@@ -3,6 +3,7 @@
 #include <dolphin/dolphin.h>
 #include <furi_hal.h>
 #include "../u2f.h"
+#include <loader/loader.h>
 
 #define U2F_REQUEST_TIMEOUT 500
 #define U2F_SUCCESS_TIMEOUT 3000
@@ -12,6 +13,19 @@ static void u2f_scene_main_ok_callback(InputType type, void* context) {
     furi_assert(context);
     U2fApp* app = context;
     view_dispatcher_send_custom_event(app->view_dispatcher, U2fCustomEventConfirm);
+}
+
+static void u2f_scene_main_open_unsecure_enclave_ok(InputType type, void* context) {
+    UNUSED(type);
+    furi_assert(context);
+    U2fApp* app = context;
+
+    // Enqueue launch of Unsecure Enclave ext app and exit this app
+    Loader* loader = furi_record_open(RECORD_LOADER);
+    loader_enqueue_launch(loader, "/ext/apps/Tools/unsecure_enclave.fap", NULL, LoaderDeferredLaunchFlagGui);
+    furi_record_close(RECORD_LOADER);
+
+    view_dispatcher_stop(app->view_dispatcher);
 }
 
 static void u2f_scene_main_event_callback(U2fNotifyEvent evt, void* context) {
@@ -48,10 +62,14 @@ bool u2f_scene_main_on_event(void* context, SceneManagerEvent event) {
         if(event.event == U2fCustomEventConnect) {
             furi_timer_stop(app->timer);
             u2f_view_set_state(app->u2f_view, U2fMsgIdle);
+            // Restore normal OK behavior
+            u2f_view_set_ok_callback(app->u2f_view, u2f_scene_main_ok_callback, app);
         } else if(event.event == U2fCustomEventDisconnect) {
             furi_timer_stop(app->timer);
             app->event_cur = U2fCustomEventNone;
             u2f_view_set_state(app->u2f_view, U2fMsgNotConnected);
+            // Restore normal OK behavior
+            u2f_view_set_ok_callback(app->u2f_view, u2f_scene_main_ok_callback, app);
         } else if((event.event == U2fCustomEventRegister) || (event.event == U2fCustomEventAuth)) {
             furi_timer_start(app->timer, U2F_REQUEST_TIMEOUT);
             if(app->event_cur == U2fCustomEventNone) {
@@ -64,6 +82,8 @@ bool u2f_scene_main_on_event(void* context, SceneManagerEvent event) {
                 notification_message(app->notifications, &sequence_single_vibro);
             }
             notification_message(app->notifications, &sequence_blink_magenta_10);
+            // Ensure normal OK behavior during auth/register
+            u2f_view_set_ok_callback(app->u2f_view, u2f_scene_main_ok_callback, app);
         } else if(event.event == U2fCustomEventWink) {
             notification_message(app->notifications, &sequence_blink_magenta_10);
         } else if(event.event == U2fCustomEventAuthSuccess) {
@@ -72,10 +92,14 @@ bool u2f_scene_main_on_event(void* context, SceneManagerEvent event) {
             furi_timer_start(app->timer, U2F_SUCCESS_TIMEOUT);
             app->event_cur = U2fCustomEventNone;
             u2f_view_set_state(app->u2f_view, U2fMsgSuccess);
+            // Normal OK behavior
+            u2f_view_set_ok_callback(app->u2f_view, u2f_scene_main_ok_callback, app);
         } else if(event.event == U2fCustomEventTimeout) {
             notification_message_block(app->notifications, &sequence_reset_rgb);
             app->event_cur = U2fCustomEventNone;
             u2f_view_set_state(app->u2f_view, U2fMsgIdle);
+            // Normal OK behavior
+            u2f_view_set_ok_callback(app->u2f_view, u2f_scene_main_ok_callback, app);
         } else if(event.event == U2fCustomEventConfirm) {
             if(app->event_cur != U2fCustomEventNone) {
                 u2f_confirm_user_present(app->u2f_instance);
@@ -84,6 +108,8 @@ bool u2f_scene_main_on_event(void* context, SceneManagerEvent event) {
             notification_message(app->notifications, &sequence_set_red_255);
             furi_timer_stop(app->timer);
             u2f_view_set_state(app->u2f_view, U2fMsgError);
+            // Change OK to open Unsecure Enclave
+            u2f_view_set_ok_callback(app->u2f_view, u2f_scene_main_open_unsecure_enclave_ok, app);
         }
         consumed = true;
     }
@@ -105,6 +131,8 @@ void u2f_scene_main_on_enter(void* context) {
     } else {
         u2f_free(app->u2f_instance);
         u2f_view_set_state(app->u2f_view, U2fMsgError);
+    // Error state: OK opens Unsecure Enclave
+    u2f_view_set_ok_callback(app->u2f_view, u2f_scene_main_open_unsecure_enclave_ok, app);
     }
 
     view_dispatcher_switch_to_view(app->view_dispatcher, U2fAppViewMain);

@@ -64,7 +64,7 @@ const char* desktop_keybinds_defaults[DesktopKeybindTypeMAX][DesktopKeybindKeyMA
             [DesktopKeybindKeyUp] = "Lock Menu",
             [DesktopKeybindKeyDown] = "Archive",
             [DesktopKeybindKeyRight] = "Passport",
-            [DesktopKeybindKeyLeft] = "Clock",
+            [DesktopKeybindKeyLeft] = "Kiisu Sensor Hub",
         },
     [DesktopKeybindTypeHold] =
         {
@@ -205,8 +205,12 @@ void desktop_run_keybind(Desktop* desktop, InputType _type, InputKey _key) {
     } else if(furi_string_equal(keybind, "Archive")) {
         desktop_launch_archive(desktop, NULL);
     } else if(furi_string_equal(keybind, "Clock")) {
+        // Backward-compat: existing configs labeled "Clock" now open Kiisu Sensor Hub
         loader_start_detached_with_gui_error(
-            desktop->loader, EXT_PATH("apps/Tools/nightstand.fap"), "");
+            desktop->loader, EXT_PATH("apps/Tools/kiisu_sensor_hub.fap"), "");
+    } else if(furi_string_equal(keybind, "Kiisu Sensor Hub")) {
+        loader_start_detached_with_gui_error(
+            desktop->loader, EXT_PATH("apps/Tools/kiisu_sensor_hub.fap"), "");
     } else if(furi_string_equal(keybind, "Device Info")) {
         loader_start_detached_with_gui_error(desktop->loader, "Power", "about_battery");
     } else if(furi_string_equal(keybind, "Lock Menu")) {

@@ -6,7 +6,13 @@
 
 #include <stm32wbxx_ll_cortex.h>
 #include <furi.h>
-#include <interface/patterns/ble_thread/shci/shci.h>
+#include <storage/storage.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+/* FSAM_* and FSOM_* are provided via storage.h includes */
 
 #define TAG "FuriHalCrypto"
 
@@ -40,6 +46,42 @@
 
 static FuriMutex* furi_hal_crypto_mutex = NULL;
 static bool furi_hal_crypto_mode_init_done = false;
+
+/* Unsecure enclave: persistent key slots under internal storage */
+#define ENCLAVE_DIR INT_PATH("enclave")
+#define ENCLAVE_SLOT_FILENAME_FORMAT ENCLAVE_DIR "/slot_%03u.bin"
+
+typedef struct {
+    uint8_t version; /* 1 */
+    uint8_t type;    /* FuriHalCryptoKeyType */
+    uint8_t size;    /* key bytes length: 16 or 32 */
+    uint8_t reserved;
+    /* followed by key data of length `size` for Simple/Master.
+       For Encrypted type, contents are stored as-is, but load is unsupported and will fail. */
+} EnclaveKeyHeader;
+
+static bool enclave_ensure_dir(Storage* storage) {
+    return storage_simply_mkdir(storage, ENCLAVE_DIR);
+}
+
+static void enclave_make_slot_path(uint8_t slot, char* path, size_t path_size) {
+    snprintf(path, path_size, ENCLAVE_SLOT_FILENAME_FORMAT, slot);
+}
+
+static bool enclave_find_last_slot(Storage* storage, uint8_t* last_slot) {
+    *last_slot = 0;
+    for(uint8_t s = 1; s <= 100; s++) {
+        char p[64];
+        enclave_make_slot_path(s, p, sizeof(p));
+        if(storage_file_exists(storage, p)) {
+            *last_slot = s;
+        } else {
+            /* gap means first free at s, but preserve append-only semantics */
+            /* continue scanning to detect non-sequential states gracefully */
+        }
+    }
+    return true;
+}
 
 static const uint8_t enclave_signature_iv[ENCLAVE_FACTORY_KEY_SLOTS][16] = {
     {0xac, 0x5d, 0x68, 0xb8, 0x79, 0x74, 0xfc, 0x7f, 0x45, 0x02, 0x82, 0xf1, 0x48, 0x7e, 0x75, 0x8a},
@@ -160,39 +202,66 @@ bool furi_hal_crypto_enclave_store_key(FuriHalCryptoKey* key, uint8_t* slot) {
 
     furi_check(furi_mutex_acquire(furi_hal_crypto_mutex, FuriWaitForever) == FuriStatusOk);
 
-    if(!furi_hal_bt_is_alive()) {
-        return false;
-    }
+    bool result = false;
+    Storage* storage = furi_record_open(RECORD_STORAGE);
+    do {
+        if(!enclave_ensure_dir(storage)) break;
 
-    SHCI_C2_FUS_StoreUsrKey_Cmd_Param_t pParam;
-    size_t key_data_size = 0;
+        /* Determine next slot (append-only) */
+        uint8_t last = 0;
+        enclave_find_last_slot(storage, &last);
+        uint8_t new_slot = last + 1;
+        if(new_slot == 0 || new_slot > 100) break;
 
-    if(key->type == FuriHalCryptoKeyTypeMaster) {
-        pParam.KeyType = KEYTYPE_MASTER;
-    } else if(key->type == FuriHalCryptoKeyTypeSimple) {
-        pParam.KeyType = KEYTYPE_SIMPLE;
-    } else if(key->type == FuriHalCryptoKeyTypeEncrypted) {
-        pParam.KeyType = KEYTYPE_ENCRYPTED;
-        key_data_size += 12;
-    } else {
-        furi_crash("Incorrect key type");
-    }
+        /* Validate key params and compute payload size */
+        uint8_t key_len = 0;
+        if(key->size == FuriHalCryptoKeySize128) key_len = 16;
+        else if(key->size == FuriHalCryptoKeySize256) key_len = 32;
+        else furi_crash("Incorrect key size");
 
-    if(key->size == FuriHalCryptoKeySize128) {
-        pParam.KeySize = KEYSIZE_16;
-        key_data_size += 16;
-    } else if(key->size == FuriHalCryptoKeySize256) {
-        pParam.KeySize = KEYSIZE_32;
-        key_data_size += 32;
-    } else {
-        furi_crash("Incorrect key size");
-    }
+        /* Encrypted keys are not supported for load; still store as-is */
+        size_t payload_len = key_len;
+        if(key->type == FuriHalCryptoKeyTypeEncrypted) {
+            /* Store whatever provided; loader will refuse to use */
+            payload_len = key_len + 12; /* follow original packing semantics */
+        } else if(key->type == FuriHalCryptoKeyTypeMaster || key->type == FuriHalCryptoKeyTypeSimple) {
+            /* ok */
+        } else {
+            furi_crash("Incorrect key type");
+        }
 
-    memcpy(pParam.KeyData, key->data, key_data_size);
+        char path[64];
+        enclave_make_slot_path(new_slot, path, sizeof(path));
+        File* file = storage_file_alloc(storage);
+        if(!file) break;
+        bool opened = storage_file_open(file, path, FSAM_WRITE, FSOM_CREATE_ALWAYS);
+        if(!opened) {
+            storage_file_close(file);
+            storage_file_free(file);
+            break;
+        }
 
-    SHCI_CmdStatus_t shci_state = SHCI_C2_FUS_StoreUsrKey(&pParam, slot);
+        EnclaveKeyHeader hdr = {
+            .version = 1,
+            .type = (uint8_t)key->type,
+            .size = key_len,
+            .reserved = 0,
+        };
+        size_t wrote = 0;
+        wrote += storage_file_write(file, &hdr, sizeof(hdr));
+        wrote += storage_file_write(file, key->data, payload_len);
+        storage_file_sync(file);
+        storage_file_close(file);
+        storage_file_free(file);
+        if(wrote != sizeof(hdr) + payload_len) break;
+
+        *slot = new_slot;
+        result = true;
+    } while(false);
+
+    furi_record_close(RECORD_STORAGE);
     furi_check(furi_mutex_release(furi_hal_crypto_mutex) == FuriStatusOk);
-    return shci_state == SHCI_Success;
+    return result;
 }
 
 static void crypto_key_init(uint32_t* key, uint32_t* iv) {
@@ -264,52 +333,71 @@ bool furi_hal_crypto_enclave_load_key(uint8_t slot, const uint8_t* iv) {
 
     bool success = false;
 
-    furi_hal_bt_lock_core2();
-
+    Storage* storage = furi_record_open(RECORD_STORAGE);
     do {
-        if(!furi_hal_bt_is_alive()) {
+        char path[64];
+        enclave_make_slot_path(slot, path, sizeof(path));
+        if(!storage_file_exists(storage, path)) break;
+
+        File* file = storage_file_alloc(storage);
+        if(!file) break;
+        if(!storage_file_open(file, path, FSAM_READ, FSOM_OPEN_EXISTING)) {
+            storage_file_close(file);
+            storage_file_free(file);
             break;
         }
 
-        furi_hal_crypto_mode_init_done = false;
-        crypto_key_init(NULL, (uint32_t*)iv);
-
-        if(SHCI_C2_FUS_LoadUsrKey(slot) == SHCI_Success) {
-            success = true;
-        } else {
-            CLEAR_BIT(AES1->CR, AES_CR_EN);
-            furi_check(furi_mutex_release(furi_hal_crypto_mutex) == FuriStatusOk);
+        EnclaveKeyHeader hdr;
+        size_t rd = storage_file_read(file, &hdr, sizeof(hdr));
+        if(rd != sizeof(hdr) || hdr.version != 1) {
+            storage_file_close(file);
+            storage_file_free(file);
+            break;
         }
 
+        /* Only support Simple/Master keys for runtime use */
+        if(hdr.type == (uint8_t)FuriHalCryptoKeyTypeEncrypted) {
+            storage_file_close(file);
+            storage_file_free(file);
+            break;
+        }
+
+        if(!(hdr.size == 32 || hdr.size == 16)) {
+            storage_file_close(file);
+            storage_file_free(file);
+            break;
+        }
+
+        uint8_t keybuf[32] = {0};
+        rd = storage_file_read(file, keybuf, hdr.size);
+        storage_file_close(file);
+        storage_file_free(file);
+        if(rd != hdr.size) break;
+
+        furi_hal_crypto_mode_init_done = false;
+        crypto_key_init((uint32_t*)keybuf, (uint32_t*)iv);
+        success = true;
     } while(false);
 
-    furi_hal_bt_unlock_core2();
+    if(!success) {
+        CLEAR_BIT(AES1->CR, AES_CR_EN);
+        furi_check(furi_mutex_release(furi_hal_crypto_mutex) == FuriStatusOk);
+    }
+
+    furi_record_close(RECORD_STORAGE);
     return success;
 }
 
 bool furi_hal_crypto_enclave_unload_key(uint8_t slot) {
-    furi_hal_bt_lock_core2();
+    (void)slot; /* slot parameter retained for API compatibility */
 
-    bool success = false;
+    CLEAR_BIT(AES1->CR, AES_CR_EN);
 
-    do {
-        if(!furi_hal_bt_is_alive()) {
-            break;
-        }
+    furi_hal_bus_disable(FuriHalBusAES1);
 
-        CLEAR_BIT(AES1->CR, AES_CR_EN);
+    furi_check(furi_mutex_release(furi_hal_crypto_mutex) == FuriStatusOk);
 
-        SHCI_CmdStatus_t shci_state = SHCI_C2_FUS_UnloadUsrKey(slot);
-
-        furi_hal_bus_disable(FuriHalBusAES1);
-
-        furi_check(furi_mutex_release(furi_hal_crypto_mutex) == FuriStatusOk);
-
-        success = (shci_state == SHCI_Success);
-    } while(false);
-
-    furi_hal_bt_unlock_core2();
-    return success;
+    return true;
 }
 
 bool furi_hal_crypto_load_key(const uint8_t* key, const uint8_t* iv) {

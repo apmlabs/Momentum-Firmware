@@ -12,7 +12,7 @@
 const char* EXTRA_KEYBINDS[] = {
     "Apps Menu",
     "Archive",
-    "Clock",
+    "Kiisu Sensor Hub",
     "Device Info",
     "Lock Menu",
     "Lock Keypad",

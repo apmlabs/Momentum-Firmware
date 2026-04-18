@@ -16,31 +16,46 @@ typedef struct {
 static void u2f_view_draw_callback(Canvas* canvas, void* _model) {
     U2fModel* model = _model;
 
-    canvas_draw_icon(canvas, 8, 14, &I_Drive_112x35);
+    // Ensure previous frame content is cleared
+    canvas_clear(canvas);
+    canvas_set_color(canvas, ColorBlack);
     canvas_set_font(canvas, FontSecondary);
 
     if(model->display_msg == U2fMsgNotConnected) {
+        canvas_draw_icon(canvas, 8, 14, &I_Drive_112x35);
         canvas_draw_icon(canvas, 22, 15, &I_Connect_me_62x31);
         canvas_draw_str_aligned(canvas, 128 / 2, 3, AlignCenter, AlignTop, "Connect to a device");
     } else if(model->display_msg == U2fMsgIdle) {
+        canvas_draw_icon(canvas, 8, 14, &I_Drive_112x35);
         canvas_draw_icon(canvas, 22, 15, &I_Connected_62x31);
         canvas_draw_str_aligned(canvas, 128 / 2, 3, AlignCenter, AlignTop, "Connected!");
     } else if(model->display_msg == U2fMsgRegister) {
+        canvas_draw_icon(canvas, 8, 14, &I_Drive_112x35);
         elements_button_center(canvas, "OK");
         canvas_draw_icon(canvas, 22, 15, &I_Auth_62x31);
         canvas_draw_str_aligned(canvas, 128 / 2, 3, AlignCenter, AlignTop, "Press OK to register");
     } else if(model->display_msg == U2fMsgAuth) {
+        canvas_draw_icon(canvas, 8, 14, &I_Drive_112x35);
         elements_button_center(canvas, "OK");
         canvas_draw_icon(canvas, 22, 15, &I_Auth_62x31);
         canvas_draw_str_aligned(
             canvas, 128 / 2, 3, AlignCenter, AlignTop, "Press OK to authenticate");
     } else if(model->display_msg == U2fMsgSuccess) {
+        canvas_draw_icon(canvas, 8, 14, &I_Drive_112x35);
         canvas_draw_icon(canvas, 22, 15, &I_Connected_62x31);
         canvas_draw_str_aligned(
             canvas, 128 / 2, 3, AlignCenter, AlignTop, "Authentication successful!");
     } else if(model->display_msg == U2fMsgError) {
-        canvas_draw_icon(canvas, 22, 15, &I_Error_62x31);
-        canvas_draw_str_aligned(canvas, 128 / 2, 3, AlignCenter, AlignTop, "Certificate error");
+        // Error screen with guidance and action to open Unsecure Enclave
+        elements_button_center(canvas, "Open Unsecure Enclave");
+
+        canvas_set_font(canvas, FontPrimary);
+        canvas_draw_str(canvas, 22, 9, "Certificate errror");
+
+        canvas_set_font(canvas, FontSecondary);
+        canvas_draw_str(canvas, 8, 20, "Open unsecure enclave and");
+        canvas_draw_str(canvas, 13, 28, "generate random keys for");
+        canvas_draw_str(canvas, 41, 37, "slots 1 to 10");
     }
 }
 

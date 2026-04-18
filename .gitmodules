@@ -41,3 +41,17 @@
 [submodule "lib/uzlib"]
 	path = lib/uzlib
 	url = https://github.com/pfalcon/uzlib.git
+[submodule "applications/kiisu_sensor_hub"]
+	path = applications/kiisu_sensor_hub
+	url = https://github.com/twoelw/kiisu-sensor-hub.git
+	branch = main
+[submodule "applications/unsecure_enclave"]
+	path = applications/unsecure_enclave
+	url = https://github.com/twoelw/Unsecure-Enclave-App.git
+	branch = main
+[submodule "applications/kiisu_companion_bridge"]
+	path = applications/kiisu_companion_bridge
+	url = https://github.com/twoelw/kiisu-companion-bridge.git
+[submodule "applications/kiisu-manager"]
+	path = applications/kiisu-manager
+	url = https://github.com/twoelw/kiisu-manager
