@@ -5,17 +5,22 @@
 
 extern const SubGhzProtocolRegistry subghz_protocol_registry;
 
-// ============== Spacing/band config ==============
-
 static const uint32_t sc_spacing[] = {196078, 39215, 784313};
 static const uint32_t sc_step[] = {5000, 1000, 20000};
-static const char* sc_width_names[] = {"Wide", "Narrow", "UltraWide"};
+static const char* sc_width_names[] = {"Wide", "Narrow", "UWide"};
 static const char* sc_view_names[] = {"SPECTRUM", "FREQ ANALYZER", "DECODER", "WAVEFORM"};
 static const char* sc_sort_names[] = {"Count", "RSSI", "Freq", "Recent"};
-static const char* sc_mod_names[] = {"OOK650", "OOK270", "2FSK"};
+static const char* sc_mod_names[] = {"AM650", "AM270", "FM2.4", "FM47.6"};
+static const FuriHalSubGhzPreset sc_presets[] = {
+    FuriHalSubGhzPresetOok650Async, FuriHalSubGhzPresetOok270Async,
+    FuriHalSubGhzPreset2FSKDev238Async, FuriHalSubGhzPreset2FSKDev476Async,
+};
+static const char* sc_preset_names[] = {
+    "FuriHalSubGhzPresetOok650Async", "FuriHalSubGhzPresetOok270Async",
+    "FuriHalSubGhzPreset2FSKDev238Async", "FuriHalSubGhzPreset2FSKDev476Async",
+};
 
 // ============== Log sort ==============
-
 static void sc_log_sort(SCLogEntry* log, uint8_t size, SCLogSort mode) {
     for(uint8_t i = 1; i < size; i++) {
         SCLogEntry tmp = log[i];
@@ -29,8 +34,7 @@ static void sc_log_sort(SCLogEntry* log, uint8_t size, SCLogSort mode) {
             default: swap = log[j].seq < tmp.seq; break;
             }
             if(!swap) break;
-            log[j + 1] = log[j];
-            j--;
+            log[j + 1] = log[j]; j--;
         }
         log[j + 1] = tmp;
     }
@@ -39,7 +43,6 @@ static void sc_log_sort(SCLogEntry* log, uint8_t size, SCLogSort mode) {
 static void sc_log_update(SpectrumCheckApp* app, uint32_t freq, float rssi) {
     if(!freq) return;
     uint8_t rssi_u8 = (uint8_t)(rssi - SC_RSSI_MIN);
-
     for(uint8_t i = 0; i < app->log_size; i++) {
         if(app->log[i].frequency == freq) {
             if(app->log[i].count < 255) app->log[i].count++;
@@ -50,322 +53,384 @@ static void sc_log_update(SpectrumCheckApp* app, uint32_t freq, float rssi) {
         }
     }
     if(app->log_size < SC_MAX_LOG) {
-        app->log[app->log_size].frequency = freq;
-        app->log[app->log_size].count = 1;
-        app->log[app->log_size].rssi_max = rssi_u8;
-        app->log[app->log_size].seq = app->log_seq++;
+        app->log[app->log_size] = (SCLogEntry){freq, 1, rssi_u8, app->log_seq++};
         app->log_size++;
         sc_log_sort(app->log, app->log_size, app->log_sort);
     }
 }
 
-// ============== Raw sample capture ==============
-
-static void sc_raw_callback(bool level, uint32_t duration, void* context) {
-    SpectrumCheckApp* app = context;
-    if(app->raw_write_idx < SC_RAW_SAMPLES_MAX) {
-        app->raw_samples[app->raw_write_idx].level = level;
-        app->raw_samples[app->raw_write_idx].duration = duration;
-        app->raw_write_idx++;
-        if(app->raw_count < SC_RAW_SAMPLES_MAX) app->raw_count++;
+// ============== Signal analysis ==============
+static void sc_analyze_signal(SCSignal* sig) {
+    if(sig->raw_count < 4) return;
+    sig->pulse_count = sig->raw_count;
+    sig->total_duration_us = 0;
+    sig->min_pulse_us = UINT32_MAX;
+    for(uint16_t i = 0; i < sig->raw_count; i++) {
+        uint32_t d = sig->raw_data[i] > 0 ? (uint32_t)sig->raw_data[i] : (uint32_t)(-sig->raw_data[i]);
+        sig->total_duration_us += d;
+        if(d < sig->min_pulse_us && d > 50) sig->min_pulse_us = d;
     }
+    if(sig->min_pulse_us < UINT32_MAX && sig->min_pulse_us > 0)
+        sig->est_rate_hz = 1000000 / sig->min_pulse_us;
+    else
+        sig->est_rate_hz = 0;
+    sig->analyzed = true;
 }
 
-// ============== Spectrum worker ==============
+// ============== Raw capture callback ==============
+static volatile uint16_t sc_cap_idx;
+static int32_t* sc_cap_buf;
+static volatile bool sc_cap_last_level;
 
-static int32_t sc_spectrum_worker(void* ctx) {
+static void sc_raw_callback(bool level, uint32_t duration, void* context) {
+    UNUSED(context);
+    if(sc_cap_idx >= SC_RAW_PER_SIGNAL) return;
+    sc_cap_buf[sc_cap_idx] = level ? (int32_t)duration : -(int32_t)duration;
+    sc_cap_idx++;
+    sc_cap_last_level = level;
+}
+
+// ============== Save signal to .sub ==============
+static void sc_save_signal(SpectrumCheckApp* app, SCSignal* sig) {
+    Storage* storage = furi_record_open(RECORD_STORAGE);
+    storage_simply_mkdir(storage, "/ext/subghz");
+    storage_simply_mkdir(storage, "/ext/subghz/spectrum_check");
+
+    FuriString* path = furi_string_alloc();
+    // Generate filename from frequency
+    furi_string_printf(path, "/ext/subghz/spectrum_check/%ld_%s.sub",
+        sig->frequency / 1000, sc_mod_names[sig->modulation]);
+
+    FlipperFormat* ff = flipper_format_file_alloc(storage);
+    do {
+        if(!flipper_format_file_open_always(ff, furi_string_get_cstr(path))) break;
+        if(!flipper_format_write_header_cstr(ff, "Flipper SubGhz RAW File", 1)) break;
+        if(!flipper_format_write_uint32(ff, "Frequency", &sig->frequency, 1)) break;
+        if(!flipper_format_write_string_cstr(ff, "Preset", sc_preset_names[sig->modulation])) break;
+        if(!flipper_format_write_string_cstr(ff, "Protocol", "RAW")) break;
+        // Write raw data in chunks
+        uint16_t written = 0;
+        while(written < sig->raw_count) {
+            uint16_t chunk = sig->raw_count - written;
+            if(chunk > 128) chunk = 128;
+            if(!flipper_format_write_int32(ff, "RAW_Data", &sig->raw_data[written], chunk)) break;
+            written += chunk;
+        }
+    } while(0);
+    flipper_format_free(ff);
+    furi_string_free(path);
+    furi_record_close(RECORD_STORAGE);
+
+    notification_message(app->notifications, &sequence_success);
+}
+
+// ============== Worker thread ==============
+static int32_t sc_worker(void* ctx) {
     SpectrumCheckApp* app = ctx;
 
     while(app->worker_running) {
         if(app->current_view == SCViewSpectrum) {
-            // Sweep channels
             uint32_t spacing = sc_spacing[app->width];
             uint32_t ch0 = app->frequency - (SC_NUM_CHANNELS / 2) * spacing;
-
             subghz_devices_idle(app->radio_device);
             subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetOok650Async, NULL);
 
             float best_rssi = -200.0f;
             uint8_t best_ch = 0;
-
             for(uint8_t i = 0; i < SC_NUM_CHANNELS && app->worker_running; i++) {
-                uint32_t f = ch0 + i * spacing;
-                subghz_devices_set_frequency(app->radio_device, f);
+                subghz_devices_set_frequency(app->radio_device, ch0 + i * spacing);
                 subghz_devices_set_rx(app->radio_device);
                 furi_delay_us(300);
                 float rssi = subghz_devices_get_rssi(app->radio_device);
                 subghz_devices_idle(app->radio_device);
 
                 furi_mutex_acquire(app->mutex, FuriWaitForever);
-                int8_t db = (int8_t)rssi + 138; // normalize to 0-80 range
-                if(db < 0) db = 0;
-                if(db > 80) db = 80;
-                app->channel_ss[i] = (uint8_t)db;
-                if(rssi > best_rssi) {
-                    best_rssi = rssi;
-                    best_ch = i;
-                }
+                int8_t db = (int8_t)rssi + 138;
+                app->channel_ss[i] = (db < 0) ? 0 : ((db > 80) ? 80 : (uint8_t)db);
+                if(rssi > best_rssi) { best_rssi = rssi; best_ch = i; }
                 furi_mutex_release(app->mutex);
             }
-
             furi_mutex_acquire(app->mutex, FuriWaitForever);
             app->max_rssi = best_rssi;
             app->max_rssi_channel = best_ch;
             furi_mutex_release(app->mutex);
 
         } else if(app->current_view == SCViewFreqAnalyzer) {
-            // Frequency analyzer: scan common frequencies for signals
             static const uint32_t scan_freqs[] = {
                 300000000, 303875000, 310000000, 315000000, 318000000,
                 390000000, 418000000, 433075000, 433420000, 433920000,
                 434420000, 434775000, 438900000,
                 868350000, 868950000, 915000000, 925000000,
             };
-            static const uint8_t scan_count = sizeof(scan_freqs) / sizeof(scan_freqs[0]);
-
             subghz_devices_idle(app->radio_device);
             subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetOok650Async, NULL);
 
-            for(uint8_t i = 0; i < scan_count && app->worker_running; i++) {
+            float best_rssi = -127.0f;
+            uint32_t best_freq = 0;
+            for(uint8_t i = 0; i < 17 && app->worker_running; i++) {
                 subghz_devices_set_frequency(app->radio_device, scan_freqs[i]);
                 subghz_devices_set_rx(app->radio_device);
-                furi_delay_us(500);
+                furi_delay_us(2000);
                 float rssi = subghz_devices_get_rssi(app->radio_device);
                 subghz_devices_idle(app->radio_device);
+                if(rssi > best_rssi) { best_rssi = rssi; best_freq = scan_freqs[i]; }
+            }
 
-                furi_mutex_acquire(app->mutex, FuriWaitForever);
-                if(rssi > app->trigger) {
-                    app->signal_found = true;
-                    app->detected_freq = scan_freqs[i];
-                    app->detected_rssi = rssi;
-                    sc_log_update(app, scan_freqs[i], rssi);
+            if(best_rssi > app->trigger && best_freq > 0) {
+                // Fine scan
+                subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetOok270Async, NULL);
+                float fine_rssi = -127.0f;
+                uint32_t fine_freq = 0;
+                for(uint32_t f = best_freq - 300000; f <= best_freq + 300000; f += 20000) {
+                    subghz_devices_set_frequency(app->radio_device, f);
+                    subghz_devices_set_rx(app->radio_device);
+                    furi_delay_us(2000);
+                    float rssi = subghz_devices_get_rssi(app->radio_device);
+                    subghz_devices_idle(app->radio_device);
+                    if(rssi > fine_rssi) { fine_rssi = rssi; fine_freq = f; }
                 }
+                furi_mutex_acquire(app->mutex, FuriWaitForever);
+                if(fine_rssi > app->trigger) {
+                    app->signal_found = true;
+                    app->detected_freq = fine_freq;
+                    app->detected_rssi = fine_rssi;
+                    sc_log_update(app, fine_freq, fine_rssi);
+
+                    // Auto-capture into signal library
+                    if(app->signal_count < SC_MAX_SIGNALS) {
+                        bool already = false;
+                        for(uint8_t s = 0; s < app->signal_count; s++) {
+                            if(app->signals[s].frequency == fine_freq) { already = true; break; }
+                        }
+                        if(!already) {
+                            // Quick capture
+                            furi_mutex_release(app->mutex);
+                            subghz_devices_idle(app->radio_device);
+                            subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetOok650Async, NULL);
+                            subghz_devices_set_frequency(app->radio_device, fine_freq);
+
+                            furi_mutex_acquire(app->mutex, FuriWaitForever);
+                            SCSignal* sig = &app->signals[app->signal_count];
+                            memset(sig, 0, sizeof(SCSignal));
+                            sig->frequency = fine_freq;
+                            sig->modulation = SCModAM650;
+                            sc_cap_buf = sig->raw_data;
+                            sc_cap_idx = 0;
+                            furi_mutex_release(app->mutex);
+
+                            subghz_devices_start_async_rx(app->radio_device, sc_raw_callback, app);
+                            furi_delay_ms(400);
+                            subghz_devices_stop_async_rx(app->radio_device);
+
+                            furi_mutex_acquire(app->mutex, FuriWaitForever);
+                            sig->raw_count = sc_cap_idx;
+                            sc_analyze_signal(sig);
+                            if(sig->raw_count > 10) {
+                                app->signal_count++;
+                                app->signal_selected = app->signal_count - 1;
+                            }
+                        }
+                    }
+                } else {
+                    app->signal_found = false;
+                }
+                furi_mutex_release(app->mutex);
+            } else {
+                furi_mutex_acquire(app->mutex, FuriWaitForever);
+                app->signal_found = false;
                 furi_mutex_release(app->mutex);
             }
 
         } else if(app->current_view == SCViewDecoder || app->current_view == SCViewWaveform) {
-            // Capture raw pulses on current frequency
-            if(!app->signal_found && app->detected_freq == 0) {
-                furi_delay_ms(100);
-                continue;
-            }
+            // Only capture when explicitly requested
+            if(app->capturing) {
+                uint32_t freq = app->detected_freq ? app->detected_freq : app->frequency;
+                subghz_devices_idle(app->radio_device);
+                subghz_devices_load_preset(app->radio_device, sc_presets[app->modulation], NULL);
+                subghz_devices_set_frequency(app->radio_device, freq);
 
-            subghz_devices_idle(app->radio_device);
-            subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetOok650Async, NULL);
-            subghz_devices_set_frequency(app->radio_device, app->detected_freq ? app->detected_freq : app->frequency);
-
-            furi_mutex_acquire(app->mutex, FuriWaitForever);
-            app->raw_write_idx = 0;
-            app->raw_count = 0;
-            furi_mutex_release(app->mutex);
-
-            subghz_devices_start_async_rx(app->radio_device, sc_raw_callback, app);
-            furi_delay_ms(500); // Capture for 500ms
-            subghz_devices_stop_async_rx(app->radio_device);
-            subghz_devices_idle(app->radio_device);
-
-            // Try to decode
-            if(app->raw_count > 10) {
                 furi_mutex_acquire(app->mutex, FuriWaitForever);
-                // Analyze raw data for basic stats
-                uint32_t total_dur = 0;
-                uint32_t min_pulse = UINT32_MAX;
-                uint16_t high_count = 0;
-                for(uint16_t i = 0; i < app->raw_count; i++) {
-                    total_dur += app->raw_samples[i].duration;
-                    if(app->raw_samples[i].level) high_count++;
-                    if(app->raw_samples[i].duration < min_pulse && app->raw_samples[i].duration > 50) {
-                        min_pulse = app->raw_samples[i].duration;
-                    }
+                SCSignal* sig;
+                if(app->signal_count < SC_MAX_SIGNALS) {
+                    sig = &app->signals[app->signal_count];
+                } else {
+                    sig = &app->signals[SC_MAX_SIGNALS - 1]; // overwrite last
                 }
-                if(!app->decoded.decoded && app->raw_count > 20) {
-                    snprintf(app->decoded.protocol_name, sizeof(app->decoded.protocol_name), "Unknown");
-                    snprintf(app->decoded.info_str, sizeof(app->decoded.info_str),
-                        "Pulses:%d Hi:%d\nDur:%ldms Te~%ldus\nRate~%ldHz",
-                        app->raw_count, high_count,
-                        total_dur / 1000,
-                        min_pulse < UINT32_MAX ? min_pulse : 0,
-                        min_pulse < UINT32_MAX && min_pulse > 0 ? 1000000 / min_pulse : 0);
-                    app->decoded.decoded = true;
-                }
+                memset(sig, 0, sizeof(SCSignal));
+                sig->frequency = freq;
+                sig->modulation = app->modulation;
+                sc_cap_buf = sig->raw_data;
+                sc_cap_idx = 0;
                 furi_mutex_release(app->mutex);
+
+                subghz_devices_start_async_rx(app->radio_device, sc_raw_callback, app);
+                furi_delay_ms(500);
+                subghz_devices_stop_async_rx(app->radio_device);
+                subghz_devices_idle(app->radio_device);
+
+                furi_mutex_acquire(app->mutex, FuriWaitForever);
+                sig->raw_count = sc_cap_idx;
+                sc_analyze_signal(sig);
+                if(sig->raw_count > 4 && app->signal_count < SC_MAX_SIGNALS) {
+                    app->signal_count++;
+                }
+                app->signal_selected = app->signal_count > 0 ? app->signal_count - 1 : 0;
+                app->capturing = false;
+                app->capture_done = true;
+                furi_mutex_release(app->mutex);
+            } else {
+                furi_delay_ms(100);
             }
         }
-
         furi_delay_ms(50);
     }
-
     subghz_devices_idle(app->radio_device);
     return 0;
 }
 
 // ============== Drawing ==============
-
 static void sc_draw_spectrum(Canvas* canvas, SpectrumCheckApp* app) {
     char buf[32];
-
-    // Draw bars
     for(uint8_t i = 0; i < SC_NUM_CHANNELS; i++) {
         uint8_t h = app->channel_ss[i] * 40 / 80;
-        if(h > 0) {
-            canvas_draw_line(canvas, SC_FREQ_START_X + i, SC_FREQ_BOTTOM_Y, SC_FREQ_START_X + i, SC_FREQ_BOTTOM_Y - h);
-        }
+        if(h > 0) canvas_draw_line(canvas, SC_FREQ_START_X + i, SC_FREQ_BOTTOM_Y, SC_FREQ_START_X + i, SC_FREQ_BOTTOM_Y - h);
     }
-
-    // Peak marker
     if(app->max_rssi > -90.0f) {
         uint8_t px = SC_FREQ_START_X + app->max_rssi_channel;
         canvas_draw_line(canvas, px, 10, px, SC_FREQ_BOTTOM_Y);
-        snprintf(buf, sizeof(buf), "%.1f", (double)app->max_rssi);
-        canvas_draw_str(canvas, px + 2, 18, buf);
+        snprintf(buf, sizeof(buf), "%.0fdB", (double)app->max_rssi);
+        canvas_draw_str(canvas, px > 80 ? px - 30 : px + 2, 18, buf);
     }
-
-    // Scale
     uint32_t spacing = sc_spacing[app->width];
     uint32_t left = app->frequency - (SC_NUM_CHANNELS / 2) * spacing;
     uint32_t right = app->frequency + (SC_NUM_CHANNELS / 2) * spacing;
     snprintf(buf, sizeof(buf), "%ld.%01ld", left / 1000000, (left / 100000) % 10);
     canvas_draw_str(canvas, 0, 62, buf);
     snprintf(buf, sizeof(buf), "%ld.%01ld", right / 1000000, (right / 100000) % 10);
-    canvas_draw_str(canvas, 90, 62, buf);
-
-    // Width mode
-    canvas_draw_str(canvas, 50, 62, sc_width_names[app->width]);
+    canvas_draw_str(canvas, 88, 62, buf);
+    canvas_draw_str(canvas, 48, 62, sc_width_names[app->width]);
 }
 
 static void sc_draw_freq_analyzer(Canvas* canvas, SpectrumCheckApp* app) {
     char buf[64];
-
-    // Detected frequency
     canvas_set_font(canvas, FontBigNumbers);
     if(app->detected_freq > 0) {
-        snprintf(buf, sizeof(buf), "%03ld.%03ld",
-            app->detected_freq / 1000000 % 1000, app->detected_freq / 1000 % 1000);
-        if(app->signal_found) {
-            canvas_draw_box(canvas, 2, 10, 124, 19);
-            canvas_set_color(canvas, ColorWhite);
-        }
+        snprintf(buf, sizeof(buf), "%03ld.%03ld", app->detected_freq / 1000000 % 1000, app->detected_freq / 1000 % 1000);
+        if(app->signal_found) { canvas_draw_box(canvas, 2, 10, 124, 19); canvas_set_color(canvas, ColorWhite); }
         canvas_draw_str(canvas, 6, 26, buf);
         canvas_set_color(canvas, ColorBlack);
     } else {
         canvas_draw_str(canvas, 6, 26, "----.---");
     }
-
-    // RSSI bar
     canvas_set_font(canvas, FontSecondary);
-    snprintf(buf, sizeof(buf), "T:%.0f", (double)app->trigger);
+    snprintf(buf, sizeof(buf), "T:%.0f Sig:%d", (double)app->trigger, app->signal_count);
     canvas_draw_str(canvas, 0, 36, buf);
 
-    // Log list
     canvas_set_font(canvas, FontKeyboard);
-    uint8_t y = 42;
     for(uint8_t i = 0; i < 3 && (app->log_scroll + i) < app->log_size; i++) {
         SCLogEntry* e = &app->log[app->log_scroll + i];
-        snprintf(buf, sizeof(buf), "%03ld.%03ld x%d",
-            e->frequency / 1000000 % 1000, e->frequency / 1000 % 1000, e->count);
-        canvas_draw_str(canvas, 0, y + i * 9, buf);
-        // Mini RSSI bar
+        snprintf(buf, sizeof(buf), "%03ld.%03ld x%d", e->frequency / 1000000 % 1000, e->frequency / 1000 % 1000, e->count);
+        canvas_draw_str(canvas, 0, 44 + i * 9, buf);
         uint8_t bar = e->rssi_max > 40 ? 40 : e->rssi_max;
-        for(uint8_t b = 0; b < bar; b++) {
-            if(b % 4) canvas_draw_dot(canvas, 85 + b, y + i * 9 - 3);
-        }
+        for(uint8_t b = 0; b < bar; b++) { if(b % 4) canvas_draw_dot(canvas, 85 + b, 41 + i * 9); }
     }
     canvas_set_font(canvas, FontSecondary);
-    canvas_draw_str(canvas, 85, 36, sc_sort_names[app->log_sort]);
+    if(app->log_size > 0) canvas_draw_str(canvas, 85, 36, sc_sort_names[app->log_sort]);
 }
 
 static void sc_draw_decoder(Canvas* canvas, SpectrumCheckApp* app) {
     char buf[64];
-
     canvas_set_font(canvas, FontSecondary);
-    if(app->detected_freq > 0) {
-        snprintf(buf, sizeof(buf), "%ld.%03ld MHz  %s",
-            app->detected_freq / 1000000, (app->detected_freq / 1000) % 1000,
-            sc_mod_names[app->modulation]);
-        canvas_draw_str(canvas, 0, 18, buf);
+
+    if(app->signal_count == 0) {
+        canvas_draw_str(canvas, 4, 20, "No signals captured yet.");
+        canvas_draw_str(canvas, 4, 32, "Use Freq Analyzer to find");
+        canvas_draw_str(canvas, 4, 42, "signals, or press OK to");
+        canvas_draw_str(canvas, 4, 52, "capture on current freq.");
+        return;
     }
 
-    if(app->decoded.decoded) {
-        canvas_set_font(canvas, FontPrimary);
-        canvas_draw_str(canvas, 0, 30, app->decoded.protocol_name);
-        canvas_set_font(canvas, FontSecondary);
+    SCSignal* sig = &app->signals[app->signal_selected];
+    // Header: signal index + freq
+    snprintf(buf, sizeof(buf), "[%d/%d] %ld.%03ld %s",
+        app->signal_selected + 1, app->signal_count,
+        sig->frequency / 1000000, (sig->frequency / 1000) % 1000,
+        sc_mod_names[sig->modulation]);
+    canvas_draw_str(canvas, 0, 18, buf);
 
-        // Draw multi-line info
-        const char* p = app->decoded.info_str;
-        uint8_t y = 40;
-        while(*p && y < 64) {
-            const char* nl = strchr(p, '\n');
-            uint8_t len = nl ? (uint8_t)(nl - p) : strlen(p);
-            if(len > 30) len = 30;
-            char line[32];
-            memcpy(line, p, len);
-            line[len] = 0;
-            canvas_draw_str(canvas, 0, y, line);
-            y += 10;
-            p += len;
-            if(*p == '\n') p++;
+    if(sig->analyzed) {
+        snprintf(buf, sizeof(buf), "Pulses: %d", sig->pulse_count);
+        canvas_draw_str(canvas, 0, 30, buf);
+        snprintf(buf, sizeof(buf), "Duration: %ldms", sig->total_duration_us / 1000);
+        canvas_draw_str(canvas, 0, 40, buf);
+        if(sig->min_pulse_us < UINT32_MAX) {
+            snprintf(buf, sizeof(buf), "Te: %ldus  Rate: %ldHz", sig->min_pulse_us, sig->est_rate_hz);
+            canvas_draw_str(canvas, 0, 50, buf);
         }
     } else {
-        canvas_draw_str(canvas, 0, 36, "Waiting for signal...");
-        snprintf(buf, sizeof(buf), "Samples: %d", app->raw_count);
-        canvas_draw_str(canvas, 0, 48, buf);
+        canvas_draw_str(canvas, 0, 30, "Not analyzed");
     }
+    // Bottom hints
+    canvas_draw_str(canvas, 0, 62, "L/R:sig OK:cap Long:save");
 }
 
 static void sc_draw_waveform(Canvas* canvas, SpectrumCheckApp* app) {
-    if(app->raw_count == 0) {
+    if(app->signal_count == 0) {
         canvas_set_font(canvas, FontSecondary);
         canvas_draw_str(canvas, 10, 32, "No signal captured yet");
+        return;
+    }
+    SCSignal* sig = &app->signals[app->signal_selected];
+    if(sig->raw_count == 0) {
+        canvas_set_font(canvas, FontSecondary);
+        canvas_draw_str(canvas, 10, 32, "Empty signal");
         return;
     }
 
     uint8_t zoom = app->waveform_zoom ? app->waveform_zoom : 1;
     uint16_t x = 0;
     uint16_t idx = app->waveform_scroll;
-
-    while(x < 128 && idx < app->raw_count) {
-        uint8_t pixels = (app->raw_samples[idx].duration / (100 / zoom));
+    while(x < 128 && idx < sig->raw_count) {
+        int32_t val = sig->raw_data[idx];
+        bool level = val > 0;
+        uint32_t dur = level ? (uint32_t)val : (uint32_t)(-val);
+        uint8_t pixels = dur / (100 / zoom);
         if(pixels == 0) pixels = 1;
         if(pixels > 128 - x) pixels = 128 - x;
 
-        uint8_t y = app->raw_samples[idx].level ? 15 : 45;
+        uint8_t y = level ? 15 : 45;
         canvas_draw_line(canvas, x, y, x + pixels, y);
-
-        // Vertical transition line
         if(idx > app->waveform_scroll) {
-            uint8_t prev_y = app->raw_samples[idx - 1].level ? 15 : 45;
+            int32_t prev = sig->raw_data[idx - 1];
+            uint8_t prev_y = prev > 0 ? 15 : 45;
             if(prev_y != y) canvas_draw_line(canvas, x, 15, x, 45);
         }
-
         x += pixels;
         idx++;
     }
-
-    // Info bar
     canvas_set_font(canvas, FontSecondary);
-    char buf[32];
-    snprintf(buf, sizeof(buf), "%d/%d z:%d", app->waveform_scroll, app->raw_count, zoom);
+    char buf[40];
+    snprintf(buf, sizeof(buf), "[%d/%d] %d/%d z:%d",
+        app->signal_selected + 1, app->signal_count,
+        app->waveform_scroll, sig->raw_count, zoom);
     canvas_draw_str(canvas, 0, 62, buf);
 }
 
 static void sc_draw_callback(Canvas* canvas, void* ctx) {
     SpectrumCheckApp* app = ctx;
     furi_mutex_acquire(app->mutex, FuriWaitForever);
-
     canvas_clear(canvas);
     canvas_set_color(canvas, ColorBlack);
+    canvas_set_font(canvas, FontSecondary);
 
     // Header
-    canvas_set_font(canvas, FontSecondary);
+    char buf[32];
     canvas_draw_str(canvas, 0, 7, sc_view_names[app->current_view]);
+    snprintf(buf, sizeof(buf), "%ld.%02ld %s",
+        app->frequency / 1000000, (app->frequency / 10000) % 100,
+        sc_mod_names[app->modulation]);
+    canvas_draw_str(canvas, 70, 7, buf);
 
-    // Center freq
-    char buf[20];
-    snprintf(buf, sizeof(buf), "%ld.%02ld",
-        app->frequency / 1000000, (app->frequency / 10000) % 100);
-    canvas_draw_str(canvas, 80, 7, buf);
-
-    // Draw active view
     switch(app->current_view) {
     case SCViewSpectrum: sc_draw_spectrum(canvas, app); break;
     case SCViewFreqAnalyzer: sc_draw_freq_analyzer(canvas, app); break;
@@ -373,43 +438,26 @@ static void sc_draw_callback(Canvas* canvas, void* ctx) {
     case SCViewWaveform: sc_draw_waveform(canvas, app); break;
     default: break;
     }
-
     furi_mutex_release(app->mutex);
 }
 
 // ============== Input ==============
-
 static void sc_input_callback(InputEvent* event, void* ctx) {
-    SpectrumCheckApp* app = ctx;
-    furi_message_queue_put(app->event_queue, event, FuriWaitForever);
+    furi_message_queue_put(((SpectrumCheckApp*)ctx)->event_queue, event, FuriWaitForever);
 }
 
 static void sc_handle_input(SpectrumCheckApp* app, InputEvent* event) {
-    if(event->type != InputTypeShort && event->type != InputTypeRepeat) return;
-
+    if(event->type != InputTypeShort && event->type != InputTypeRepeat && event->type != InputTypeLong) return;
     furi_mutex_acquire(app->mutex, FuriWaitForever);
 
     switch(event->key) {
     case InputKeyUp:
-        if(app->current_view == 0)
-            app->current_view = SCViewCount - 1;
-        else
-            app->current_view--;
-        // Reset decoder when switching to it
-        if(app->current_view == SCViewDecoder) {
-            app->decoded.decoded = false;
-            app->raw_count = 0;
-            app->raw_write_idx = 0;
-        }
+        app->current_view = app->current_view == 0 ? SCViewCount - 1 : app->current_view - 1;
+        app->waveform_scroll = 0;
         break;
-
     case InputKeyDown:
         app->current_view = (app->current_view + 1) % SCViewCount;
-        if(app->current_view == SCViewDecoder) {
-            app->decoded.decoded = false;
-            app->raw_count = 0;
-            app->raw_write_idx = 0;
-        }
+        app->waveform_scroll = 0;
         break;
 
     case InputKeyLeft:
@@ -419,6 +467,9 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* event) {
         } else if(app->current_view == SCViewFreqAnalyzer) {
             app->trigger -= SC_TRIGGER_STEP;
             if(app->trigger < SC_RSSI_MIN) app->trigger = SC_RSSI_MIN;
+        } else if(app->current_view == SCViewDecoder) {
+            // Browse signals
+            if(app->signal_selected > 0) app->signal_selected--;
         } else if(app->current_view == SCViewWaveform) {
             if(app->waveform_scroll > 0) app->waveform_scroll--;
         }
@@ -431,76 +482,84 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* event) {
         } else if(app->current_view == SCViewFreqAnalyzer) {
             app->trigger += SC_TRIGGER_STEP;
             if(app->trigger > SC_RSSI_MAX) app->trigger = SC_RSSI_MAX;
+        } else if(app->current_view == SCViewDecoder) {
+            if(app->signal_selected + 1 < app->signal_count) app->signal_selected++;
         } else if(app->current_view == SCViewWaveform) {
-            if(app->waveform_scroll + 1 < app->raw_count) app->waveform_scroll++;
+            SCSignal* sig = app->signal_count > 0 ? &app->signals[app->signal_selected] : NULL;
+            if(sig && app->waveform_scroll + 1 < sig->raw_count) app->waveform_scroll++;
         }
         break;
 
     case InputKeyOk:
-        if(app->current_view == SCViewSpectrum) {
-            // Cycle width
-            app->width = (app->width + 1) % 3;
-        } else if(app->current_view == SCViewFreqAnalyzer) {
-            // Cycle sort
-            app->log_sort = (app->log_sort + 1) % SCLogSortModes;
-            sc_log_sort(app->log, app->log_size, app->log_sort);
-            app->log_scroll = 0;
-        } else if(app->current_view == SCViewDecoder) {
-            // Cycle modulation
-            app->modulation = (app->modulation + 1) % 3;
-            app->decoded.decoded = false;
-            app->raw_count = 0;
-            app->raw_write_idx = 0;
-        } else if(app->current_view == SCViewWaveform) {
-            // Cycle zoom
-            app->waveform_zoom = app->waveform_zoom >= 4 ? 1 : app->waveform_zoom + 1;
+        if(event->type == InputTypeLong) {
+            // Long OK: save current signal
+            if(app->signal_count > 0 && (app->current_view == SCViewDecoder || app->current_view == SCViewWaveform)) {
+                SCSignal* sig = &app->signals[app->signal_selected];
+                if(sig->raw_count > 0) {
+                    furi_mutex_release(app->mutex);
+                    sc_save_signal(app, sig);
+                    furi_mutex_acquire(app->mutex, FuriWaitForever);
+                }
+            }
+        } else {
+            // Short OK
+            if(app->current_view == SCViewSpectrum) {
+                // Lock peak frequency + cycle width
+                if(app->max_rssi > -90.0f) {
+                    uint32_t spacing = sc_spacing[app->width];
+                    uint32_t peak = app->frequency - (SC_NUM_CHANNELS / 2) * spacing + app->max_rssi_channel * spacing;
+                    app->detected_freq = peak;
+                    app->frequency = peak;
+                }
+                app->width = (app->width + 1) % 3;
+            } else if(app->current_view == SCViewFreqAnalyzer) {
+                app->log_sort = (app->log_sort + 1) % SCLogSortModes;
+                sc_log_sort(app->log, app->log_size, app->log_sort);
+                app->log_scroll = 0;
+            } else if(app->current_view == SCViewDecoder) {
+                // Cycle modulation and trigger new capture
+                app->modulation = (app->modulation + 1) % SCModCount;
+                app->capturing = true;
+                app->capture_done = false;
+            } else if(app->current_view == SCViewWaveform) {
+                app->waveform_zoom = app->waveform_zoom >= 4 ? 1 : app->waveform_zoom + 1;
+            }
         }
         break;
-
-    default:
-        break;
+    default: break;
     }
-
     furi_mutex_release(app->mutex);
 }
 
 // ============== App lifecycle ==============
-
 int32_t spectrum_check_app(void* p) {
     UNUSED(p);
-
     SpectrumCheckApp* app = malloc(sizeof(SpectrumCheckApp));
     memset(app, 0, sizeof(SpectrumCheckApp));
 
-    // Defaults
     app->frequency = 433920000;
     app->trigger = -85.0f;
     app->width = SCWidthWide;
     app->waveform_zoom = 1;
     app->running = true;
 
-    // Init system
     app->mutex = furi_mutex_alloc(FuriMutexTypeNormal);
     app->event_queue = furi_message_queue_alloc(8, sizeof(InputEvent));
     app->notifications = furi_record_open(RECORD_NOTIFICATION);
 
-    // Init radio
     subghz_devices_init();
     app->radio_device = radio_device_loader_set(NULL, SubGhzRadioDeviceTypeInternal);
 
-    // Init GUI
     app->view_port = view_port_alloc();
     view_port_draw_callback_set(app->view_port, sc_draw_callback, app);
     view_port_input_callback_set(app->view_port, sc_input_callback, app);
     app->gui = furi_record_open(RECORD_GUI);
     gui_add_view_port(app->gui, app->view_port, GuiLayerFullscreen);
 
-    // Start worker
     app->worker_running = true;
-    app->worker_thread = furi_thread_alloc_ex("SCWorker", 4096, sc_spectrum_worker, app);
+    app->worker_thread = furi_thread_alloc_ex("SCWorker", 4096, sc_worker, app);
     furi_thread_start(app->worker_thread);
 
-    // Main loop
     InputEvent event;
     while(app->running) {
         if(furi_message_queue_get(app->event_queue, &event, 100) == FuriStatusOk) {
@@ -513,7 +572,6 @@ int32_t spectrum_check_app(void* p) {
         view_port_update(app->view_port);
     }
 
-    // Cleanup
     app->worker_running = false;
     furi_thread_join(app->worker_thread);
     furi_thread_free(app->worker_thread);
@@ -521,14 +579,11 @@ int32_t spectrum_check_app(void* p) {
     gui_remove_view_port(app->gui, app->view_port);
     view_port_free(app->view_port);
     furi_record_close(RECORD_GUI);
-
     radio_device_loader_end(app->radio_device);
     subghz_devices_deinit();
-
     furi_record_close(RECORD_NOTIFICATION);
     furi_message_queue_free(app->event_queue);
     furi_mutex_free(app->mutex);
     free(app);
-
     return 0;
 }

@@ -5,6 +5,8 @@
 #include <gui/gui.h>
 #include <input/input.h>
 #include <notification/notification_messages.h>
+#include <storage/storage.h>
+#include <lib/flipper_format/flipper_format.h>
 #include <lib/subghz/devices/devices.h>
 #include <lib/subghz/subghz_setting.h>
 #include <lib/subghz/receiver.h>
@@ -21,14 +23,14 @@
 #define SC_FREQ_BOTTOM_Y 50
 #define SC_FREQ_START_X 14
 
-// Frequency analyzer
-#define SC_MAX_LOG 16
+// Signal library
+#define SC_MAX_SIGNALS 8
+#define SC_RAW_PER_SIGNAL 512
+
+// Thresholds
 #define SC_RSSI_MIN (-97.0f)
 #define SC_RSSI_MAX (-60.0f)
 #define SC_TRIGGER_STEP 1
-
-// Raw samples
-#define SC_RAW_SAMPLES_MAX 512
 
 // Views
 typedef enum {
@@ -39,14 +41,12 @@ typedef enum {
     SCViewCount,
 } SCView;
 
-// Width modes for spectrum
 typedef enum {
-    SCWidthWide,       // 20 MHz
-    SCWidthNarrow,     // 4 MHz
-    SCWidthUltraWide,  // 80 MHz
+    SCWidthWide,
+    SCWidthNarrow,
+    SCWidthUltraWide,
 } SCWidth;
 
-// Freq log sort
 typedef enum {
     SCLogSortCount,
     SCLogSortRSSI,
@@ -54,6 +54,15 @@ typedef enum {
     SCLogSortRecent,
     SCLogSortModes,
 } SCLogSort;
+
+// Modulation presets
+typedef enum {
+    SCModAM650,
+    SCModAM270,
+    SCModFM238,
+    SCModFM476,
+    SCModCount,
+} SCMod;
 
 // Frequency hit log entry
 typedef struct {
@@ -63,18 +72,19 @@ typedef struct {
     uint8_t seq;
 } SCLogEntry;
 
-// Raw sample (level + duration)
+// One captured signal with its raw data
 typedef struct {
-    bool level;
-    uint32_t duration;
-} SCRawSample;
-
-// Decoded protocol info
-typedef struct {
-    char protocol_name[32];
-    char info_str[128];
-    bool decoded;
-} SCDecodedInfo;
+    uint32_t frequency;
+    SCMod modulation;
+    int32_t raw_data[SC_RAW_PER_SIGNAL]; // +duration=high, -duration=low
+    uint16_t raw_count;
+    // Decoded info
+    uint16_t pulse_count;
+    uint32_t total_duration_us;
+    uint32_t min_pulse_us;
+    uint32_t est_rate_hz;
+    bool analyzed;
+} SCSignal;
 
 // Main app state
 typedef struct {
@@ -88,13 +98,11 @@ typedef struct {
 
     // Radio
     const SubGhzDevice* radio_device;
-    SubGhzEnvironment* environment;
-    SubGhzReceiver* receiver;
 
     // Current state
     SCView current_view;
     uint32_t frequency;
-    uint8_t modulation; // 0=OOK650, 1=OOK270, 2=2FSK
+    SCMod modulation;
     SCWidth width;
 
     // Spectrum data
@@ -107,26 +115,29 @@ typedef struct {
     bool signal_found;
     uint32_t detected_freq;
     float detected_rssi;
+    #define SC_MAX_LOG 16
     SCLogEntry log[SC_MAX_LOG];
     uint8_t log_size;
     uint8_t log_seq;
     SCLogSort log_sort;
     uint8_t log_scroll;
 
-    // Raw samples
-    SCRawSample raw_samples[SC_RAW_SAMPLES_MAX];
-    uint16_t raw_count;
-    uint16_t raw_write_idx;
-    uint16_t waveform_scroll;
-    uint8_t waveform_zoom; // pixels per 100us
+    // Signal library
+    SCSignal signals[SC_MAX_SIGNALS];
+    uint8_t signal_count;
+    uint8_t signal_selected; // which signal we're viewing in decoder/waveform
 
-    // Decoder
-    SCDecodedInfo decoded;
+    // Waveform
+    uint16_t waveform_scroll;
+    uint8_t waveform_zoom;
+
+    // Capture state
+    bool capturing;       // currently capturing raw data
+    bool capture_done;    // capture finished, data held
 
     // Worker
     FuriThread* worker_thread;
     bool worker_running;
 } SpectrumCheckApp;
 
-// Functions
 int32_t spectrum_check_app(void* p);
