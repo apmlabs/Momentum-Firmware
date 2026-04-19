@@ -24,7 +24,7 @@
 #define SC_FREQ_START_X 14
 
 // Signal library
-#define SC_MAX_SIGNALS 8
+#define SC_MAX_SIGNALS 16
 #define SC_RAW_PER_SIGNAL 512
 
 // Thresholds

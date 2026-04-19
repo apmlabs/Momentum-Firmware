@@ -289,24 +289,29 @@ static int32_t sc_worker(void* ctx) {
                     app->detected_rssi = fine_rssi;
                     sc_log_update(app, fine_freq, fine_rssi);
 
-                    // Auto-capture into signal library
-                    if(app->signal_count < SC_MAX_SIGNALS) {
-                        bool already = false;
-                        for(uint8_t s = 0; s < app->signal_count; s++) {
-                            if(app->signals[s].frequency == fine_freq) { already = true; break; }
+                    // Auto-capture: try all modulations, only keep if decoded
+                    bool already_decoded = false;
+                    for(uint8_t s = 0; s < app->signal_count; s++) {
+                        if(app->signals[s].frequency == fine_freq && app->signals[s].protocol_decoded) {
+                            already_decoded = true;
+                            break;
                         }
-                        if(!already) {
-                            // Quick capture
-                            furi_mutex_release(app->mutex);
+                    }
+                    if(!already_decoded) {
+                        furi_mutex_release(app->mutex);
+                        // Try each modulation preset
+                        for(uint8_t mod = 0; mod < SCModCount && app->worker_running; mod++) {
                             subghz_devices_idle(app->radio_device);
-                            subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetOok650Async, NULL);
+                            subghz_devices_load_preset(app->radio_device, sc_presets[mod], NULL);
                             subghz_devices_set_frequency(app->radio_device, fine_freq);
 
                             furi_mutex_acquire(app->mutex, FuriWaitForever);
-                            SCSignal* sig = &app->signals[app->signal_count];
+                            // Use a temp slot
+                            uint8_t slot = app->signal_count < SC_MAX_SIGNALS ? app->signal_count : SC_MAX_SIGNALS - 1;
+                            SCSignal* sig = &app->signals[slot];
                             memset(sig, 0, sizeof(SCSignal));
                             sig->frequency = fine_freq;
-                            sig->modulation = SCModAM650;
+                            sig->modulation = mod;
                             sc_cap_buf = sig->raw_data;
                             sc_cap_idx = 0;
                             furi_mutex_release(app->mutex);
@@ -317,12 +322,21 @@ static int32_t sc_worker(void* ctx) {
 
                             furi_mutex_acquire(app->mutex, FuriWaitForever);
                             sig->raw_count = sc_cap_idx;
-                            sc_analyze_signal(sig); sc_decode_signal(app, sig);
                             if(sig->raw_count > 10) {
-                                app->signal_count++;
-                                app->signal_selected = app->signal_count - 1;
+                                sc_analyze_signal(sig); sc_decode_signal(app, sig);
+                                if(sig->protocol_decoded) {
+                                    // Keep it!
+                                    if(app->signal_count < SC_MAX_SIGNALS) {
+                                        app->signal_count++;
+                                    }
+                                    app->signal_selected = slot;
+                                    furi_mutex_release(app->mutex);
+                                    break; // Found a match, stop trying modulations
+                                }
                             }
+                            furi_mutex_release(app->mutex);
                         }
+                        furi_mutex_acquire(app->mutex, FuriWaitForever);
                     }
                 } else {
                     app->signal_found = false;
@@ -444,19 +458,18 @@ static void sc_draw_freq_analyzer(Canvas* canvas, SpectrumCheckApp* app) {
         canvas_draw_str(canvas, 6, 26, "----.---");
     }
     canvas_set_font(canvas, FontSecondary);
-    snprintf(buf, sizeof(buf), "T:%.0f Sig:%d", (double)app->trigger, app->signal_count);
+    snprintf(buf, sizeof(buf), "T:%.0f  %d sig  %s", (double)app->trigger, app->signal_count, app->log_size > 0 ? sc_sort_names[app->log_sort] : "");
     canvas_draw_str(canvas, 0, 36, buf);
 
     canvas_set_font(canvas, FontKeyboard);
     for(uint8_t i = 0; i < 3 && (app->log_scroll + i) < app->log_size; i++) {
         SCLogEntry* e = &app->log[app->log_scroll + i];
-        snprintf(buf, sizeof(buf), "%03ld.%03ld x%d", e->frequency / 1000000 % 1000, e->frequency / 1000 % 1000, e->count);
+        snprintf(buf, sizeof(buf), "%03ld.%03ld %2dx %2ddB",
+            e->frequency / 1000000 % 1000, e->frequency / 1000 % 1000,
+            e->count, e->rssi_max);
         canvas_draw_str(canvas, 0, 44 + i * 9, buf);
-        uint8_t bar = e->rssi_max > 40 ? 40 : e->rssi_max;
-        for(uint8_t b = 0; b < bar; b++) { if(b % 4) canvas_draw_dot(canvas, 85 + b, 41 + i * 9); }
     }
     canvas_set_font(canvas, FontSecondary);
-    if(app->log_size > 0) canvas_draw_str(canvas, 85, 36, sc_sort_names[app->log_sort]);
 }
 
 static void sc_draw_decoder(Canvas* canvas, SpectrumCheckApp* app) {
@@ -571,7 +584,9 @@ static void sc_draw_callback(Canvas* canvas, void* ctx) {
 
     // Header
     char buf[32];
-    canvas_draw_str(canvas, 0, 7, sc_view_names[app->current_view]);
+    if(app->current_view != SCViewFreqAnalyzer) {
+        canvas_draw_str(canvas, 0, 7, sc_view_names[app->current_view]);
+    }
     snprintf(buf, sizeof(buf), "%ld.%02ld %s",
         app->frequency / 1000000, (app->frequency / 10000) % 100,
         sc_mod_names[app->modulation]);
