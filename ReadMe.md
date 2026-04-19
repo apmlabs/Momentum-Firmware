@@ -138,3454 +138,1983 @@ Note that this repo is always updated with the great work from our friends at [U
 
 <br>
 
+
 <h2 align="center">📱 External Applications Catalog</h2>
 
 This firmware includes **667** external applications across **27** categories. Each app is ready to use — just launch it from your Flipper Zero's menu.
 
-<details><summary><h3>🎮 Games — 145 apps</h3></summary>
+<details><summary><h3>🎮 Games — 141 apps</h3></summary>
 
 #### 1D Pacman *(by easiwork)*
-> Implementation of 1D Pacman using the Flipper Zero Game Engine as boilerplate. Flipper Zero 1D Pacman an implementation of 1D Pacman using the Flipper Zero Game Engine as boilerplate..
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> One-dimensional Pacman — the classic dot-munching game compressed into a single horizontal line. Navigate left and right to eat dots while avoiding a ghost. Built on the Flipper Zero Game Engine.
 
 #### 2048 *(by @eugene-kirzhanov)*
-> Play the port of the 2048 game on Flipper Zero. "2048" game for Flipper Zero - play up to 65K - progress is saved on exit
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Slide tiles on a 4×4 grid to combine matching numbers and reach 2048. Use d-pad to slide all tiles in one direction. Progress saves automatically on exit. Can go up to 65K.
 
 #### 2048 (Original) *(by OlegSchwann)*
-> 2048 (Original) game for Flipper Zero.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Alternative version of the 2048 tile-sliding puzzle. Same core gameplay — combine matching numbers on a 4×4 grid — with a different visual style.
 
 #### 4 in a Row *(by leo-need-more-coffee)*
-> 4 in a Row game for Flipper Zero.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Classic connect-four game. Drop pieces into columns to get four in a row before your opponent. Two-player on one device.
 
 #### 99 Bottles *(by bolknote)*
-> 99 bottles lyrics guide for Flipper Zero
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Displays the lyrics to "99 Bottles of Beer on the Wall." Scroll through the verses with the d-pad. A novelty/joke app.
 
 #### Air Arkanoid
-> Arkanoid game that supports the Video Game Module motion sensor
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Arkanoid game that supports the Video Game Module motion sensor. Tilt to move the paddle instead of using buttons. Falls back to d-pad controls without VGM.
 
 #### Air Labyrinth *(by @CodeAllNight (MrDerekJamison))*
-> Labyrinth game v0.1 that supports the Video Game Module motion sensor. Written by @CodeAllNight (https://youtube.com/MrDerekJamison/about) This is a simple game where you have to navigate a ball through a maze. The game is controlled by tilting the Flipper Zero with a Video Game Module attached.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
-
-#### Apple Grabber *(by d7d8 / Julio Rodriguez)*
-> Apple grabber game, default mode is vertical Apple Grabber Game for Flipper Zero Flip the your device on vertical mode and use LEFT/RIGHT to move, the objective is to grab all the apples. The speed increases each turn.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
-
-#### Ardudrivin *(by apfxtech)*
-> Race game ported to Flipper Zero. 'Ard Drivin' is an Arduboy racing game Technical info so far: - Game runs at a constant rate of 67 frames per second
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Labyrinth game with VGM motion sensor. Tilt the device to guide a ball through a maze. Can also be played with the d-pad if no VGM is attached.
 
 #### ArduGolf *(by apfxtech)*
-> Play the port of Wolfenduino game on your Flipper Zero. ArduGolf is a 3D minigolf game with solid ball physics, ported to the Flipper Zero handheld device. Play through 18 holes, plan your shots, bounce off walls, and use slopes to finish each course in as few strokes as possible. Good ball physics
+> 3D minigolf game with real ball physics, ported from Arduboy. Play through 18 holes — plan your shots, bounce off walls, and use slopes to finish each course in as few strokes as possible. D-pad to aim and shoot.
 
-**Usage:** Launch from the Games menu. Use d-pad to aim and shoot. Navigate through 18 holes of minigolf.
+#### Ardudrivin *(by apfxtech)*
+> Retro racing game ported from Arduboy. Runs at 67 FPS with smooth pseudo-3D road rendering. Steer left/right to avoid obstacles and stay on the road.
 
 #### Arduventure *(by apfxtech)*
-> Play the port of Arduventure game on your Flipper Zero. A lightweight retro RPG/adventure for Flipper Zero, based on the classic Arduventure for Arduboy. Explore a pixel world, fight enemies, and.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Retro RPG/adventure ported from Arduboy. Explore a pixel world across 4 locations, fight enemies in turn-based combat, and grow your character. Features 8-bit music and character progression.
 
 #### Arkanoid *(by @xMasterX & @gotnull)*
-> Arkanoid game for Flipper Zero.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Classic brick-breaking game. Use left/right to move paddle, bounce ball to destroy all bricks.
 
 #### Asteroids *(by @antirez & @SimplyMinimal)*
-> Asteroids game This is an implementation of the classic Asteroids game for the Flipper Zero. Inside you will find a simple 2D engine that can be reused to implement other games. Note: This one is SimplyMinimal's.
-
-**Usage:** Auto rapid fire (less wear on the buttons this way too) Up button applies thrusters
+> Space asteroids shooter. Rotate with left/right, thrust with up, shoot with OK. Features auto rapid-fire, title screen, and Drone Buddy power-up.
 
 #### Avocado Zero *(by Endika)*
-> Avocado pit care sim: clean water, grow roots, avoid grime. A tiny care sim for Flipper Zero: you suspend an avocado pit over a glass of water (toothpicks and all) and try to keep it alive long enough to grow a full root system. Time passes, the water gets ...
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Avocado pit care simulator. Suspend a pit over a glass of water and keep it alive long enough to grow roots. Clean the water when it gets dirty, manage hydration levels. Days tick by in real time — neglect it too long and it's game over. Win when roots reach full length.
 
 #### Banana *(by DrEverr)*
-> Banana. Everyone loves bananas. Welcome to the Banana App! 🍌 This app is all about bananas. Everyone loves bananas and want to share that love with you. Whether you're looking to track your banana consumption, find new banana recipes, or learn fun facts abou...
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Banana clicker/tracker. Tap OK to increment your banana count. Features banana facts, consumption tracking, and the simple joy of watching a number go up. A novelty app by DrEverr.
 
 #### BlackJack *(by @teeebor)*
-> Blackjack Game !maintained - yes !contributions - welcome Blackjack for Flipper Zero
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Casino blackjack card game. Hit, stand, or double down to beat the dealer to 21. Dealer follows traditional casino rules.
 
 #### Blackjack By RocketGod *(by RocketGod-git)*
-> Blackjack! Flipper-Zero-Blackjack Blackjack! for your Flipper Zero - Full Blackjack gameplay:
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Alternative blackjack implementation with a different visual style. Full blackjack gameplay — hit, stand, bust. Dealer follows standard casino rules.
 
 #### Bomber Fox *(by Electric Fox)*
-> Two Player Bomber game over Sub-Ghz Radio BomberFox !In Development !Powered By Bomberman for the FlipperZero utilising the SubGHz radio for multiplayer functionality with other nearby flipper devices! For more information about the SubGHz protocol, please see protocol.md
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Two-player Bomberman over Sub-GHz radio. Choose Wolf or Fox, then battle on the same map wirelessly. Fox is Player 1 and picks the level. D-pad to move, OK to place bombs. Requires two Flippers.
 
 #### Bomberduck *(by @leo-need-more-coffee & @xMasterX)*
-> Bomberduck(Bomberman) Game flipperzero-bomberduck Bomberman clone on flipper zero!
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Bomberman-style game. Place bombs to destroy walls and enemies while avoiding your own explosions.
 
 #### BzzBzz *(by Koray Er)*
-> Haptic rhythm-matching game BzzBzz - Rhythm-Matching Game for Flipper Zero Haptic rhythm-matching game focusing on tactile feedback rather than visual cues. - The app generates a 5-step vibration sequence.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Haptic rhythm-matching game using vibration instead of visuals. The Flipper generates a 5-step vibration sequence with randomized timing gaps (200/500/800ms). Replicate the pattern using any button. Accuracy is calculated from timing offsets — need 60%+ to advance. Patterns auto-repeat after 5 seconds of inactivity.
 
 #### CarJacker *(by RocketGod-git)*
-> Car stealing app - The Pirates Plunder style. flipper-zero-carjacker Flipper Zero Carjacker App - Private Unleashed V2 Follow the white rabbit. He will lead you through the passage to the land of wiggly roosters.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Satirical pirate-themed car stealing game. Navigate menus with the d-pad in this tongue-in-cheek adventure. A joke/novelty game — no actual vehicles are harmed.
 
 #### Catacombs Of The Damned *(by apfxtech)*
-> Play the port of the arduboy3d game on your Flipper Zero. Catacombs of the Damned! Catacombs of the Damned! is a first-person shooter / dungeon crawler for the Arduboy miniature game system.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> First-person dungeon crawler ported from Arduboy. Explore 10 procedurally generated floors, destroy monsters with fireballs, and collect loot. Inspired by the classic Catacomb 3D series. Features smooth real-time 3D rendering and sound effects.
 
 #### Cells Lab *(by PilotOfAsuka)*
-> Simple Cellular Automaton with Genetic Algorithm for Flipper Zero Simple Cellular Automaton with Genetic Algorithm for Flipper Zero Это приложение для Flipper Zero, представляющее собой простой клеточный автомат с базовым генетическим алгоритмом.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Cellular automaton with genetic algorithm simulation. Cells have coordinates, energy levels, and DNA. They mutate during reproduction, lose energy each turn, die at zero energy, and reproduce when energy is high. Watch evolution play out on the 128×64 screen.
 
 #### Checkers *(by @Claude + H4W9)*
-> Checkers for Flipper A classic checkers (draughts) game for the Flipper Zero. This was inspired and based off of Flipper Chess by xtruan - Play against a friend or a CPU opponent
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Classic checkers board game. Move diagonally, jump to capture opponent pieces.
 
 #### Chess *(by Struan Clark (xtruan))*
-> Chess for Flipper HOW ABOUT A NICE GAME OF CHESS? Chess game for Flipper Zero - Built against 1.1.2 Flipper Zero firmware release
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Full chess game for Flipper. Includes AI opponent. Select pieces with d-pad, confirm with OK.
 
 #### Chess Clock *(by ihatecsv)*
-> A simple chess clock
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Simple chess clock for timed games. Two countdown timers that alternate — press OK to switch turns. Useful for any timed two-player board game.
 
 #### Cigarette *(by fuckmaz)*
-> A well needed smoke break. Flipper Cigarette Finally a way to smoke a cigarette on the Flipper Zero Plug in your Flipper Zero and build the app from within the firmware base-directory:
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Animated cigarette smoking simulator. Watch a cigarette slowly burn down on screen. A novelty/joke app — "finally a way to smoke on the Flipper Zero."
 
 #### City Bloxx *(by Milk-Cool)*
-> City Bloxx for the Flipper Zero! City Bloxx for the Flipper Zero!
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Tower-building game ported to Flipper Zero. Stack blocks as precisely as possible to build the tallest tower. Misaligned blocks get trimmed, making each level narrower.
 
 #### Cognizant Flipper *(by Luke Gamertsfelder)*
-> Random Word Generator Cognizant-Flipper This mysterious app reveals the hidden consciousness of your Flipper Zero. With each press of the OK button, the Flipper shares a word from its digital mind, slowly unveiling its thoughts and desires. !Screenshot-20240926-234530
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Random word generator that pretends your Flipper is sentient. Press OK and the Flipper "reveals" words from its "digital mind." A fun novelty app — the screen fills with cryptic messages as if the device is trying to communicate.
 
 #### Color Guess *(by Leedave)*
-> Color Guessing Game Flipper Zero Color Guessing Game As a web developer I enjoy guessing colours by HEX Code. This game is targeted at other Devs and graphic designers that also enjoy this.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Color guessing game. Try to identify colors displayed on the 1-bit screen through patterns.
 
 #### Connect Wires *(by AlexTaran)*
-> A puzzle game about rotating differently shaped wires to connect power source with consumers. "Connect Wires" game for Flipper Zero - famous puzzle concept - play on 3 different complexity levels
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Puzzle game about rotating pipe segments to connect a power source to consumers. Three difficulty levels. Rotate pieces to create a complete circuit. A classic pipe-puzzle concept.
 
 #### CountDown *(by Oscar Rodriguez)*
-> Solve target number from 6 numbers like the CountDown TV Show Countdown — Numbers Game for Flipper Zero A game inspired by the "Countdown" numbers round. Select 6 numbers, choose a 3-digit target,
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Numbers game inspired by the Countdown TV show. Select 6 numbers, choose a 3-digit target, and the solver tries to reach it using +, −, ×, ÷. D-pad to move cursor, OK to select.
 
 #### Crossy Road *(by Mikael098)*
-> Frogger clone WIP. Crossy Road de Mikael Fortier [Technologie Émergente]
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Frogger-style road-crossing game. Guide your character across lanes of traffic and obstacles. Work in progress.
 
 #### DeadZone *(by retrooper)*
-> Fight through tough challenges, dodge enemy fire, and avoid the falling obstacles to survive! DeadZone - Flipper Zero Video Game Fight through tough challenges, dodge enemy fire, and avoid the falling obstacles to survive!
-
-**Usage:** Use the Left, Right, and Up arrow keys to move the player.\ Press OK to fire a bullet.\
+> Top-down shooter with AI enemies. Fight through challenges, dodge enemy fire, and avoid falling obstacles. Left/Right/Up to move, OK to fire. Enemy NPCs use neural networks (362 parameters, 37 neurons each) for AI behavior.
 
 #### Decision Maker *(by jacki)*
-> Spin a roulette to pick a random option for you. Random Decision Maker A Flipper Zero app that lets you type your own choices and let a roulette wheel decide — powered by the device's hardware true-random-number generator. - Add up to 20 custom decisions (up to 20 characters each)
+> Roulette-style random decision picker. Add up to 20 custom choices (20 chars each), spin the wheel, and let hardware true-random (not software PRNG) decide for you. Smooth deceleration animation before landing on the result.
 
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
-
-#### Devillier's Platformer *(by adevil5)*
-> This is a simple platformer game developed for the Flipper Zero. The game allows players to control a character as they navigate through a level filled with obstacles and platforms, aiming to reach the finish line.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+#### Devillier's Platformer
+> Side-scrolling platformer. Control a character navigating through levels filled with obstacles and platforms, aiming to reach the finish line. D-pad to move and jump.
 
 #### Dice [RM] *(by Lambda)*
-> Roll multi-sided dice for RolePlaying/D&D games. d2, d3, d4, d6, d8, d10, d12, d20, d100. Including SEX/WAR/8BALL/WEED/DRINK DICE. Dice (By Lambda) - Displays roll date/time on each roll Including d2, d3, d4, d6, d8, d10, d12, d20 & d100 (Works Great for Dungeons and Dragons)
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Multi-sided dice roller for tabletop/D&D games. Roll d2 (coin), d4, d6, d8, d10, d12, d20, and d100. Displays roll date/time on each roll.
 
 #### Digital Kaleidoscope *(by J. Randall jr3d.co.uk)*
-> A Digital Kaleidoscope Visualiser Digital Kaleidoscope Digital Kaleidoscope is a simple, animated visualizer for Flipper Zero. It displays four different patterns that shift and change, turning your Flipper into a miniature kaleidoscope. - Four Animated Styles
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Animated visual toy with four pattern modes: rotating starburst, expanding/contracting concentric arcs, gradient noise (brighter at center), and mirrored random dots. Press buttons to switch patterns. A mesmerizing screensaver-style app.
 
 #### DnD Dice *(by Ka3u6y6a)*
-> Dice rolling, types: Coin, d4, d6, d8, d10, d12, d20, d100 Flipper Zero DnD Dice DnD Dice is a dice rolling application for your Flipper Zero. Dice types: Coin, d4, d6, d8, d10, d12, d20, d100
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Dice rolling app for tabletop RPGs. Supports coin flip, d4, d6, d8, d10, d12, d20, and d100. Clean interface with visual dice display.
 
 #### DOOM *(by @xMasterX & @Svarich & @hedger (original code by @p4nic4ttack))*
-> Will it run Doom? Doom Flipper Zero edition Will it run Doom? As tradition goes, Doom is being ported to almost every possible embedded electronic device. Therefore I did an attempt to come up with something close to Doom and still compatible on the Flipper.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Yes, it runs Doom. A Doom-like clone adapted for the 128×64 screen. Navigate with d-pad, shoot with OK.
 
 #### Drifter *(by Jed Lejosne)*
-> A boat game Drifter is a boat game for the Flipper Zero
-
-**Usage:** Use left and right keys to affect the drift. The longer the keypress, the bigger the impact. The score multiplier keeps increasing when no key is p... Press OK after a crash to start a new game, and back to exit.
+> Boat steering game inspired by the TI-89 classic. Use left/right to affect drift — longer keypresses have bigger impact. Score multiplier increases when no key is pressed, rewarding steady hands. OK to restart after a crash.
 
 #### DVD Bouncer
-> Flipper-DVD-Bounce simple dvd-bounce application for flipper Y'know how dvd players got that thing that bounces around?
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> The classic DVD screensaver logo bouncing around the screen. Watch it and wait for it to hit the corner perfectly. That's the whole app.
 
 #### Executor Keychain *(by Esteban Fuentealba)*
-> Echo Keyller/Executor Keychain 🔫 🔊 Flipper Keyller
-
-**Usage:** Flipper Keyller is an app for the Flipper Zero that emulates the iconic sounds of the classic 80s keychain: the Echo Keyller (also known as the Exe... - 🎵 8 retro laser-style sound effects
+> Emulates the iconic 80s Echo Keyller/Executor Keychain sounds. 8 retro laser-style sound effects played through the Flipper's speaker. A nostalgia trip for anyone who remembers these classic keychains.
 
 #### Fighter Jet *(by Erbonator3000)*
-> Fighter jet simulator Flipper zero fighter jet Simple game about flying a fighter jet. Fly around, shoot the enemies, and dont loose your healt. This is just a demo, might make more finalized version later.
+> Simple fighter jet game. Fly around, shoot enemies, and don't lose your health. Left/Right to turn, OK to shoot, Down to brake. A demo/prototype.
 
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+#### Five Nights at Flipper's
+> FNAF-style horror game for Flipper Zero. Up for door button, Down for lights, OK for camera monitor. Long-press Back for main menu. Survive the night by managing doors and cameras.
 
-#### Five Nights at Flipper's *(by sillygir1)*
-> Five Nights at Flipper's FNAF game for Flipper Zero. - up - door button
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
-
-#### Flappy Bird *(by @DroomOne, @xMasterX, @jaylikesbunda, @the1anonlypr3)*
-> Flappy Bird Game
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+#### Flappy Bird *(by @DroomOne)*
+> The classic mobile game. Press any button to flap, navigate through pipes.
 
 #### Flight Assault *(by evillero)*
-> Flight Assault is a dynamic action game where players control a spacecraft engaged in combat against enemy ships approaching from different directions.
-
-**Usage:** 2. Use the control keys to maneuver the spacecraft. 3. Destroy as many enemy ships as possible to score points.
+> Space combat game. Control a spacecraft fighting enemy ships approaching from different directions. Maneuver to avoid collisions, destroy enemies to score points. Play as long as you can for the highest score.
 
 #### Flipper Hero *(by Mentoster)*
-> Arrow Speed Game Welcome to Flipper Hero, an engaging typing practice game ported for the Flipper Zero device! Flipper Hero is inspired by the beloved minigame "Stratagem Hero, " found in the "Helldivers 2" universe.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Arrow-speed reaction game. Arrows appear on screen and you must press the matching d-pad direction as fast as possible. Tests reflexes and pattern recognition.
 
 #### Flippy Road *(by rkilpadi)*
-> Flippy Road Game A simple arcade game for the Flipper Zero After plugging in your Flipper Zero, either The game will automatically be launched after compilation.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Frogger-style arcade game. Cross roads and rivers by timing your movements between obstacles. Simple controls — d-pad to move.
 
 #### Fortune Cookie *(by evillero)*
-> Get inspired with a random motivational quote or fortune each time you open the app. The Fortune Cookie app delivers a random motivational quote or fortune each time you open it, providing a small dose of inspiration to brighten your day. Simple app for Flipper Zero.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Random motivational quote generator. Open the app and receive a random fortune or inspirational quote. Press OK for a new one. Simple and uplifting.
 
 #### Furious Birds *(by Dmitry Ermashev)*
-> Well-known birds and pigs game. The bird is really furious! Pigs are under attack! Next level has even more pigs to eliminate. And you have just 3 attempts! "Furious Birds" game for Flipper Zero Well-known birds and pigs game.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Angry Birds-style physics game. Launch a furious bird at pigs hiding behind structures. Each level has more pigs to eliminate. You get 3 attempts per level. Aim and adjust power to knock them all down.
 
 #### Game 15 *(by @x27)*
-> Logic Game Game "15" for Flipper Zero Logic game Wikipedia
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Sliding puzzle (15-puzzle). Slide numbered tiles to arrange them in order.
 
 #### Game of Life *(by @tgxn (original by @itsyourbedtime))*
-> Life, is a cellular automaton devised by the British mathematician John Horton Conway in 1970.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Conway's Game of Life cellular automaton. Watch patterns evolve or draw your own starting state.
 
 #### Geometry Dash
-> Flipper Zero Geometry Flip Geometry Dash Demake with level system, basic physics engine, coyote time physics and basic UI. I am making real ship, ball and ufo physics!
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
-
-#### Geometry Dash *(by goosedev72-projects)*
-> Geometry Dash Demake with level system, basic physics engine, coyote time physics and basic UI. Flipper Zero Geometry Flip Geometry Dash Demake with level system, basic physics engine, coyote time physics and basic UI. I am making real ship, ball and ufo physics!
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Side-scrolling rhythm game. Tap to jump over obstacles. Timing is everything.
 
 #### Groks Adventure *(by DigiMancer3D)*
-> A Grok made micro-Adventure Grok's Adventure v3.3 Grok's Adventure v3.3 is the smallest infinite liminal space souls-like game for the Flipper Zero, built with AI code assistance from Grok 3 (xAI). Set in the eerie Backrooms, players control Grok ...
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Infinite roguelike dungeon crawler set in the Backrooms. Procedurally generated platforms, walls, and pickups on a single 128×64 screen. Battle enemies, collect items, and survive as long as possible. Features AI-driven enemy behavior.
 
 #### Guess The Number *(by kWAYTV)*
-> An enhanced number guessing game with progressive feedback, score tracking, and immersive multi-sensory experience. Guess The Number - Flipper Zero - Progressive Hint System - Distance-based feedback (very close, close, far) - Score Tracking - Personal best score persistence across games
+> Enhanced number guessing game with progressive feedback. Distance-based hints (very close, close, far), persistent high score tracking, dynamic LED colors, haptic patterns, and sound effects. Fine (+/-1) and coarse (+/-10) adjustment modes.
 
-**Usage:** - Intuitive Controls - Fine (+/-1) and coarse (+/-10) adjustment modes - Professional UI - Centered layout with visual emphasis and clear typography
-
-#### Hangman *(by Evgeny Stepanischev, Eva Stepanischeva)*
-> Hangman for Flipper Игра «Виселица» («Балда») Первая русскоязычная программа для Flipper Zero. Правила очень просты — «Флиппер» загадывает слово, вам надо его отгадать, выбирая буквы. Если буква встречается, она будет нарисована на той позиции или позициях,
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+#### Hangman *(by Evgeny Stepanischev)*
+> Classic hangman word-guessing game. The Flipper picks a word, you guess letters. Wrong guesses draw the hangman. Supports four language dictionaries: English, Spanish, Russian, and Tatar.
 
 #### Hanoi Towers *(by AlexTaran)*
-> In this classic puzzle game, your objective is to move all disks to another stick. You are allowed to move one disk at once. You cannot put a bigger disk on a smaller disk. "Hanoi Towers" game for Flipper Zero - famous puzzle concept - complexity level increases each time you solve the puzzle
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Classic Tower of Hanoi puzzle. Move discs between three pegs — only smaller discs can go on top of larger ones. Complexity increases each time you solve it.
 
 #### Heap Defence *(by @xMasterX (original implementation by @wquinoa & @Vedmein))*
-> Heap Defence game from hackathon (aka Stack Attack)
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Stack Attack arcade game. Catch falling blocks and stack them. Don't let the stack reach the top.
 
 #### Hirn - Crack Color Codes *(by F Greil)*
-> A deduction game to crack a 4-digit code A simple Flipper Zero combination cracking game. A one-player logic game where Flipper Zero creates a secret color code with 4 sybmols of 6 different colors. The user has to guess it in the fewest attempts. She/He receives clues: Black pegs for c...
+> Mastermind-style code-breaking game. The Flipper creates a secret 4-symbol code from 6 colors. Guess the code and receive clues: black pegs for correct color+position, grey pegs for correct color but wrong position. Fewest attempts wins.
 
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
-
-#### Hold 'em *(by code-phreak)*
-> Single-player Texas Hold'em with smart bots Hold 'em for Flipper Zero Native single-player Texas Hold'em built specifically for Flipper Zero.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+#### Hold 'Em
+> Single-player Texas Hold'em poker. Play against up to 4 AI bots with real betting rounds, side-pot-aware showdowns, and save/load support. Full poker rules with a UI designed for the 128×64 screen.
 
 #### Hunter Killer *(by josephburnett)*
-> A submarine warfare simulation game ported from Pico-8 to Flipper Zero using the Flipper Zero Game Engine. Hunter Killer - Flipper Zero Submarine Game A submarine warfare simulation game ported from Pico-8 to Flipper Zero using the Flipper Zero Game Engine.
-
-**Usage:** - Realistic submarine physics - Navigate using heading and velocity controls - Procedural terrain generation - Diamond-square algorithm creates unique underwater landscapes
+> Submarine warfare simulation ported from Pico-8. Navigate using heading and velocity controls, use sonar to discover procedurally generated terrain (diamond-square algorithm), and fire torpedoes to destroy obstacles. Realistic submarine physics.
 
 #### Impostor *(by Endika)*
-> Undercover-style word game: impostors see a hint, everyone else shares one secret word. Flipper Zero external application (FAP). Install it on the microSD of your Flipper and run it from Apps → Games → Impostor Game. It is a device-only party helper: you do not need a phone or PC duri...
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Undercover/Spyfall-style party game. Pass the Flipper around — everyone except the impostors sees the same secret word; impostors see only a hint. Discuss and vote to find the impostor. Supports custom player counts and impostor numbers. No phone needed.
 
 #### Infinite Tic Tac Toe *(by Kyle Diller)*
-> Tic Tac Toe but Infinite Infinite Tic-Tac-Toe This is an extension of the favorite childhood game of Tic-Tac-Toe but with pieces only lasting 3 turns. This allows for the game to go till there is a winner.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Tic Tac Toe with a twist — pieces only last 3 turns, then disappear. This means the game can never end in a draw. Play continues until someone gets three in a row.
 
 #### Insults *(by ERSUCC)*
-> Insult generator
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Random insult generator. Press OK to generate a random (humorous) insult. A novelty/joke app.
 
 #### Jetpack Joyride
-> flipper-jetpack-game JETPACKS, ROCKETS, AND ADVENTURE AWAITS! Game Remake of Jetpack Joyride for Flipper Zero
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Side-scrolling action game. Hold to fly up, release to fall. Avoid obstacles.
 
 #### Jumping Pawns *(by Tyl3rA)*
-> A simple board game where you race to move all of your pieces to the other side of the board. Jumping Pawns is a strategy game for the Flipper Zero. Play locally against a friend or challenge a minimax algorithm. From the main menu: - PvP – Local two-player mode.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Strategy board game — race to move all your pieces to the other side. Play locally against a friend (PvP) or challenge a minimax AI (PvE) with adjustable difficulty.
 
 #### KC Line *(by Andrew Diamond)*
-> One line dot munching game! A one line/row version of the game where a character eats little bits and gets chased around the screen by a ghost. It's pretty obvious where the inspiration for this game came from, but if you have questions, hit me up
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> One-line Pac-Man variant. A character eats dots on a single row while being chased by a ghost. Left/Right to move, OK to pause. Simple but addictive.
 
 #### Laser Tag *(by @RocketGod-git & @jamisonderek)*
-> Laser Tag game for Flipper Zero Flipper-Zero-Laser-Tag 🚀 Real World Team based Laser Tag game Use Flipper Zero as your laser blaster, RFID scan for power-ups, and automatic detection of add-on weapons to GPIO such as the Rabbit Labs Masta-Blasta for arena style play.
-
-**Usage:** - Team Battles: Choose your team and face off in epic Red vs. Blue laser battles. - Real-Time Gameplay: Smooth and responsive laser firing and hit detection.
-
-#### Laser Tag *(by RocketGod-git & jamisonderek)*
-> Laser Tag game for Flipper Zero Flipper-Zero-Laser-Tag 🚀 Real World Team based Laser Tag game Use Flipper Zero as your laser blaster, RFID scan for power-ups, and automatic detection of add-on weapons to GPIO such as the Rabbit Labs Masta-Blasta for arena style play.
-
-**Usage:** - Team Battles: Choose your team and face off in epic Red vs. Blue laser battles. - Real-Time Gameplay: Smooth and responsive laser firing and hit detection.
+> IR-based laser tag between two Flippers. Choose teams (Red vs Blue), fire with IR, detect hits automatically. Features health/ammo bars, sound effects, and RFID power-up scanning. Supports add-on blasters like the Rabbit Labs Masta-Blasta via GPIO.
 
 #### Lifecounter *(by Antsy)*
-> Application to record life situation of a collectible card game A Flipper Zero life tracker for collectible card games such as Flesh and Blood, Magic the Gathering, Sorcery, Lorcana etc. Development setup - Buy a Flipper Zero device
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Life point tracker for collectible card games (Magic: The Gathering, Flesh and Blood, Lorcana, Sorcery, etc.). Track life totals for multiple players with increment/decrement buttons.
 
 #### Lights Out Flipper Zero *(by DigiMancer3D)*
-> Turn off the lights on the sith lor...*coughs*... Lights Out Flipper Zero (LOFZ) Lights Out Flipper Zero (LOFZ) is a Star Wars-inspired puzzle game for the Flipper Zero, based on the classic "Lights Out" game. As the last Jedi, you must toggle a 17-cell grid of lights to turn t...
-
-**Usage:** - Star Wars Aesthetic: Features a scrolling intro crawl, a 16x16 Sith Flipper mascot (1bpp bitmap) that bounces or moves under stress ( 981), and t...
+> Star Wars-themed Lights Out puzzle. Toggle cells on a 17-cell grid to turn all lights off — toggling one cell flips its neighbors too. Features an AI opponent (Sith Lord Flipper) that fights back, a scrolling Star Wars intro crawl, and themed win/loss screens.
 
 #### Magic 8-ball *(by Steven Quinn)*
-> A simple Magic 8-ball A magic 8 ball game for the Flipper Zero. Press the center button to get a random answer to your question.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Shake (press OK) and receive a random Magic 8-ball answer. Will it be "Yes," "No," or "Ask again later"? The classic fortune-telling toy, digitized.
 
 #### Mancala *(by F. Greil)*
-> Old strategy board game with 6 pits and 1 store per player and 4 stones per pit. Left / Right-Button. Moves cursor between the 6 user pits OK picks up stones from selected pit and perform the distributions of the stones according to the rules Holding Back quits the App.
-
-**Usage:** Visual cursor to select your moves Status messages for game events
+> Ancient strategy board game. 6 pits and 1 store per player, 4 stones per pit. Pick up stones from a pit and distribute them counter-clockwise. Capture opponent's stones by landing in an empty pit opposite their stones. Left/Right to select pit, OK to play.
 
 #### Mandelbrot Set *(by Possibly-Matt)*
-> The Mandelbrot set is the set of all so-called (complex) numbers that meet Mandelbrots simple arithmetic criterion.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Interactive Mandelbrot fractal viewer. Zoom in and explore the infinite complexity of the Mandelbrot set on the 128×64 screen. Navigate with d-pad, zoom with OK. A mathematical visualization tool.
 
 #### Matagotchi *(by MrModd)*
-> Tamagotchi like game Tamagotchi(R) like game for Flipper Zero
-
-**Usage:** The pet grows from an egg to an adult and then dies of old age. The stages are !Egg -> !Baby -> !Child -> !Teen -> !Adult -> !Dead
-
-#### Mind Probe *(by Miksang)*
-> This is a simple version of the online game Akinator/20 Questions I first saw reddit user EscanorSensi asking if a 20 question style game could be implemented on the flipper and it got me thinking.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Tamagotchi-like virtual pet. Your pet grows from egg → baby → child → teen → adult → death. Feed it, play with it, keep it happy. The pet continues living even when the app isn't running — neglect has consequences.
 
 #### Mine Sweeper *(by Alexander Rodriguez)*
-> Flipper Zero Minesweeper Implementation Minesweeper Implementation for the Flipper Zero. !Mine Sweeper Example Gameplay Gif
-
-**Usage:** Added features unique to this implementation: -	Enable board verifier for board generation to ensure unambiguous boards!
+> Classic minesweeper. Uncover tiles without hitting mines. Numbers show adjacent mine count. Long-press to flag.
 
 #### Minesweeper *(by panki27 & xMasterX)*
-> Minesweeper Game This is a Minesweeper implementation for the Flipper Zero device.
-
-**Usage:** - Arrow buttons to move - Push center button to open field
+> Alternative minesweeper implementation. Arrow buttons to move, center button to open a field, hold center to toggle flag. Press center on an open field with correct flag count to auto-open remaining neighbors.
 
 #### Mode 7 Demo *(by CookiePLMonster)*
-> A demo of pseudo-3D Mode 7 rendering Flipper Zero Mode 7 Demo A simple proof-of-concept of pseudo 3D rendering, modelled after a famous Mode 7 from SNES. Up/Down/Left/Right - Move the camera
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Pseudo-3D rendering demo inspired by the SNES Mode 7 effect. Navigate a textured plane that rotates and scales in perspective. Up/Down/Left/Right to move camera, OK to rotate, Back to switch backgrounds. A tech demo, not a game.
 
 #### Monster Slayer *(by ratmanZorry)*
-> Monster Slayer game for Flipper Zero Flipper Zero Game Engine Example
-
-**Usage:** Cloning source code
+> Action game built on the Flipper Zero Game Engine. Fight monsters in a side-scrolling environment. A showcase/example project for the game engine.
 
 #### Monty Hall *(by DevMilanIan)*
-> Monty Hall asks you to guess which closed door a prize is behind.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> The Monty Hall probability puzzle. Pick a door, one wrong door is revealed, then decide: stick or switch? Demonstrates the famous counter-intuitive probability problem. Play multiple rounds to see the statistics converge.
 
 #### Morse Master *(by P1X / w84death)*
-> Learn Morse code using this toolkit. Morse Master: Morse Code Learning Toolkit for Flipper Zero !Morse Master Title Screen A comprehensive Morse code learning and practice app for Flipper Zero. Final release of version 1.0.
-
-**Usage:** - Character Sets: Switch between letters (A-Z) and numbers (0-9) with the LEFT/RIGHT buttons - Visual Representation: See the Morse code pattern for each character
+> Comprehensive Morse code learning toolkit. Learning Mode shows visual patterns and plays audio for each character (A-Z, 0-9). Practice Mode tests your knowledge. Switch between letters and numbers with Left/Right. Audio playback with clear timing.
 
 #### Multi Counter *(by JadePossible & Roro)*
-> Counter App with 4 counter for tabletop games Flipper Multi Counter This is a simple external application for the Flipper Zero modified from VS Counter version. The app give you access to up to 4 counters to count your scores for tabletop games for example.
-
-**Usage:** The UP and DOWN buttons are for adding or subbing one from the selected player And de LEFT and RIGHT to switch between players
+> 4-player score counter for tabletop games. Up/Down to add/subtract from the selected player, Left/Right to switch between players. OK to toggle sound. Simple and practical for board game nights.
 
 #### Multi-Dice
-> A customizable dice roller for tabletop gaming. Roll multiple dice of different types (d4, d6, d8, d10, d12, d20) simultaneously with animated results on screen.
-
-**Usage:** Launch from Games. Use the d-pad to select dice type and quantity, press OK to roll. Results display with a satisfying animation.
+> Roll multiple dice of various types (d4, d6, d8, d10, d12, d20). Press OK to roll.
 
 #### Mystic Balloon *(by apfxtech)*
-> Play the port of Mystic Balloon game on your Flipper Zero. Mystic Balloon is an atmospheric 2D platformer featuring 39 levels, each requiring precision, careful planning, and attention to detail.
-
-**Usage:** The player controls a character who navigates the levels using balloons. The hero can slowly descend while suspended by balloons and float above ai... Player objectives:
+> Atmospheric 2D platformer with 39 levels. Control a character using balloons — slowly descend while suspended, float above fan air currents to cross gaps. Collect coins, keep balloons intact, and avoid traps. Precision platforming on a tiny screen.
 
 #### Nah 2 da Nah Nah Nah *(by DigiMancer3D)*
-> Games Nah2-Nah3: Flipper Zero Mini-Game Suite Nah2-Nah3 is a fun and engaging mini-game application for the Flipper Zero, featuring rhythm and action-based gameplay optimized for the device's 128x64 display and input system.
-
-**Usage:** - Zero Hero: A rhythm game where you press buttons to hit falling notes, with dynamic difficulty and streak tracking. - Flip Zip: An running game where you navigate a mascot through lanes, jumping over obstacles with a speed bar and tap-based boosts.
+> Mini-game collection with multiple game modes. Zero Hero is a rhythm game — press buttons to hit falling notes with streak tracking. Flip Zip is a runner — navigate lanes and jump obstacles. More modes planned. Dynamic animated menu.
 
 #### Network Defender *(by w84death)*
-> A Game & Watch style network security game for the Flipper Zero. Network Defender is a retro-style game inspired by the classic Nintendo Game & Watch handhelds. You play as a system administrator defending your network from incoming data packets and hacking attempts.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Game & Watch-style cybersecurity game. Defend 4 computer systems from cyber attacks. Move between systems with d-pad, accept packets with OK, hold OK for 3 seconds to patch compromised systems. Prevent hacking and keep packet levels below critical threshold.
 
 #### Nu pogodi *(by sionyx)*
-> Elektronika IM-02 - Nu, Pogodi! / (Game & Watch - Egg) - Soviet retro game Игра Ну, погоди! для Flipper Zero
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Recreation of the classic Soviet handheld game "Elektronika IM-02" (Nu, pogodi! / Well, Just You Wait!). Catch eggs rolling down from four directions before they fall. Based on the famous 1984 LCD game.
 
 #### P1X Adventure *(by w84death)*
-> Adventure game from P1X
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Text-based adventure game. Navigate through rooms, make choices, and explore a pixel-art world. By the P1X game development collective.
 
 #### P1X Your Own Adventure *(by w84death)*
-> Choose your own adventure text game
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Choose-your-own-adventure text game. Read story passages and make decisions that branch the narrative. Multiple paths and endings.
 
 #### PacMan WIP *(by DanieleMaffi)*
-> The classic PacMan game.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Classic Pac-Man game (work in progress). Navigate the maze, eat dots, avoid ghosts, grab power pellets to turn the tables.
 
 #### Panis - A Grumpy Bread *(by F Greil)*
-> A simple jump'n'run game where you control a grumpy bread Just a grumpy bread walking and jumping around. - Left/Right: Move Panis left or right - Up (single press): Small jump (~25px high)
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Platformer starring a grumpy bread character. Left/Right to move, single press Up for small jump (~25px), hold Up for big jump (~50px). Simple and charming.
 
 #### Paper Plane *(by Larry-the-Pig)*
-> Guide a paper plane through obstacles to get the highest score. Port of this game to the Flipper Zero. !plane flying down Your goal is to fly a paper plane through obstacles and get to the bottom of the map.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Guide a paper plane through obstacles to get the highest score. Ported from a TI calculator game. The plane descends through the level — steer to avoid walls and obstacles. Score based on distance traveled.
 
 #### Pinball0 *(by Roberto De Feo)*
-> Pinball game Pinball0 (Pinball Zero) Play pinball on your Flipperzero! Get the latest version:
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Pinball game. Use left/right for flippers, launch ball with OK.
 
 #### Pocket Battle+ *(by HermeticCode)*
-> Enhanced Pokemon Battle Game with authentic pokeyellow data Pokemon Yellow+ for Flipper Zero An enhanced Pokemon battle game for the Flipper Zero, featuring authentic Pokemon data integrated from the pokeyellow disassembly project. Authentic Pokemon Experience
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Enhanced Pokemon battle game with authentic data from the Pokemon Yellow disassembly. All 151 original Pokemon with accurate base stats, proper type effectiveness, turn-based battles with speed-based move order, and status conditions (sleep, poison, burn, freeze, paralysis).
 
 #### Pong *(by @nmrr & @SimplyMinimal)*
-> Simple pong game flipperzero-pong A Pong game for the Flipper Zero Assuming the toolchain is already installed, copy flipper_pong directory to applications_user
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Classic pong. Two-player on one device — one player uses up/down, other uses left/right.
 
 #### Puck Girl *(by F Greil)*
-> A maze chase game where you control a little pie-shape girl to eat all the dots while avoiding be eaten by three ghosts
-
-**Usage:** A simple Flipper Zero arcade chase game. The player controls a pie-shaped character ("Puck girl") through a maze, collecting dots while avoiding gh... Like in the classic game, each ghost has distinct personality: one targets directly, another one patrols.
+> Pac-Man-style maze chase game. Control a pie-shaped character through a maze, collecting dots while avoiding ghosts with distinct AI personalities. Power pills make ghosts temporarily vulnerable. Arrow keys to move, OK to restart, Back to pause.
 
 #### Quadrastic *(by @ivanbarsukov)*
-> Quadrastic is a simple addicting game inspired by the Arduboy game of the same name Flipper Zero Quadrastic Game Quadrastic is a simple addicting game inspired by the Arduboy game of the same name. This, in turn, was based on a popular PSP homebrew game called Squarez.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Addicting arcade game inspired by the Arduboy game. Dodge enemies and collect targets. Fast-paced with increasing difficulty.
 
 #### Questions *(by nikilark)*
-> Questions to better know each other Flipper Questions Flipper app designed to foster meaningful connections by helping you discover more about each other. Perfect for getting in touch with new people or strengthening existing bonds.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Party game — displays questions to help people get to know each other better. Pass the Flipper around and answer the prompts. Great for social gatherings and icebreakers.
 
 #### Race *(by zyuhel)*
-> Race game inspired by Race game in BrickGame 9999 in 1. Flipperzero Race Game Race game inspired by Race game in BrickGame 9999 in 1. Source is heavily base on tetris game from jeffplang's repo and this article.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Retro racing game inspired by BrickGame 9999-in-1. Three-lane vertical scrolling — dodge oncoming vehicles. Classic handheld gaming nostalgia.
 
 #### Race Game *(by mrc19056)*
-> 3-lane racing game with power-ups, combos, and night mode 🏎️ Race Game for Flipper Zero A fast-paced 3-lane vertical scrolling car racing game for Flipper Zero. - 3 Lane Racing — Dodge incoming vehicles on a scrolling road
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> 3-lane vertical scrolling racer with power-ups. Dodge motorcycles (fast), sedans (normal), and boss trucks (2-lane wide). Collect shields for invincibility, magnets for auto-coin-collection, and fuel for extra lives. Coin combo system with increasing multiplier.
 
 #### Reaction Test *(by Milk-Cool)*
-> A simple reaction test game fz-reaction-game A simple reaction test for the flipper zero.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Simple reaction time test. Wait for the prompt, then press a button as fast as possible. Measures your reaction time in milliseconds.
 
 #### Reaction Time *(by ihatecsv)*
-> A simple reaction time game Flipper Zero Reaction Game This is a simple reaction game for the Flipper Zero device. The game is designed to test your reaction times, giving you immediate feedback on how quickly you respond to visual prompts. - The game begins with a "Press to start" screen.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Visual reaction time game with multi-sensory feedback. Screen shows "Get ready..." then flashes "PRESS" with a blue LED and vibration. Press any button as fast as possible. Displays your reaction time.
 
 #### Reversi *(by @dimat)*
-> Reversi game, the game controls should be intuitive. Longs press on OK opens the menu to start a new game. Reversi game for Flipper Zero 2. Go to the applications_user directory 3. Create a symlink to this repo assuming that these two repos are on the same level:
-
-**Usage:** The game controls should be intuitive.
+> Classic Othello/Reversi board game. Place pieces to flip opponent's pieces. Long-press OK for new game menu.
 
 #### Rock Paper Scissors *(by jamisonderek)*
-> Play the rock-paper-scissors game with your friends using the Flipper Zero Sub-GHz radio! Rock Papper Scissors !Flipper Zero Game This multi-player application relies on a SubGHz API that was recently changed. Older firmware will get a build error, due to not supporting the new API definitions.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Multiplayer rock-paper-scissors over Sub-GHz radio. Play against another Flipper wirelessly. Both players choose simultaneously, results are transmitted and compared. Requires two Flippers.
 
 #### Rock Paper Scissors 2 *(by benwoo1110)*
-> Rock Paper Scissor app Rock Paper Scissor A fun rock paper scissor game for the Flipper Zero device.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Local rock-paper-scissors game. Play against the Flipper's random choice. Simple single-player version — no second device needed.
 
 #### Roots of Life *(by @Xorboo)*
-> A zen-puzzle game for FlipperZero, puzzle made on GlobalGameJam23 (theme: Roots) A zen-puzzle game for FlipperZero puzzle made on GlobalGameJam'23 (theme: "Roots") !FlipperZero with the game on it Nothing interesting in the code, as you would expect from a jam-rushed development.
+> Zen puzzle game from Global Game Jam 2023 (theme: Roots). Grow roots through the soil.
 
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
-
-#### Rubik's Cube Scrambler *(by @RaZeSloth)*
-> App generates random moves to scramble a Rubik's cube. Rubik's Cube Scrambler FAP Where to start? What does what?
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+#### Rubik's Cube Scrambler
+> Generates random scramble sequences for a Rubik's cube. Follow the moves (R=Right, L=Left, U=Up, D=Down, F=Front, B=Back) to scramble your physical cube. Toggle vibration notification on/off. Press "New" for a fresh scramble.
 
 #### Sand Simulation *(by JJoeDev)*
-> A sand simulation that can run on the Flipper Zero FZSandSimulation Simulation is running at a blazing 10FPS by design. (Can be changed in code) Simulation is running on 128x64 (F0 screen size)
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Falling sand physics simulation on the 128×64 screen. Watch sand particles pile up, flow, and interact with gravity. Runs at 10 FPS by design. A mesmerizing physics toy.
 
 #### Scorched Tanks *(by @jasniec)*
-> A Flipper Zero game inspired by scorched earth Scorched tanks - flipper zero game A flipper zero game inspired by scorched earth. Current state is shown below:
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Artillery game inspired by Scorched Earth. Adjust angle and power to hit opponent tanks across terrain.
 
 #### Secret Toggle *(by nostrumuva)*
-> A game that toggles squares. A game for the Flipper Zero device.
-
-**Usage:** - Arrow buttons move around the board. - Push center OK button to toggle a square. Some squares are connected.
+> Grid puzzle game. Arrow buttons move around the board, OK toggles a square — but some squares are secretly connected and toggle together. Turn all squares on (light colored) to pass each level. Levels get progressively harder.
 
 #### Simon Says *(by @SimplyMinimal & @ShehabAttia96)*
-> A Simon Says Game FlipperZero-SimonSays Think you can beat Simon? !Image of dolphin saying Simon Says
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Memory pattern game. Watch the sequence of buttons, then repeat it. Gets longer each round.
 
 #### Slot Machine *(by @Daniel-dev-s)*
-> Simple Slots simulator game Slots for Flipper Zero :) Simple slots with highscores for flipper zero.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Casino slots simulator. Press OK to spin. Match symbols to win.
 
 #### Slots *(by vh8t)*
-> 81-way slot machine A high-fidelity slot machine for your Flipper Zero. When you're bored and feeling lucky, jump into this "all-ways" simulator and see if you can hit the jackpot! 💎 The 81-Way Experience 81-Way Slots brings the excitement of the casino floor to your pocket.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> 81-way slot machine with custom hand-drawn graphics. Unlike traditional slots with fixed lines, matching symbols anywhere on adjacent reels from left to right count as wins. Features haptic feedback, RGB LED celebrations, and a clean sidebar showing cash, bet, and last win.
 
 #### Snake 2.0 *(by @Willzvul)*
-> Advanced Snake Game (Remake of original Snake)
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Advanced snake game. Eat food to grow, don't hit walls or yourself. D-pad to steer.
 
 #### Snake Game
-> Classic Snake Game
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Classic snake game — the original simple version. Eat food, grow longer, don't crash into yourself.
 
 #### Sokoban *(by Racso)*
-> Sokoban on Flipper Zero. Solve your path to victory! Sokoban is a classic puzzle game. Your objective is to push all the boxes onto the targets. Rules are simple: 1. You can only push boxes, not pull them.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Classic box-pushing puzzle game. Push all boxes onto target positions. You can only push (not pull) one box at a time. Score is based on number of pushes — fewer is better. Multiple levels of increasing difficulty.
 
 #### Solitaire *(by doofy-dev)*
-> Klondike Solitaire card game !maintained - yes !contributions - welcome Solitaire - Klondike for Flipper Zero
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Klondike solitaire card game. Move cards between columns, build foundation piles Ace to King.
 
 #### Space Impact *(by Ka3u6y6a)*
-> Space Impact game port from Nokia for Flipper Zero Space Impact game port from Nokia for Flipper Zero Work in progress Gameplay video on Nokia phone:
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Port of the classic Nokia phone game. Side-scrolling space shooter — fly your ship and destroy enemies. Multiple enemy types with explosion effects. Nostalgic mobile gaming on the Flipper.
 
 #### Space Impact II *(by Erbonator3000 & VoidXH)*
-> Space Impact II clone Flipper zero Space-Impact-II port Pixel-perfect clone of Nokia's Space Impact, one of the biggest classics in mobile gaming. All credit for the game goes to Bence Sgánetz, original creator of the clone. Port was made with effort to preserve as much of the
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Pixel-perfect clone of Nokia's Space Impact sequel. All credit to original creator Bence Sgánetz. Faithful port preserving the original gameplay on the Flipper's 128×64 screen.
 
 #### Space Invaders *(by PavelZurek)*
-> Adaptation for classic Space Invaders Space Invaders adaptaion for Flipper Zero. Check github actions to download or build your own with ufbt. - [x] Multiple enemy types
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Classic Space Invaders adaptation. Move left/right, shoot up at descending alien waves. Multiple enemy types, explosions, and increasing difficulty.
 
 #### Stratagem Zero *(by Nymda)*
-> Stratagem hero clone Stratagem hero clone for the Flipper Zero Designed to be as close to the original as possible !Screenshot-20240521-151712
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Stratagem Hero clone (from Helldivers 2). Input directional sequences as fast as possible to call in stratagems. Designed to be as close to the original as possible. Practice your stratagem inputs on the go.
 
 #### Sudoku *(by profelis)*
-> Sudoku game - ok - increment number - back - clear number - long back - pause game
-
-**Usage:** - cursor keys - move cursor
+> Classic 9×9 Sudoku puzzle. OK to increment number, Back to clear, long-press Back to pause. Cursor keys to navigate the grid. Fill every row, column, and 3×3 box with digits 1-9.
 
 #### SUPER-CHIP *(by Milk-Cool)*
-> SUPER-CHIP (Chip8) emulator for the Flipper Zero A SUPER-CHIP emulator for the Flipper Zero I know there's something wrong with it but i can't figure out what it is so the current state of this project is public testing. Please let me know if there are any issues with it.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> CHIP-8 / SUPER-CHIP emulator. Load .ch8 ROM files from the SD card (stored in apps_data/schip/) and play classic CHIP-8 games. Supports the extended SUPER-CHIP instruction set for higher resolution games.
 
 #### Swimmy Fish *(by Invizabel)*
-> Swimmy Fish. One goal, Survive. One button, Enter Flappy, er, Swimmy Fish
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Flappy Bird variant with a swimming fish theme. Tap to swim upward, avoid obstacles. Same addictive one-button gameplay with an underwater twist.
 
 #### T-Rex Runner *(by @Rrycbarm)*
-> Play the port of the Chrome browser T-Rex game on your Flipper Zero. Flipper Zero port of Chrome's running T-rex game - Added command to move DINO - Added gravity
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Chrome browser T-Rex game port. Press OK to jump over cacti and duck under birds. Features moving background, gravity physics, and increasing speed.
 
 #### Tamagotchi
-> Tama P1 Emulator for Flipper Zero This is a tama P1 Emulator app for Flipper Zero, based on TamaLIB. Create a tama_p1 folder in your microSD card, and put the ROM as rom.bin.
-
-**Usage:** in portrait mode are the same as landscape mode, but turned 90 degrees.
+> Virtual pet (P1 emulator). Feed, play, and care for your digital pet. Stack fixed to 4KB in our build. Press Up for menu (layout, speed, save). Long-press Back to save & exit.
 
 #### Tanks
-> A two-player tank battle game using Sub-GHz radio for local multiplayer. Drive your tank around the battlefield and shoot your opponent before they get you.
-
-**Usage:** Two Flipper Zeros needed. Both players launch the app, one hosts and the other joins via Sub-GHz. Use d-pad to move your tank and OK to fire.
+> Tank battle game. Navigate maze, shoot opponents. D-pad to move, OK to fire.
 
 #### Tarot *(by pionaiki & tihyltew)*
-> Tarot card reader Tarot spread for Flipper Zero. This app can give you a linear spread of the major arcana cards (minor arcana is planned to be added). - Official app store - Auto-built releases are available on the Github actions page
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Tarot card reader with major arcana spread. Draws cards in a linear spread with upright and reversed positions. Uses radio-based random number generation for true randomness. Minor arcana planned for future update.
 
 #### Tetris *(by @xMasterX & @jeffplang & @noiob)*
-> Tetris game for Flipper Zero.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Classic Tetris. Rotate pieces with OK, move with left/right, drop with down. Clear lines to score.
 
 #### Tetris Modern *(by xMasterX & jeffplang & noiob & Alloy-Lou)*
-> Tetris Modern game for Flipper Zero.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Updated Tetris implementation with modern features. Same classic gameplay — rotate and drop tetrominoes to clear lines — with quality-of-life improvements.
 
 #### Tic Tac Toe *(by @xMasterX & @gotnull)*
-> Tic Tac Toe game, for 2 players, play on one device
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Two-player on one device. Take turns placing X and O on a 3×3 grid.
 
 #### Tic-Tac-Toe Multi *(by RouNNdeL)*
-> Multiplayer Tic-Tac-Toe game
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Multiplayer Tic-Tac-Toe — play against another Flipper wirelessly or locally. Same classic rules with networked play support.
 
 #### Ultimate Tic-Tac-Toe *(by Racso)*
-> Ultimate Tic-Tac-Toe: play on a big board, where each square is a Tic-Tac-Toe board itself! About Ultimate Tic-Tac-Toe Ultimate Tic-Tac-Toe is a strategic variant of Tic-Tac-Toe where you have 9 Tic-Tac-Toe boards arranged in a 3x3 grid.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Strategic variant with 9 Tic-Tac-Toe boards in a 3×3 grid. Your move determines which board your opponent plays on next. Win small boards to claim them, win 3 small boards in a row to win the game. Much deeper strategy than regular Tic-Tac-Toe.
 
 #### Umpire Indicator *(by @RocketGod-git)*
-> Umpire indicators keep track of balls, strikes, and outs for Baseball and Softball ⚾ Flipper Zero Umpire Indicator ⚾ A baseball umpire indicator app for the Flipper Zero device! This app simulates a traditional baseball umpire's counter, tracking balls, strikes, and outs with a classic.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Baseball/softball ball-strike-out counter. Use d-pad to increment counts during a game.
 
 #### Vexed *(by dlvoy)*
-> Vexed - classic Palm.OS puzzle game !Vexed splash screen logo Vexed for Flipper Zero Vexed is puzzle game, where your goal is to clear level from bricks in smallest possible count of moves. Easy to learn, hard to master
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Classic Palm OS puzzle game reborn. Clear levels by pushing matching colored bricks together — they disappear when touching. Gravity pulls bricks down after each move. Goal: clear all bricks in the fewest moves. Multiple level sets from the original game.
 
 #### Video Poker *(by @PixlEmly)*
-> Video poker is a casino game based on five-card draw poker
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Five-card draw poker. Select cards to hold, draw replacements, try to make the best hand.
 
 #### Wave *(by sergo)*
-> Game about a wave that avoids obstacles, it's cool This game is almost entirely AI-generated through all circles of hell. The logic is simple: the arrow falls down, and when you hold down the OK or UP button, you start flying up.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Side-scrolling obstacle avoidance game. Hold OK or Up to fly upward, release to fall. Avoid obstacles on the way. Inspired by Geometry Dash. Features pause (Back button) and language switching.
 
 #### Wolfenduino *(by apfxtech)*
-> Play the port of Wolfenduino game on your Flipper Zero. Wolfenduino is a demake of id software's Wolfenstein 3D for the Arduboy FX. The game recreates the classic shareware episode "Escape from Wolfenstein" with original-style gameplay adapted for portable hardware.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Wolfenstein 3D demake ported from Arduboy FX. Play through 10 levels of the shareware episode "Escape from Wolfenstein" with first-person 3D gameplay adapted for the 128×64 screen. Classic FPS action on a tiny display.
 
 #### Yappy Invaders *(by @dagnazty)*
-> Yappy version of Space Invaders. Yappy Invaders is a space invaders clone designed specifically for the Flipper Zero device. It combines the classic gameplay of space invaders with the unique hardware capabilities of Flipper Zero,...
-
-**Usage:** Simple and intuitive controls using Flipper Zero's built-in buttons. Score tracking for each game session.
+> Space Invaders variant. Move left/right, shoot up at descending alien waves.
 
 #### Yatzee *(by @emfleak)*
-> Yahtzee game flipperzero-yatzee Yahtzee game for flipperzero Its not beautiful, but it works and now I can play Yahtzee on my flipper while I shit at work.
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+> Yahtzee dice game. Roll dice up to 3 times per turn, score in categories.
 
 #### ZERO! *(by Racso)*
-> ZERO! Get rid of all your cards before your opponents do! ZERO! is a card game where the aim is to get rid of all your cards before your opponents! The game implements the rules of the classic card game UNO, with adaptations to make it playable on the Fli... 1.
+> UNO-style card game against AI opponents. Match cards by suit, number, or action. Draw if you can't play. Action cards (skip, reverse, draw) add strategy. First player to empty their hand wins.
 
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
-
-#### Zombiez *(by @DevMilanIan & @xMasterX, (original By @Dooskington))*
-> Defend your walls from the zombies
-
-**Usage:** Launch from the Games menu. Use d-pad to control and OK to select/action. Back to exit.
+#### Zombiez *(by @DevMilanIan & @xMasterX)*
+> Defend your walls from approaching zombies. Shoot them before they break through.
 
 </details>
 
-<details><summary><h3>🔧 Tools — 107 apps</h3></summary>
-
-#### [WIP] Skeleton Sample App *(by jamisonderek)*
-> Skeleton Sample App. This is intended to be used as a starting point for new applications with one primary screen. You can use this application as a starting point for creating your own application. It contains the skeleton framework to get an application running on the Flipper Zero.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Access Audit *(by matthewkayne)*
-> Audit NFC, RFID, and HID iCLASS access-control cards. Detects DESFire EV1/EV2/EV3, MIFARE Classic/Plus SL1-SL3, NTAG, EM4100, HID iCLASS Legacy, and more. Instant risk score with per-card advice.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Air Level *(by CodeAllNight (MrDerekJamison))*
-> Flipper Level using the Video Game Module motion sensor This is a simple level that can use the motion-tracking sensor of the Video Game Module. - Copy the air_level project into your firmware's applications_user folder.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Analog Clock *(by scrolltex)*
-> Shows analog clock on Flipper screen Analog Clock app for Flipper Zero
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Authenticator *(by Alexander Kopachov (@akopachov))*
-> Software-based TOTP/HOTP authenticator for Flipper Zero device
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Barcode *(by @Kingal1337)*
-> App allows you to display various barcodes on flipper screen Barcode Generator A barcode generator for the Flipper Zero that supports UPC-A, EAN-8, EAN-13, Code-39, Codabar, and Code-128[1] Table of Contents
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### BG Loader *(by twisted-pear)*
-> This plugin allows compatible apps to be loaded and to remain running in the background. Flipper Zero Background Loader This is a plugin for the Flipper Zero that allows compatible apps to be loaded and to remain running in the background.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Big Clock *(by Eris-Margeta)*
-> Bedside clock with adjustable brightness (0-100%). UP/DOWN to adjust. !Big Clock Screenshot ⬇️ Download Latest Release - Get the .fap file and copy to /ext/apps/Tools/ on your Flipper. Turn your Flipper Zero into a bedside or desk clock with:
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### BlackJack Counter *(by grugnoymeme)*
-> Simple application to keep the count of blackjack cards during the game. flipperzero-blackjack_counter-fap A BlackJack Counter Fap for Flipper Zero embedded Device.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Brainfuck *(by nymda)*
-> Brainfuck language interpreter FlipperZeroBrainfuck Brainfuck interpreter and editor for the F0. Supports text inputs and outputs.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Caesar Cipher *(by @panki27)*
-> Encrypt and decrypt text using Caesar Cipher A caesar cipher encoder for the Flipper Zero device. Start app, painfully input your ciphertext with the onscreen keyboard. Replace spaces with underscores. Hit "Save", scroll output.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Calculator *(by @n-o-T-I-n-s-a-n-e)*
-> Calculator, that can calculate simple expressions
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Calendar *(by Adiras)*
-> Simple Flipper Zero calendar application Flipper Zero calendar application - Flipper Zero Official Website. A simple way to explain to your friends what Flipper Zero can do. - Flipper Zero Firmware Update.
-
-**Usage:** - User Documentation. Learn more about your dolphin: specs, usage guides, and anything you want to ask. How to set up and build the application
-
-#### Calendar of weeks *(by F. Greil)*
-> Simple app to organize your week mitzi-cal-weeks This Calendar of week is an application for the Flipper Zero that displays a weekly view of dates &mdash; the current week along with the previous and next week. Today's date is highlighted with i...
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Calendar TECHART *(by TechArtDev)*
-> Simple calendar app Simple Calendar App for Flipper Zero the source code for a simple calendar application designed for the Flipper Zero device. The app provides an intuitive display of the days of the month and supports basic na... - Monthly View: Display the days of the current month.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### CAN Tools *(by Matthew KuKanich)*
-> CAN Tools, DBC management, Data decoding CAN Tools is a Flipper Zero external app for creating simple DBC-style signal definitions and decoding CAN frames with them. - Create and save DBC signal entries (name, CAN ID, bit layout, scaling, unit, min/max).
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Chronometer *(by nmrr)*
-> This chronometer is accurate to the millisecond. TIM2 internal timer of the STM32 MCU is used to generate a 64 MHz clock signal. This signal is used to count elapsed time.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### CLI-GUI Bridge
-> flipperzero-cli-bridge Allows CLI control from GUI, giving untethered access to sub-ghz chat, system diagnostics, and more. Easy way - get a .fap file from the releases page
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Clock *(by kowalski7cc)*
-> Simple clock app
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Combo Cracker
-> Crack combo locks in 8 attempts or less ComboCracker-FZ Combo Cracker is an on-the-go combination lock cracking tool for the Flipper Zero, inspired by security researcher Samy Kamkar’s work on the mechanical vulnerabilities in Master Lock combination pa...
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Combo Cracker *(by CharlesTheGreat77)*
-> Crack combo locks in 8 attempts or less ComboCracker-FZ Combo Cracker is an on-the-go combination lock cracking tool for the Flipper Zero, inspired by security researcher Samy Kamkar’s work on the mechanical vulnerabilities in Master Lock combination pa...
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Count Down Timer *(by @0w0mewo)*
-> Simple count down timer Simple count down timer application for flipper zero up/down: set second/minute/hour value. ok: start/stop counting.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Counter *(by @Krulknul)*
-> Simple counter Dolphin counter This is a simple plugin for the Flipper Zero.
-
-**Usage:** It gives you access to a counter which you can increment and decrement using the up and down buttons respectively. Long-pressing the OK button will enable vibro feedback for adding, and long-pressing the back button will clear the counter.
-
-#### Device Info
-> Device Info application for Flipper Zero.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Doc Viewer Lite *(by C0d3-5t3w)*
-> A simple document viewer Doc Viewer Lite A lightweight text document viewer application for Flipper Zero that allows you to read text files directly on your device. - View text files (.txt) stored on your Flipper Zero's SD card
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### DTMF Dolphin *(by @litui & @xMasterX)*
-> DTMF (Dual-Tone Multi-Frequency) dialer, Bluebox, and Redbox. DTMF (Dual-Tone Multi-Frequency) dialer, Bluebox, and Redbox.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Enigma *(by Struan Clark (xtruan))*
-> Enigma for Flipper Enigma machine emulator for Flipper Zero - Built against 0.104.0 Flipper Zero firmware release - Uses enigma-machine lib
-
-**Usage:** Key features of the M3 Enigma included:
-
-#### Eye Saver *(by paul-sopin)*
-> Simple eye strain prevention tool using the 20-20-20 rule. What does this app do? This app is designed to prevent eye strain when looking at a screen for extended periods of time. 69 percent of Americans have reported eye strain at least once a week, and this app is designed to ...
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### F0 Forth *(by twisted-pear)*
-> Once started the plugin will add a forth command to the CLI that can be used to call up a basic forth shell. Flipper Zero Forth This is a plugin for the Flipper Zero that ports Once started the plugin will add a forth command to the CLI that can be used
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Financial Calculator *(by schaene)*
-> Solve TVM Problems with this calculator Flipper-Financial-Calculator Very basic TVM calculator for Flipper Zero Have you ever thought to yourself "Man, I wish I could figure out the Future Value of a $12,000 investment, over the span of 3 years, with a 7.5% interest rate, in which I pay another.
-
-**Usage:** - Press the arrow keys to move around the pinpad.
-
-#### FlipBIP Crypto Wallet *(by Struan Clark (xtruan))*
-> Crypto wallet for Flipper FlipBIP - BIP32/39/44 Crypto toolkit for Flipper Zero - Last built against 1.0.1 Flipper Zero firmware release
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### FlipCrypt *(by Tyl3rA)*
-> Encrypt, decrypt, and hash text using a wide variety of classic and modern crypto tools. FlipCrypt is a Flipper Zero app that provides a collection of classic cipher algorithms, cryptographic hash functions, and some text encoding methods to explore and learn about. You can emulate the...
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### FlipCrypt *(by TAxelAnderson)*
-> Encrypt, decrypt, and hash text using a wide variety of classic and modern crypto tools. FlipCrypt is a Flipper Zero app that provides a collection of classic cipher algorithms, cryptographic hash functions, and some text encoding methods to explore and learn about. You can emulate the...
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Flipfetch *(by Ismael A. Rodríguez)*
-> A simple app that shows some flipper info Sistema de información estilo fastfetch para Flipper Zero. - Firmware version - Batería % y voltaje
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### FlipNote *(by morty517)*
-> A real text editor for Flipper Zero. Open, edit and save files directly on device.
-
-**Usage:** A real text editor for Flipper Zero — bc 5 buttons and a 128×64 screen are more than enough. - Open / Save / Save As — full file browser powered by Momentum's native file picker
-
-#### Flipp Pomodoro
-> Flipp Pomodoro application for Flipper Zero.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### FlipPar *(by jsammarco)*
-> Track golf and disc golf rounds on Flipper Zero. FlipPar is a Flipper Zero external app for tracking golf or disc golf rounds on-device. It lets you set the number of holes and players, rename players, record par and score values hole-by-hole, an...
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Flipper Aid *(by spaghety)*
-> Flipper application for emergency response with pulse timer and CPR timer Flipper application for emergency response with pulse timer and CPR timer
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Flipper Printer *(by alxcrt)*
-> Thermal printer app with coin flip game and text printing Flipper Printer A Flipper Zero external application that combines a coin flip game with thermal printer functionality using the T7-US thermal printer module.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Flipper Wedge *(by Dangerous Things)*
-> Read RFID/NFC tags and type their UIDs as HID keyboard input via USB or Bluetooth. Supports 5 scan modes and NDEF text records. Brought to you by Dangerous Things A Flipper Zero application that transforms your device into a contactless tag-to-keyboard interface.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Flipper95 *(by Silent / CookiePLMonster)*
-> Stress test your Flipper by crunching prime numbers Application to stress test the Flipper by finding Mersenne primes using the Lucas-Lehmer Test, much like Prime95 does. By default, the app starts from the Mersenne prime M2. This can be overridden from the CLI,
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### FlipperPwn *(by PentestSuite & barkandbite)*
-> Modular pentest payload framework with OS detection and WiFi Dev Board support Modular pentest payload framework for Flipper Zero
-
-**Usage:** FlipperPwn is a Metasploit-inspired payload framework (v1.5) that turns Flipper Zero into a full USB HID attack platform. Load .fpwn modules from a... Table of Contents
-
-#### FlipperZero Clock *(by mdaskalov)*
-> FlipperZero Customizable Clock Displays customizable clock in full-screen or split-view with date and weekday. Customizations are saved in a configuration file and retrieved on next application start. Use the ok key to switch between split-view and full-screen mode.
-
-**Usage:** In split-view mode use the left key to select the desired clock face. In full-screen mode use the left and right keys to change the width. Use the up and down arrow keys to select which hour digits are shown for the analog faces.
-
-#### Ford Radio Codes *(by DavidB)*
-> Ford Radio 'M' & 'V' Unlock Code Generator! Ford Radio Codes - Flipper Zero Ford Radio 'M' &amp; 'V' Unlock Code Generator For Flipper Zero! Instantly generate unlock codes for for 'M' and 'V' series radios directly on your Flipper Zero!
-
-**Usage:** Simply enter the radio's serial number using the UP and DOWN buttons and the 4-digit unlock code will be shown. Remember to copy the 'radiocodes.bin' file to your SD Card.
-
-#### GnomishTool *(by Andreeved88)*
-> Gnomish army multitool. Assembled in Gnomeregan Gnomish army knife for Flipper Zero owners. Civilian market version! Another gift from the brothers from Gnomeregan. - Ruler : 3 cm with a division of up to 0.25 mm (1 px).
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### HEX Editor *(by @dunaevai135)*
-> Read text files line by line and edit them without a computer or smartphone. flipper-zero-hex_editor inspired by QtRoS/flipper-zero-hex-viewer Read any file line by line, and by Ok allow change char. Useful for NFC file "Edit Dump" feature with out smartphone.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### HEX Viewer *(by @QtRoS)*
-> App allows to view various files as HEX Hex Viewer application for Flipper Zero! The app allows you to view various files as HEX - Written with pure C in a very simple and effective manner
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### HyperFocus Calc *(by Endika)*
-> Hyperfocal distance calculator: focal and aperture on-device with sensor CoC. HyperFocus Calc (Flipper Zero) External Flipper Zero app that computes hyperfocal distance from focal length (mm), aperture (full-stop sequence), and each sensor’s circle of confusion (CoC).
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### IconEdit *(by Roberto De Feo)*
-> Icon editor !build status badge Icon editor for the FlipperZero Create images and animated icons up to 128x64 in size directly on the Flipper! Easily preview how your images, icons, and animations will look directly on the device. Send your images to your PC.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### ID Card *(by evillero)*
-> This program represents a simple application for managing an ID card. This program represents a simple application for managing an ID card for Flipper Zero.
-
-**Usage:** In the main menu, users have three options: ID Card: View personal data.
-
-#### Key Copier *(by Torron)*
-> @README.md A Flipper Zero app for measuring key bitting patterns. The best way to install the latest build would be download it from Flipper Zero's Official App Store: To measure your key:
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Key Copier *(by zinongli)*
-> Measure and save Kwikset/Schlage physical keys. A Flipper Zero app for measuring key bitting patterns. To measure your key: 1. Place it on top of the screen.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### LED Blinker *(by Cupprum)*
-> Blinking LED light, which gradually slows down. A Flipper Zero application that blinks LEDs with a decreasing frequency over time. Unlike traditional Pomodoro timers, it provides visual feedback through LED blinks that gradually slow down. This application can be downloaded from Flipper Lab.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### LED Pulsator *(by Leed)*
-> Flipper Zero LED Pulse Animations This app is a proof-of-concept to show abilities of the LED light integrated in the Flipper Zero device.
-
-**Usage:** By default the Flipper Zero firmware framework offers various controls to the LED, including - Selection of few basic colors (red, green, blue, yellow, magenta, cyan etc)
-
-#### Letter Beacon *(by nmrr)*
-> A letter/number morse beacon on 125 kHz using RFID interface of the Flipper Zero flipperzero-letterbeacon A letter/number/symbol Morse beacon on RFID/NFC interfaces of the Flipper Zero (banner has been made with Dall.E 2)
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Lightning Distance *(by HyperMuffin12)*
-> An app that calculates the distance of a lightning strike based on time between seeing the flash and hearing the thunderclap. Flipper Zero Lightning Distance An app that calculates the distance of a lightning strike based on time between seeing the flash and hearing the thunderclap.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Lishi *(by evillero)*
-> App for saving obtained vaules from lishi tool. An app for saving values obtained from the Lishi tool, which is used for lock decoding. This app allows users to input, view, and store values from the decoding process for easy reference and organ...
-
-**Usage:** - Key Types: The app supports various types of LISHI keys. - Input values directly from the Lishi tool into the app.
-
-#### ListEM *(by Clawzman)*
-> NFC / RFID / iButton List Generator 📟 ListEM — Advanced UID List Generator for Flipper Zero ListEM is a Flipper Zero application that generates large, customizable UID dictionaries for RFID, NFC, and iButton protocols directly on your Flipper!.
-
-**Usage:** ListEM brings advanced list generating features (previously done via my Python scripts) straight onto the Flipper Zero. Now with Fuzzing Mode / Bit Mutation engine! A real, usable reader testing FuZZ engine!
-
-#### Math Wiz *(by Papa_Ghost)*
-> Does some trig/calculus calculations Polynomial-Solver Polynomial-Solver is an application for the Flipper Zero that enables users to solve and manipulate polynomials up to the sixth degree. With this app, you can evaluate polynomials, calculate deriva...
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Mitzi Type Aid Demo *(by F Greil)*
-> A type-aid for Flipper Zero My take on a Flipper Zero type-aid. You can compare my version with out-complete with the standard keyboard. From the main screen, you have three options: - OK opens the keyboard with with word suggestions
-
-**Usage:** On the new keyboard, the user navigates using the directional buttons, OK selects the highlighted character or button.
-
-#### Moon Phases *(by w84death)*
-> A simple application to display the current phase of the moon Moon Phases App A simple application to display the current phase of the moon along with additional lunar information. For Flipper Zero device.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Multi Converter *(by @theisolinearchip)*
-> A multi-unit converter written with an easy and expandable system for adding new units and conversion methods
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Multi Timer *(by C0d3-5t3w)*
-> Timer app with presets, multiple custom timers and background support. 🐬⏰ Flipper Zero MultiTimer A feature-rich multi-timer application for Flipper Zero with a charming dolphin mascot!
-
-**Usage:** • Installation • Usage • Development • Screenshots ⏱️ Multiple Timer Management
-
-#### NFC/RFID Detector *(by SkorP)*
-> Identify the reader type: NFC (13 MHz) and/or RFID (125 KHz).
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Nickname Generator *(by disaxq)*
-> Easily create unique names using this app for flipper zero. Nickname-Generator Nickname Generator in flipper zero Easily create unique names using this app for flipper zero.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Nightstand Clock *(by @nymda & @Willy-JL)*
-> Clock with screen brightness controls FlipperNightStand Fork of the standard clock app, for use as a bedside clock at night -Date and AM/PM have their places swapped
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Notes for FZ (WIP)
-> Notes for FZ (WIP) application for Flipper Zero.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Orgasmotron *(by Leedave)*
-> Vibrate Flipper in different modes Flipper Zero Orgasmotron Update This app is a proof-of-concept to show abilities of the vibration motor in the Flipper Zero device. I'm also using this to learn how to code for Flipper Zero
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Paranoia *(by C0d3-5t3w)*
-> Anti-Surveillance Field Tool that scans for hidden wireless cameras, RFID skimmers, and IR monitoring devices Paranoia Mode for Flipper Zero Paranoia Mode is an anti-surveillance tool for Flipper Zero that scans for hidden wireless cameras, RFID skimmers, and infrared monitoring devices.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Password Generator *(by @anakod & @henrygab)*
-> Simple password generator flipper_passgen This is a simple Password Generator plugin (fap) for the Flipper Zero.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Password Manager *(by Rrycbarm)*
-> This app stores your usernames and password and can write them on your PC acting as a keyboard Password Manager Use you flipper zero as a password manager and authenticator! The flipper stores your usernames and password and can write them on your PC acting as a keyboard!
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Pet a Dolphin *(by EugeneSmile)*
-> Flipper app to make your dolphin a little bit happier (Reset mood) Flipper app to make your dolphin a little bit happier (Reset mood) 1. Put directory into applications_user directory of flipperzero firmware sdk 5. Run application, press OK to make Dolphin more happy
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Pet Your Dolphin *(by dwight9339)*
-> Lt's you check in on your dolphin buddy daily and give them some well-deserved pets. Petting your dolphin improves its mood and provides some XP but these effects are capped by the firmware so you're limited to two pets a day.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Pomodoro Timer *(by sbrin)*
-> Use your Flipper Zero as a Pomodoro Timer. flipperzero_pomodoro The Pomodoro Technique is a time management method developed by Francesco Cirillo in the late 1980s.[1] It uses a kitchen timer to break work into intervals, typically 25 minutes in length,.
-
-**Usage:** Flipper Zero is a portable Tamagotchi-like multi-functional device developed for interaction with access control systems. The device is able to rea... Pomodoro timer application for Flipper Zero
-
-#### Programmer Calculator *(by armixz)*
-> Calculator, for Programmers! Programmer Calculator a calculator application designed to run on Flipper Zero. - Decimal to Binary
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Programmer Calculator *(by @armixz)*
-> Calculator, for Programmers! Programmer Calculator a calculator application designed to run on Flipper Zero. - Decimal to Binary
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### QR Code *(by Bob Matcuk)*
-> Display qrcodes flipperzero-qrcode Display qrcodes on the [Flipper Zero] !qrcode screenshot
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### QRCode Generator *(by Thomas Schwarz (aka qw3rtty))*
-> Generates and displays QRCodes on flipper zero. Flipper Zero: QRCode Generator Generates and displays QRCodes on the flipper zero. Grab the qrcode_generator.fap from the latest release.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Quac! *(by Roberto De Feo)*
-> Quick Action remote control app Quick Action Remote Control for Flipperzero Get the latest version: Flipper Lab - recommended
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Quadratic Solver *(by paul-sopin)*
-> A simple quadratic equation solver app What does this app do? This app takes a, b, and c values from a quadratic equation in form "ax^2 + bx + c = 0" Select a number when hovering over a, b, or c with LEFT to decrease number, and RIGHT to increase.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Reality Clock *(by Eris-Margeta)*
-> Dimensional stability monitor using multi-band EM ratio analysis. Reality Dimension Clock v4.1 !Reality Dimension Clock Screenshot ⬇️ Download Latest Release - Get the .fap file and copy to /ext/apps/Tools/ on your Flipper.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Resistance Calculator *(by Lewis Westbury)*
-> Resistor calculations Resistance calculator A simple app to calculate resistance from the coloured bands. See: Pick from 3, 4, 5, or 6 band resistor.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Resistance Calculator *(by Lewis Westbury)*
-> Resistor calculations Resistance calculator A simple app to calculate resistance from the coloured bands, based on original work by Lewis Westbury. Pick from 3, 4, 5, or 6 band resistor.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Roman decoder *(by evillero)*
-> An app that converts Roman numerals to decimal values. An Flipper Zero app that converts Roman numerals to decimal values.
-
-**Usage:** Roman Decoder is an application that allows users to easily convert Roman numerals to decimals. The app provides an interactive user interface that... - Interactive Dialing:Users can use the buttons to navigate through Roman numerals.
-
-#### ROT13 *(by nothingbutlucas)*
-> Cipher text with ROT13 I moved the source code to github because the flipper zero application catalog only accepts repos from github Actual repo: https://github.com/nothingbutlucas/flipperzero_rot13 ROT13 application
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Rubiks Cube Timer *(by KHOPAN)*
-> Cuber's best friend
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### SD Info *(by sergo)*
-> The application shows information about the SD card The application shows information about the SD card and you can also perform a test that will show the card status.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Segment Clock *(by Sladkisnovraper)*
-> Simple segment clock. Simple segment clock. Press the up button to toggle between 12 and 24 hour mode.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Sig Diary *(by C0d3-5t3w)*
-> Background scanner that logs signals and annotates them - Multi-protocol Scanning: Simultaneously monitors IR, RF, and NFC signals
-
-**Usage:** - Automatic Annotation: Identifies common signals such as garage doors, remote controls, and access cards - Signal Logging: Maintains a timestamped log of all detected signals
-
-#### SKIDcity *(by H4W9)*
-> Educational: Don't be a SKID! "Your flipper can't do that. and if it could, you'd be in federal prison."
-
-**Usage:** So you got a Flipper Zero. Maybe you saw it on TikTok. Maybe some guy on Discord told you it could hack traffic lights, clone any card, crash wifi ... This app is for you.
-
-#### Smartra VIN2PIN *(by evillero)*
-> Simple calculator for SMARTRA2 immobilizer pins for Hyundai/KIA vehicles Smartra VIN2PIN Flipper Zero app calculator for SMARTRA2 immobilizer pins for Hyundai and KIA vehicles - Supports most Hyundai/KIA models using SMARTRA2.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Space Travel Calculator *(by ejfox)*
-> KSP-style interplanetary transfer planner Space Travel Calculator A minimalist trajectory calculator for the Flipper Zero. Plan real interplanetary missions with KSP-style visual feedback. Answer the critical mission planning questions:
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Spindle Calculator *(by Jordan M)*
-> Spindle spacing calculator for stairs and straight runs. Uses IMU for stair angle. Spindle Calculator — Flipper Zero App A trade tool for carpenters and joiners to calculate spindle counts and spacings for balustrades, right on site — no phone or calculator needed.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Tasks *(by Stanislav Vasilev(Madman10K))*
-> A simple to-do application. A TODO list application for the Flipper Zero using the UntitledFlipperZero framework. 1. Run ufbt in the root of the directory 1. To launch the application on the Flipper Zero, connect to it via USB and run ufbt launch
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Tasks *(by Stanislav Vasilev(Madman10K))*
-> A simple to-do application. A TODO list application for the Flipper Zero using the UntitledFlipperZero framework. 1. Run ufbt in the root of the directory 1. To launch the application on the Flipper Zero, connect to it via USB and run ufbt launch
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Text Viewer *(by @Willy-JL)*
-> Text viewer application
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Time Dilation Calculator *(by ejfox)*
-> Time dilation calculator for relativistic travel Flipper Space Calculators A pair of minimalist space and physics calculators for the Flipper Zero. No games, no splash screens -- just the numbers. Space Travel Calculator
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Time Tracker *(by MassivDash (hhtps://spaceout.pl))*
-> Flipper Time Tracker is an application for flipperzero device that allows the user to track multiple tasks at the same time. Application uses csv file to store and handle task data that can be easily exported to excel or similar for further analysis.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Timer *(by nagamine-git)*
-> A pomodoro style timer app with 30 minutes of break and 20 minutes of work
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Tone Generator *(by Gerald McAlister)*
-> A simple app to generate sound tones.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Tree Identification *(by fgreil)*
-> Identify a tree by answering questions about the leave shapes mitzi-tree-ident Goal: Identify a tree by answering questions on your Flipper Zero. Sketch of user flow
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### uPython *(by Oliver Fabel)*
-> Compile and execute MicroPython scripts MicroPython Flipper Zero Allows you to use the power of Python natively on your Flipper Zero. The application is available on the official Flipper Lab.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### uPython *(by Oliver Fabel)*
-> Compile and execute MicroPython scripts MicroPython Flipper Zero Allows you to use the power of Python natively on your Flipper Zero. The application is available on the official Flipper Lab.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### VIN Decoder *(by evillero)*
-> Vehicle Identification Number decoder VIN decoder for Flipper Zero VIN Decoder is a mini flipper zero tool that allows you to decode VIN (Vehicle Identification Number) numbers. This project provides users with the ability to enter their VIN and obtain information... Version history
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Voltage Calculator *(by Andrew Diamond)*
-> Voltage (VRI) calculations Voltage Calculator VoltCalc is a simple voltage calculator to calculate values using Ohms Law V = R * I. !enter current value
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Voltage Calculator *(by HappyAmos)*
-> Voltage (VRI) calculations Voltage Calculator VoltCalc is a simple voltage calculator to calculate values using Ohms Law V = R * I. !enter current value
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Voyah Password *(by bolknote)*
-> This program allows you to generate the engineering menu password for Voyah vehicles. Since the password depends on the current date and is calculated according to the Chinese time zone, you will need to set your current time zone after launching the program.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-</details>
-
-<details><summary><h3>📡 Nfc — 51 apps</h3></summary>
+<details><summary><h3>📡 Nfc — 49 apps</h3></summary>
 
 #### AmiTool *(by Firefox2100)*
-> An NTAG215 toolkit for Flipper Zero to work with tags used with gaming consoles. An Flipper Zero toolkit to work with NTAG215 tags with gaming consoles. This project is usable but still in development.
-
-**Usage:** Designed as a general-purpose toolkit for Flipper Zero to work with NTAG215 figures/cards for gaming consoles, this app aims to provide the followi... - Reading NTAG215 character NFC tags: Read data from physical NTAG215 gaming tags and store it on the Flipper Zero.
-
-#### AmiTool *(by Firefox2100)*
-> An NTAG215 toolkit for Flipper Zero to work with tags used with gaming consoles. An Flipper Zero toolkit to work with NTAG215 tags with gaming consoles. This project is usable but still in development.
-
-**Usage:** Designed as a general-purpose toolkit for Flipper Zero to work with NTAG215 figures/cards for gaming consoles, this app aims to provide the followi... - Reading NTAG215 character NFC tags: Read data from physical NTAG215 gaming tags and store it on the Flipper Zero.
+> NTAG215 toolkit for gaming console tags. Read, write, emulate, generate, and randomize UIDs. Place `key_retail.bin` in `apps_data/ami_tool/` for full features. Read physical tags, generate from character database, emulate for consoles, write to blank NTAG215 tags, or randomize UIDs so one tag works as multiple different tags.
 
 #### Amusement IC *(by object-Object)*
-> A simple app "next page" in display scene to show overflowing info (full vendor name, PMm) emulate url card (see nfcurl)
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
-
-#### COGS MyKey *(by luhf)*
-> Read and edit COGES MyKey NFC cards. This is a Flipper application for editing and writing COGES Mykey Dongles. I’m releasing this because idiots are selling similar apps for profit and violating the MIKAI license. This release is for educational purposes only and comes with zero support.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Reader for amusement/arcade IC cards. Displays vendor name, PMm (manufacturer parameters), and other card data. Useful for exploring the NFC technology behind arcade and amusement park systems.
 
 #### Cyborg Detector *(by @RocketGod-git)*
-> App generates a continous NFC field to make body mod implant LEDs glow. Tested on a Dangerous Things xSIID. Flipper-Zero-Cyborg-Detector 🤖 Activate Cyborg Implants LEDs App generates a continous NFC field to make body mod implant LEDs glow. Tested on a Dangerous Things xSIID.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Generates a continuous NFC field to make body modification implant LEDs glow. Hold the Kiisu near an NFC implant (typically between thumb and index finger) and the field powers the tiny LED inside, making it light up through the skin. No buttons needed — field stays active until you press Back.
 
 #### GhostBook *(by Digi)*
-> Encrypted tap-to-share contacts with passcode lock Encrypted NFC Contact Sharing for Flipper Zero Share your contact info with a tap. Protected by passcode. Auto-wipes on failed attempts. - NFC Tap-to-Share — Emulates NTAG215, works with other Flippers
-
-**Usage:** - AES-class Encryption — 256-bit keys with 10,000 iteration stretching
-
-#### HID iClass (PicoPass)
-> App to communicate with PicoPass(iClass) tags See readme: https://lab.flipper.net/apps/picopass/ To Build ASN1 (if you change sio.asn1) Run asn1c -D ./lib/asn1 -no-gen-example -no-gen-OER -no-gen-PER -pdu=all sio.asn1 in in root to generate asn1c files
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Encrypted NFC contact sharing. Store your contact info and share it with a tap — emulates NTAG215 for compatibility with other Flippers. Protected by a variable-length passcode (6-10 button combinations, 46K to 60M possibilities). Auto-wipes on failed unlock attempts.
 
 #### ISO 15693-3 NFC Writer
-> ISO15693-3 NFC Writer An application for the Flipper Zero device that provides advanced handling of ISO 15693-3 compliant NFC tags (commonly found as ICODE SLIX). The application allows reading and writing memory data, managing block locks, and modifying special AFI and DSFID registers.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Advanced read/write tool for ISO 15693-3 NFC tags (ICODE SLIX). Write Single Block, FF to All Blocks (quick format), Lock Block (permanent — cannot be undone), Write AFI (Application Family Identifier), and Write DSFID (Data Storage Format). Common in library systems, industrial tracking, and access control.
 
 #### Metroflip *(by luu176)*
-> An implementation of metrodroid on the flipper Metroflip is a multi-protocol metro card reader app for the Flipper Zero, inspired by the Metrodroid project. It enables the parsing and analysis of metro cards from transit systems around the worl...
-
-**Usage:** Launch from the NFC/Apps menu. Hold your metro card against the back of the Flipper to read and decode transit data.
+> Transit card reader — port of the Metrodroid project. Reads and parses metro/transit cards worldwide, extracting trip history, balance, card number, and stored data. Supports Suica (Japan), RENFE (Spain), Bip (Chile), CharlieCard (Boston), and many more. Hold your transit card flat against the back of the Kiisu.
 
 #### MFDesfire Auth *(by Gatorixx / NullPageGh0st)*
-> Application for legacy authentication with Mifare Desfire cards
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Legacy authentication tool for MIFARE DESFire cards. Performs authentication handshakes with DESFire cards using legacy protocols. Useful for security research and understanding DESFire authentication mechanisms.
 
 #### MFKey *(by @noproto)*
-> MIFARE Classic key recovery tool
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> MIFARE Classic key recovery tool (v4.1). Calculates encryption keys on-device using Mfkey32 and Nested algorithms. Use after the built-in NFC app's "Extract MF Keys" collects nonces. 40% faster than v3, Static Encrypted Nested (SEN) dictionary makes recovery 10x faster. Keys saved to NFC cache automatically.
 
 #### MFP Reader *(by Defensor7)*
-> MIFARE Plus SL3 reader, dumper and emulator MFP Reader for Flipper Zero A standalone Flipper Zero application for reading, dumping and emulating MIFARE Plus SL3 smart cards. Implements the full MFP SL3 protocol over
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> MIFARE Plus SL3 reader, dumper, and emulator. Implements the full MFP SL3 protocol over ISO 14443-4A using only stock firmware APIs — no firmware modifications required. Read, dump, and emulate MIFARE Plus Security Level 3 cards.
 
 #### Mi Band NFC *(by LucaTomei)*
-> NFC writer for Mi Band with 0xFF keys Mi Band NFC Writer v1.0
-
-**Usage:** A comprehensive Flipper Zero application for managing NFC data on Xiaomi Mi Band devices with advanced features including automatic backups, detail... This application provides a complete toolkit for reading, writing, emulating, and verifying NFC data on Mi Band smart bands. It supports the full w...
+> NFC data manager for Xiaomi Mi Band devices. Read, write, emulate, and verify NFC data on Mi Band smart bands. Quick UID check, load NFC dumps from SD card, automatic backups, detailed logging, and real-time progress tracking during writes.
 
 #### MIFARE Classic Editor *(by TollyH)*
-> Application for viewing and editing MIFARE Classic .nfc files
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> View and edit raw hex data inside saved MIFARE Classic .nfc files, sector by sector. Browse to any .nfc file, view hex dump organized by sector, modify individual bytes with OK. Save changes and emulate or write to a blank card using the main NFC app.
 
 #### Mifare Fuzzer *(by @spheeere98 @Sil333033)*
-> App emulates Mifare Classic cards with various UIDs to check how reader reacts on them Flipperzero Mifare Fuzzer This app allows you to fake Mifare UIDs. It can emulate either UIDs or full cards from your Flipper's storage.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Emulate MIFARE Classic cards with various UIDs to test reader behavior. Cycles through random, sequential, or file-based UIDs. Helps identify readers that rely solely on UID-based authentication (which is insecure). Logs successful UIDs.
 
 #### MiZip Balance Editor *(by Téo Humeau)*
-> Easily modify your MiZip tags balance MiZip Balance Editor for Flipper Zero This app main goal is to make it easy to modify a MiZip tag balance. If you want to contribute to make this app better, feel free to submit PR!
+> Modify MiZip tag balances directly. Load a MiZip NFC dump, edit the stored balance value, and write it back. Work in progress — contributions welcome.
 
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+#### COGS MyKey *(by luhf)*
+> Read and edit COGES MyKey NFC dongles used in vending machines. Released as open-source because others were selling similar tools in violation of the MIKAI license. For educational purposes only.
 
 #### Networking NFC + QR *(by DonJulve)*
-> This app allows users to manage NFC, and QR codes directly on the Flipper Zero. Networking NFC + QR para Flipper Zero Esta aplicación para Flipper Zero permite emular una tarjeta NFC y mostrar un código QR simultáneamente en la pantalla.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Dual-mode contact sharing — simultaneously emulates an NFC card and displays a QR code on screen. Perfect for networking events: the other person can either tap their phone to the NFC or scan the QR code. Load .nfc and .qrcode files from SD card.
 
 #### NFC APDU Runner *(by SpenserCai)*
-> Run APDU commands from script files
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Run sequences of APDU commands against NFC cards from pre-written script files. Create .apdu files with hex commands (one per line) in `apps_data/nfc_apdu_runner/`. The app sends each command and displays the card's response. Requires knowledge of the target card's APDU command set.
 
 #### NFC Comparator *(by acegoal07)*
-> A tool to check if a physical NFC card is the same as a saved digital one FlipperZero_NFC_Comparator This is a simple tool for checking NFC cards using a Flipper Zero device. It allows you to compare a stored NFC card against a physical card, checking for UID, UID length, and protocol.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Compare a physical NFC card against a saved digital copy. Checks UID, UID length, and protocol. Also includes a finder feature that searches for matches between physical cards and your saved collection — useful for finding duplicates or locating which saved file matches a card in hand.
 
 #### NFC Dict Manager *(by grugnoymeme a.k.a. 47LeCoste)*
-> Advanced NFC dictionary management tool for Flipper Zero Flipper Zero Dictionary Manager A powerful application for your Flipper Zero that lets you manage, optimize, and organize your NFC dictionaries with ease. Handle mf_classic_dict.nfc and mf_classic_dict_user.nfc files, without con...
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
-
-#### NFC Fuzzer *(by PentestSuite & barkandbite)*
-> NFC protocol fuzzer for testing reader/tag robustness NFC protocol fuzzer with 11 profiles and 4 strategies for Flipper Zero NFC Fuzzer operates the Flipper Zero's NFC hardware in both listener (card emulation) and poller (reader) modes to send malformed, boundary-case, and mutation-based data to.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
-
-#### NFC Keyboard *(by Patrick762)*
-> Paste NFC card ids to keyboard input flipper-nfc-keyboard Paste NFC card ids to keyboard input
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
-
-#### NFC Login *(by Play2BReal)*
-> NFC based desktop login using USB HID or BLE HID (BLE exit fix, OFW compatible) A Flipper Zero app that uses NFC cards to automatically type passwords on your computer via USB HID or BLE HID.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
-
-#### NFC Magic
-> Application for writing to NFC tags with modifiable sector 0
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
-
-#### NFC Maker *(by @Willy-JL)*
-> Create NFC files for BT MACs, Contacts, Links, Emails, Phones, Text and WiFis
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
-
-#### NFC Playlist *(by @acegoal07)*
-> A Tool used to running through a list of NFC cards FlipperZero_NFC_Playlist: The idea behind this app is to allow for you to test multiple copies of NFC's at once as a bulk test When starting the app you are greeted by a select file option where you choose the playlist you wanna run.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
-
-#### NFC Relay *(by leommxj)*
-> NFC Relay app for flipper zero, relay NFCA APDU and response between two flipper. NFC Relay app for flipper zero, relay NFCA APDU and response between two flipper. configurable UART pin and baudrate (Right now is hardcored using 15/16 aka.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
-
-#### NFC Sniffer *(by Kyle Diller)*
-> A simple app to log NFC commands This is a simple Flipper app that listens for the commands being sent by a NFC reader, and displays them to the Flipper's screen. The commands are also logged to the nfc_sniffer_logs folder in the ...
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
-
-#### NFC URL *(by Yasper De Jong)*
-> Create NFC tags that direct you to a URL A Flipper Zero application that generates and emulates NFC tags that point to URLs. - Generate http(s), (s)ftp, mailto, etc. URLs - Save a list URLs for later use
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Advanced NFC dictionary management tool. Manage, optimize, and organize mf_classic_dict.nfc and mf_classic_dict_user.nfc files directly on-device without a PC. Backup dictionaries, merge files, remove duplicates, and organize keys. Six management options from the main menu.
 
 #### NFC-Eink *(by RebornedBrain)*
-> Application for emulation and writing to NFC Eink tags - This app allows emulation and writing of NFC Eink tags from Waveshare and Goodisplay - Image saved as one screen type can be then loaded to screen of another type Here is the list of displays wich app supports now:
+> Write images to NFC-powered e-ink displays from Waveshare and Goodisplay. Supports 2.13", 2.7", 2.9", 4.2", and 7.5" Waveshare displays plus several Goodisplay models. Emulate or write image data directly. Save/load screen data between different display types.
 
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+#### NFC Fuzzer *(by PentestSuite & barkandbite)*
+> NFC protocol fuzzer with 11 profiles and 4 strategies for testing reader/tag robustness. Systematically tests how NFC readers handle malformed or unexpected data. For security research and reader testing.
+
+#### NFC Keyboard *(by Patrick762)*
+> Scan an NFC card and paste its UID as keyboard input. Quick way to type card UIDs into a computer without manually reading and entering the hex values.
+
+#### NFC Login *(by Play2BReal)*
+> Scan an NFC card to automatically type a stored password via USB or Bluetooth keyboard emulation. Store multiple cards linked to different passwords. Passwords encrypted using the Flipper's secure enclave. Supports auto-matching, passcode protection, and international keyboard layouts.
+
+#### NFC Magic
+> Write to "magic" NFC tags with modifiable Block 0 (UID/manufacturer block). Used for cloning MIFARE Classic cards to writable tags. Supports Gen1a, Gen2, and other magic tag types. The app handles special write commands automatically.
+
+#### NFC Maker *(by @Willy-JL)*
+> Create NFC NDEF files from scratch — contacts (vCard), URLs, WiFi credentials, email, phone numbers, and plain text. Generated .nfc files can be emulated (hold Kiisu near a phone) or written to blank tags. Great for sharing WiFi passwords or contact info.
+
+#### NFC Playlist *(by @acegoal07)*
+> Cycle through a playlist of saved .nfc files automatically. Create a .txt file listing paths to .nfc files, and the app emulates them one after another with configurable timing. Useful for testing which card works with a reader, or for demonstrations.
+
+#### NFC Relay *(by leommxj)*
+> Relay NFC APDU commands and responses between two Flippers via UART. One Flipper acts as the card-side, the other as the reader-side. Demonstrates relay attack concepts for NFC security research. Hardcoded to pins C1/C0 at 38400 baud.
+
+#### NFC Sniffer *(by Kyle Diller)*
+> Log NFC commands sent by readers in real-time. Displays commands on screen and saves them to `nfc_sniffer_logs/` on SD card. Supports ISO14443-3A and ISO15693-3. Note: captures reader commands only, not tag responses.
+
+#### NFC URL *(by Yasper De Jong)*
+> Generate and emulate NFC tags that open URLs when tapped by a phone. Create http(s), ftp, mailto, and other URL types. Save a list of URLs for later use. Quick way to share links via NFC tap.
 
 #### OpenPrintTag *(by Houzvicka)*
-> Read and write OpenPrintTag NFC tags for 3D printing materials OpenPrintTag Reader for Flipper Zero A Flipper Zero application to read and write OpenPrintTag NFC tags used for 3D printing filament spools. About OpenPrintTag
-
-**Usage:** OpenPrintTag is an open-source NFC tag standard for 3D printing materials, developed by Prusa Research. It stores material information like brand, ... - Specification: https://specs.openprinttag.org/
+> Read and write OpenPrintTag NFC tags for 3D printing filament spools. OpenPrintTag is Prusa Research's open-source NFC standard that stores material info (brand, type, color, usage data) on tags attached to spools. Read existing tags or write new ones.
 
 #### Passport Reader *(by bettse)*
-> eMRTD Reader Passy: Flipper Zero Passport Reader Passy is a tool for reading electronic passports (ePassports/eMRTDs) using the Flipper Zero device. It extracts and decodes data securely stored in modern passports, designed for hobbyists, researc...
+> Read electronic passports (eMRTD/ePassports) via the embedded NFC chip. Enter MRZ data (document number, date of birth, expiry date) to derive encryption keys. Hold passport flat against the Kiisu. Tested with US, Chilean, and French passports. Reading takes a few seconds — keep steady.
 
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+#### PicoPass
+> HID iClass (PicoPass) credential reader and emulator. Read iClass access control credentials, save to SD card, and emulate later. Supports Standard Edition (SE) and Standard Reader (SR) card types. Uses loclass and mbedtls crypto libraries.
 
 #### SaFlip *(by Aaronjamt)*
-> SaFlip Hospitality Tool for Flipper Zero Application to communicate with Saflok credentials and readers. Currently only works on Momentum Firmware, due to missing Date/Time screen support until OFW PR4261 is merged. Emulating cards
-
-**Usage:** It can read and write all of the main Basic Access data and variable keys.
+> Saflok hospitality lock tool — read, emulate, create, edit, and write Saflok hotel lock cards. Reads Basic Access data and variable keys from Saflok MIFARE Classic cards. Can read log entries from cards and locks in real-time. Currently MFC only; Ultralight C planned.
 
 #### Seader *(by bettse)*
-> A Flipper Zero application (aka "fap") that read credential from HID: iClass, iClass SE, Desfire EV1/EV2, and Seos using a HID SAM and UART adapter. Latest release on the App Catalog. File issues in GitHub.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> SAM-based credential reader — communicates with a Secure Access Module for high-security access control systems. Supports config cards for SAM initialization, Proxmark3-compatible commands, and SIO SE/SR credential type detection. Requires SAM hardware.
 
 #### Seos Compatible *(by bettse)*
-> Seos compatible reader/emulator Flipper app for reading and emulating Seos®-compatible cards/fobs/mobile credentials.
-
-**Usage:** The app uses all zero keys by default. If you'd like to use your own keys/ADF OID, use the format of the keys-example.txt to specify them, and pla... - No key files: If no key files are present, the app defaults to all zeros (00) for keys and an ADF OID of 030107090000000000 ("0.3.1.7.9.0.0.0.0.0").
-
-#### Seos compatible *(by bettse)*
-> Seos compatible reader/emulator Flipper app for reading and emulating Seos®-compatible cards/fobs/mobile credentials.
-
-**Usage:** The app uses all zero keys by default. If you'd like to use your own keys/ADF OID, use the format of the keys-example.txt to specify them, and pla... - No key files: If no key files are present, the app defaults to all zeros (00) for keys and an ADF OID of 030107090000000000 ("0.3.1.7.9.0.0.0.0.0").
+> Read and emulate Seos-compatible cards, fobs, and mobile credentials. Supports multiple key sets — switch between facilities via the menu. Create key files in `apps_data/seos/`. Default uses all-zero keys; real credentials need proper key files.
 
 #### SLI Writer *(by Julienbxl)*
-> Write SLIX .nfc files to SLI Magic cards (UID addressed mode) - REAL WRITE SLI Writer — Magic ISO15693 UID Writer I made a simple Flipper app to write magic ISO15693 tags with changeable UID using .nfc files. 📱 Update (10/04)
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Write .nfc files to magic ISO15693 tags with changeable UIDs. Supports UID-addressed mode for real writes to SLI magic cards. Also available as an Android app.
 
 #### Sonicare Head ID *(by mbirth.uk)*
-> Philips Sonicare brush head NFC reader Sonicare Brush Head ID Each modern brush head for a Philips Sonicare contains a Mifare Ultralight NFC chip (NTAG213). The chip not only signals to the head unit what type of brush it is (to pre-select the recommended
+> Read NFC data from Philips Sonicare brush heads. Each modern brush head contains an NTAG213 chip that identifies the brush type to the handle unit. See what data your toothbrush is storing.
 
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
-
-#### T-Union Master (China) *(by SocialSisterYi)*
-> A tool for query T-Union card and show travel logs T-Union Master（交通卡大师）是基于 flipper zero 平台用以查询交通联合卡综合信息的工具。 查询内容包括卡号、卡名、卡种、到期日期、余额等基础信息，充值、交易记录（10 条），交通工具、线路、站台等行程信息（30 条），查询方式为离线查询，无需蓝牙 wifi 等。 本应用使用 flipper zero 设备内建 NFC 外设及系统固件提供的 ISO/IEC 14443 (Type 4A) 协议栈与卡片通讯，应用层协议参考 EMV 标准以及交通运输部 JT/T 978.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+#### T-Union Master
+> Chinese transit card (交通联合卡) query tool. Read card number, name, type, expiry date, balance, plus 10 transaction records and 30 trip records (transport type, line, station). Offline query — no WiFi/Bluetooth needed. Uses ISO/IEC 14443 Type 4A protocol.
 
 #### TonUINO Writer *(by Bastelsaal)*
-> NFC card writer for TonUINO audio boxes TonUINO Writer for Flipper Zero NFC card writer application for TonUINO audio boxes. Create and manage NFC cards for the TonUINO DIY music player system. - ✅ Write TonUINO Cards - Configure NFC cards with folder, mode, and special settings
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> NFC card writer for TonUINO DIY audio boxes. Create and manage NFC cards with folder, mode, and special settings. Read existing card configurations. Rapid Write Mode for quickly programming multiple cards. TonUINO is a popular DIY music player for kids.
 
 #### TuLlave *(by zqu4rtz)*
-> This is a project to add the capability of reading TuLlave cards to the Flipper Zero device. TuLlave is a contactless smart card used to pay for public transport services in Bogota, Colombia. It operates on the MIFARE Classic protocol, which is supported by the Flipper Zero NFC module.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Read TuLlave transit cards from Bogotá, Colombia. Displays card balance and transaction history. TuLlave is a MIFARE Classic contactless card used for public transport in Bogotá.
 
 #### UDECard *(by Alexander Hahn / hahnworks)*
-> Flipper application to analyse student ID cards from the University of Duisburg-Essen. Flipper Zero application to analyse student ID cards from the University of Duisburg-Essen (Intercard) !Screen capture of UDECard The University of Duisburg-Essen utilises a system known as Intercard for the.
-
-**Usage:** These are MIFARE Classic 1K cards, whose keys are readily available in the Flippers dictionary. However, the Flipper lacks any support for useful information extraction.
+> Analyze student ID cards from the University of Duisburg-Essen (Intercard system). Read and display card data including payment balance and library authentication info.
 
 #### UID Brute Smarter *(by fbettag)*
-> Enhanced UID brute-force with key management UID Brute Smarter 🔐 UID Brute Smarter is a security research tool for authorized penetration testing and access control system auditing. It provides advanced NFC key management and intelligent pattern detection to bui... 🔍 Key Management
-
-**Usage:** - Key Browser: Browse and manage loaded keys with UID display.
+> Advanced NFC UID analysis and testing tool. Load NFC files with metadata extraction, detect patterns in UIDs, and build comprehensive security assessments. For authorized penetration testing and access control auditing only.
 
 #### UL-C Bruteforce *(by noproto)*
-> Bruteforce Ultralight C authentication
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Dictionary attack against MIFARE Ultralight C authentication keys. Tries keys from system and user dictionaries in `nfc/assets/`. If a key is found, the card can be fully read. Add custom keys to the user dictionary for targeted testing.
 
 #### UL-C Bruteforce Optimized *(by noproto)*
-> Bruteforce Ultralight C authentication. Implements the brute-force attack described in paper *Section 10.1 Online Enhancements*
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Enhanced Ultralight C bruteforce implementing the attack described in the academic paper Section 10.1 "Online Enhancements." Faster and more efficient than the standard bruteforce approach.
 
 #### UL-C Relay *(by noproto)*
-> Relay Ultralight C authentication
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Relay MIFARE Ultralight C authentication between a real reader and card, with the Kiisu as man-in-the-middle. Demonstrates relay attack vulnerability in contactless authentication. Present the Kiisu to the reader while the real card is held against the NFC antenna.
 
 #### ULCFKey *(by noproto)*
-> Crack counterfeit ULC cards
+> Crack counterfeit MIFARE Ultralight C cards with weak or predictable authentication keys. Many cheap clones ship with default keys. The app exploits those weaknesses to recover keys for full read/write access.
 
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
-
-#### ULCFKey *(by noproto)*
-> Crack counterfeit ULC cards. With tearing support.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+#### ULCFKey (Next)
+> Enhanced ULCFKey with tearing support. Cracks counterfeit Ultralight C cards using additional attack vectors including tearing (interrupting write operations to exploit state inconsistencies).
 
 #### VB Migration Assistant *(by cyanic)*
-> Makes transferring characters with VB Lab less cumbersome VB Lab Migration Assistant for Flipper Zero This app is designed to make transferring your characters from VB Lab and VBC Lab more convenient.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Makes transferring characters between VB Lab and VBC Lab less cumbersome. Designed for Vital Bracelet (Digimon/other) virtual pet device users who need to move character data between apps.
 
 #### VK Thermo *(by VivoKey Technologies)*
-> Read temperature from your VivoKey Thermo via NFC. Multi-thermo tracking, history, and graph views.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> Read temperature from VivoKey Thermo NFC implants. Supports multi-thermo tracking for users with multiple temperature-sensing NFC implants. Displays readings from the implant's temperature sensor.
 
 #### Weebo *(by bettse)*
-> An NTAG215 parser, writer, emulator, remixer, duplicator A powerful Flipper Zero NTAG215 parser, writer, emulator, remixer, and duplicator, designed for enthusiasts who want to unlock the full potential of their NFC experience. google "key_retail.bin" and you should be able to find kt.
-
-**Usage:** Launch from the NFC/Apps menu. Hold a card or tag near the Flipper's back to read/interact.
+> NTAG215 power tool — parse, write, emulate, remix, and duplicate tags. The "remix" feature modifies the UID to create a new identity (useful for games that track tag UIDs). Prevents invalid UIDs. Place `key_retail.bin` in `apps_data/weebo/` for full features.
 
 </details>
 
-<details><summary><h3>📻 Sub-Ghz — 37 apps</h3></summary>
+<details><summary><h3>🔧 Tools — 98 apps</h3></summary>
 
-#### Chief Cooker *(by Denr01)*
-> A simple app Your ultimate Flipper Zero restaurant pager tool. Be a _real chief_ of all the restaurants on the food court! This app supports receiving, decoding, editing and sending restaurant pager signals. Developed & compatible with Momentum firmware.
+#### Access Audit *(by matthewkayne)*
+> Defensive NFC/RFID access control auditor. Tap a card, get an instant risk score and plain-English security advice. Classifies MIFARE Classic 1K/4K, DESFire EV1-EV3, MIFARE Plus, Ultralight C, NTAG series, FeliCa, SLIX, ST25TB, and 125 kHz RFID (EM4100, HID H10301). Saves named session reports to SD card. For authorized security professionals only.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Air Level *(by CodeAllNight (MrDerekJamison))*
+> Spirit level/bubble tool using the Video Game Module's motion sensor. Hold the Flipper flat and the on-screen bubble shows how level the surface is. Requires VGM attached.
 
-#### Chief Cooker *(by Denr01)*
-> This app supports receiving, decoding, editing and sending restaurant pager signals. Your ultimate Flipper Zero restaurant pager tool. Be a _real chief_ of all the restaurants on the food court! This app supports receiving, decoding, editing and sending restaurant pager signals.
+#### Analog Clock *(by scrolltex)*
+> Displays an analog clock face on the Flipper's screen. A simple, clean timepiece with hour and minute hands.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Authenticator (TOTP)
+> Software-based TOTP/HOTP authenticator — generates time-based one-time passwords for two-factor authentication. Add your accounts' secret keys, and the app generates the 6-digit codes that rotate every 30 seconds. Works like Google Authenticator but runs on your Flipper. Codes stored encrypted on SD card.
 
-#### ClayLoop *(by Bobby Gibbs)*
-> Clay pigeon/skeet shooting controller. Transmits Sub-GHz .sub files repeatedly with configurable delay, duration, interval, repeats (1-Inf), and 1-4 file groups. LED/beep countdown, vibration, mid-cancel, persistent settings/paths, reset combo.
+#### Barcode *(by @Kingal1337)*
+> Display various barcodes on screen. Supports UPC-A, EAN-8, EAN-13, Code-39, Codabar, and Code-128 formats. Create barcodes by entering the data, save them to SD card, and display them for scanning. Barcodes are stored in `apps_data/barcodes/`.
 
-**Usage:** Queue up to 4 .sub files and transmit them in sequence with configurable delay, duration, interval, and repeat count. Features LED/beep countdown, ... 2. Copy it to your Flipper Zero SD card at apps/Sub-GHz/clayloop.fap
+#### BG Loader *(by twisted-pear)*
+> Background app loader — allows compatible apps to be loaded and remain running in the background. Select a FAP file from the file browser and it continues running even after you navigate away. Useful for apps that need persistent background operation.
 
-#### Enhanced Sub-Ghz Chat *(by @twisted-pear & @xMasterX & more in ReadMe)*
-> Send text messages over Sub-GHz radio to another Flippers Enhanced Sub-GHz Chat This is a plugin for the Flipper Zero that reimplements the Sub-GHz chat feature that is available on the CLI. In addition it allows for basic
+#### Big Clock *(by Eris-Margeta)*
+> Full-screen bedside clock with large, easy-to-read digits visible from across the room. Adjustable brightness from 0-100% using Up/Down buttons. Designed for nightstand use.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### BlackJack Counter *(by grugnoymeme)*
+> Card counting assistant for blackjack. Track the running count during a game to practice card counting techniques. Simple increment/decrement interface.
 
-#### Flipper Share *(by @lomalkin)*
-> Direct file transfer between two Flipper Zeros via Sub-GHz radio. Send and receive files wirelessly without needing a computer or Bluetooth connection.
+#### Brainfuck *(by nymda)*
+> Brainfuck programming language interpreter and editor. Write and execute Brainfuck programs directly on the Flipper. Supports text input/output. Blue LED indicates program is running. An esoteric programming tool for the truly dedicated.
 
-**Usage:** Launch on both Flippers. One selects a file to send, the other waits to receive. Transfer happens over Sub-GHz radio — keep devices within range.
+#### Caesar Cipher *(by @panki27)*
+> Encrypt and decrypt text using the classic Caesar cipher (letter shift). Enter your text with the on-screen keyboard (use underscores for spaces), and the app shows all 26 possible shifts so you can find the right decryption. Simple but educational crypto tool.
 
-#### Frequency Analyzer w External *(by xMasterX)*
-> Cut from unleashed FW subghz app directly, with external module support (no path isolate, get random signals from space!)
+#### Calculator *(by @n-o-T-I-n-s-a-n-e)*
+> Simple expression calculator. Enter mathematical expressions and get results. Supports basic arithmetic operations. Use the d-pad to navigate the on-screen number pad and operators.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Calendar *(by Adiras)*
+> Monthly calendar view for the Flipper Zero. Navigate between months and years with the d-pad. See day-of-week for any date. Simple and practical.
 
-#### FRSScan *(by thecybermind)*
-> Scans common FRS and GMRS frequencies and plays them over the speaker so you can hear them. Press the center button to lock. Flipper Zero FRSScan Scans common FRS and GMRS frequencies and plays them over the speaker so you can hear them. Press the center button to lock.
+#### Calendar of Weeks
+> Weekly calendar view showing the current week plus previous and next weeks. Today's date is highlighted with inverted colors. Monday is the first day. Uses Zeller's congruence for accurate day-of-week calculation including leap years.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### CAN Tools *(by Matthew KuKanich)*
+> CAN bus DBC file management and data decoding tool. Create and save DBC-style signal definitions (name, CAN ID, bit layout, scaling, unit, min/max), view saved signals, and manually decode CAN frames against your signal database. Companion to CAN Commander for offline analysis work.
 
-#### Genie Door Recorder *(by jamisonderek)*
-> This application extracts the codes from a Genie garage door remote into a .GNE file. It also plays back a .GNE file to a Genie garage door opener.
+#### Chronometer *(by nmrr)*
+> Millisecond-accurate stopwatch using the STM32's TIM2 hardware timer at 64 MHz. Much more precise than software-based timers. Stops at 99:59:59. Start/stop/reset with button presses.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### CLI-GUI Bridge
+> Bridge between the Flipper's command-line interface and the GUI screen. Run CLI commands (like `subghz chat`, `log`, `top`) directly from the screen without a USB connection. Enter commands with the on-screen keyboard, view output on screen. Long-press Back to exit. Gives untethered access to system diagnostics and tools.
 
-#### HAM Scanner *(by Clawzman)*
-> HAM Scanner for Flipper 📡 Flipper Zero Ham Radio Scanner A lightweight SubGHz radio scanner, designed to behave like a scanner for common radio bands. 🆕 What’s New in v1.1
+#### Clock *(by Lambda)*
+> Simple clock display. Shows the current time on the Flipper's screen. Basic timekeeping.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Combo Cracker
+> Crack Master Lock combination padlocks in 8 attempts or less. Based on Samy Kamkar's research into mechanical vulnerabilities in Master Lock padlocks. The app guides you through a side-channel attack — apply tension to the shackle, observe dial behavior at specific positions, and the app calculates the combination from the feedback. A mechanical exploit, not brute force.
 
-#### Marmalade *(by RocketGod-git)*
-> Frequency and preset adjustable subghz radio frequency marmalade for Flipper Zero. Exercise Caution and Follow Your Local Laws! RF Marmalade App by RocketGod ☠️📡 This RF Marmalade App for the Flipper Zero, made by RocketGod, is a powerful tool for marmalade across multiple radio frequencies and.
+#### Count Down Timer *(by @0w0mewo)*
+> Simple countdown timer. Use Up/Down to set hours, minutes, and seconds. Left/Right to select which value to change. OK to start/stop the countdown. Long-press OK to reset. Beeps when the timer reaches zero.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Counter *(by @Krulknul)*
+> Simple increment/decrement counter. Press Up to add one, Down to subtract one. Long-press OK to enable vibration feedback on each count. Long-press Back to reset to zero. Useful for counting anything — people, items, reps, laps.
 
-#### Music to Sub-GHz Radio
-> Converts Flipper music files (.FMF and .TXT) into Sub-GHz files (.SUB). Music to Sub-GHz Radio The Music to Sub-GHz Radio application converts Flipper Music Files (.FMF) into a RAW .SUB file format that can be transmitted over the Sub-GHz radio! The Flipper Zero can receive the music and pla...
+#### Device Info
+> Displays detailed information about your Flipper Zero hardware and firmware — model, firmware version, build date, and other system details. Quick reference for your device specs.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Doc Viewer Lite *(by C0d3-5t3w)*
+> Lightweight text document viewer. Read .txt files stored on the SD card with page up/down navigation and line-by-line scrolling. Configurable font sizes (small, medium, large). Simple and efficient for reading notes or documentation on-device.
 
-#### OpenShock *(by OpenShock Team)*
-> Simple app to control shockers from your flipper OpenShock Flipper Zero A Flipper Zero application for controlling OpenShock compatible shockers over 433 MHz. - Transmit — send commands to any supported shocker by configuring model, ID, channel, command type, and intensity.
+#### DTMF Dolphin *(by @litui & @xMasterX)*
+> DTMF (Dual-Tone Multi-Frequency) dialer, Bluebox, and Redbox tone generator. Generates the tones used by telephone systems. The Dialer mode produces standard phone keypad tones. Bluebox mode generates the 2600 Hz tone and MF tones used in legacy phone switching. Redbox mode produces coin deposit tones (US/UK). Educational tool for learning about phone phreaking history.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Enigma *(by Struan Clark (xtruan))*
+> Enigma M3 cipher machine emulator. Simulates the WWII German Naval Enigma with three rotors and plugboard. Enter plaintext and watch it encrypt in real-time, or decrypt intercepted messages. Uses the enigma-machine library for accurate emulation. A fascinating piece of cryptographic history on your Flipper.
 
-#### POCSAG Pager *(by @xMasterX & @Shmuma)*
-> App can capture POCSAG 1200 messages on CC1101 supported frequencies. Flipper POCSAG Receiver plugin Protocol implementation made by @Shmuma + 512, 2400 speeds support by @htotoo Plugin based on Weather Station from OFW
+#### Eye Saver *(by paul-sopin)*
+> Eye strain prevention tool using the 20-20-20 rule. Runs a repeating 20-minute timer with haptic feedback. During the 20-second break, displays a reminder to look at something 20 feet away. Helps prevent eye fatigue during long screen sessions.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### F0 Forth *(by twisted-pear)*
+> Forth programming language interpreter for Flipper Zero. Adds a `forth` command to the CLI for an interactive Forth shell. Based on pForth. Write and execute Forth programs directly on the device. For programming enthusiasts.
 
-#### ProtoPirate
-> Decode car key fob signals from Sub-GHz _for Flipper Zero_ ⚠️ Warning: Important Security & Project Update Read message by following link below:
+#### Financial Calculator *(by schaene)*
+> Time Value of Money (TVM) calculator. Solve financial problems: future value, present value, payment amounts, interest rates, and number of periods. Enter your variables and the app calculates the missing one. Useful for quick financial calculations without a phone.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Flipfetch *(by Ismael A. Rodríguez)*
+> System information display (fastfetch-style). Shows firmware version, build date, battery percentage and voltage, and other Flipper system info in a clean summary screen.
 
-#### ProtoPirate *(by RocketGod-git)*
-> Decode car key fob signals from Sub-GHz _for Flipper Zero_ ⚠️ Warning: Important Security & Project Update Read message by following link below:
+#### FlipBIP Crypto Wallet *(by Struan Clark (xtruan))*
+> BIP32/39/44 cryptocurrency wallet for Flipper Zero. Generate and store crypto wallet keys using Trezor's crypto libraries. Supports BIP39 mnemonic seed phrases and BIP44 key derivation. WARNING: uses nearly maximum Flipper RAM — may crash on first launch, just try again. Not recommended for storing significant funds due to the device's security limitations.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### FlipCrypt *(by Tyl3rA)*
+> Encrypt, decrypt, and hash text using a wide variety of classic and modern crypto tools. Supports AES-128, Affine, Atbash, Baconian, Beaufort, Caesar, Playfair, Polybius Square, Porta, Rail Fence, RC4, ROT-13, Scytale, and Vigenère ciphers. Also includes hash functions. Can emulate results via NFC, generate QR codes, or save to .txt files.
 
-#### ProtoView *(by @antirez & (fixes by @xMasterX))*
-> Digital signal detection, visualization, editing and reply tool
+#### Flipper Aid *(by spaghety)*
+> Emergency response tool with pulse timer and CPR timer. Helps maintain proper CPR rhythm and timing during emergencies. A potentially life-saving utility.
 
-**Usage:** ProtoView is a digital signal detection, visualization, editing and reply tool for the Flipper Zero. The Flipper default application, called Subghz... !ProtoView screenshot raw signal
+#### Flipper Printer *(by alxcrt)*
+> Thermal printer app for the T7-US printer module connected via GPIO. Print custom text entered via on-screen keyboard. Also includes a coin flip game with statistics tracking that can print results.
 
-#### Radio Scanner *(by @RocketGod-git)*
-> Scanner for Flipper Flipper-Zero-Radio-Scanner Scans frequencies available to the CC1101 and plays them over the speaker so you can hear them. - Does NOT play "FM radio stations" since those frequencies are not available.
+#### Flipper Wedge *(by Dangerous Things)*
+> Type RFID/NFC UIDs as keyboard input via USB or Bluetooth. Scan any RFID (125 kHz: EM4100, HID Prox, Indala) or NFC (13.56 MHz: ISO14443A/B, MIFARE, NTAG) tag, and the Kiisu instantly types the UID as if it were a keyboard. Supports 5 scan modes and NDEF text record parsing. Perfect for inventory systems, attendance tracking, or any workflow that needs tag data typed into a computer.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Flipper95 *(by Silent / CookiePLMonster)*
+> Stress test your Flipper by finding Mersenne primes using the Lucas-Lehmer Test — like Prime95 for desktop PCs. Starts from M2 by default. Watch your Flipper crunch heavy math. Can be controlled via CLI to start from higher Mersenne numbers.
 
-#### Remote for CaiXianlin *(by Anty)*
-> Remote control for CaiXianlin shock collar via Sub-GHz radio CaiXianlin Shock Collar Remote for Flipper Zero A Flipper Zero application to control CaiXianlin shock collar. WARNING: This application is intended for educational and research purposes only.
+#### FlipperPwn *(by PentestSuite & barkandbite)*
+> Modular pentest payload framework with OS detection and WiFi Dev Board support. A toolkit for security testing workflows.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### FlipperZero Clock *(by mdaskalov)*
+> Customizable clock with multiple display modes. Toggle between split-view (clock + date + weekday) and full-screen mode with OK. Choose from multiple clock faces including analog styles. Adjust digit width with Left/Right. Settings saved to config file and persist between launches.
 
-#### Restaurant Pager *(by leedave)*
-> This app triggers restaurant pagers in a brute force manner, useful to test if devices are still functional. Flipper Zero Meal Pager Tool This app triggers restaurant pagers in a brute force manner, useful to test if devices are still functional. Supported Pagers
+#### FlipNote *(by morty517)*
+> Real text editor for Flipper Zero — open, edit, save, and create text files with a full on-screen keyboard. Supports Open/Save/Save As with Momentum's native file picker. Proves that 5 buttons and a 128×64 screen are enough for text editing.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### FlipPar *(by jsammarco)*
+> Golf and disc golf scorecard tracker. Set number of holes (up to 27) and players (up to 10), rename players, record par and scores hole-by-hole. Export a plain-text score sheet to SD card. Perfect for the course.
 
-#### Rolling Flaws
-> Rolling code receiver (version 1.5), used to learn about rolling code flaws. Watch video at https://youtu.be/gMnGuDC9EQo Rolling Flaws (version 1.5) by @CodeAllNight.
+#### Ford Radio Codes *(by DavidB)*
+> Ford radio unlock code generator. Enter the radio's M or V series serial number using Up/Down buttons and instantly get the 4-digit unlock code. Requires the `radiocodes.bin` file on SD card. Saves a trip to the dealer.
 
-**Usage:** YouTube demo of using Rolling Flaws application. The video shows how to use the application to simulate a receiver that has a Replay attack flaw, ... - Discord invite: https://discord.com/invite/NsjCvqwPAd
+#### GnomishTool *(by Andreeved88)*
+> Multi-tool with ruler (3cm with 0.25mm divisions, plus inch marks), pulse counter with X5 repeater, and other utility functions. A Swiss army knife of measurement tools themed as a "Gnomish army knife from Gnomeregan."
 
-#### RS41 Tracker *(by OK1CHP / yeckel)*
-> RS41 radiosonde receiver & decoder RS41 Tracker — Flipper Zero external app Receives and decodes Vaisala RS41 radiosondes using the Flipper Zero's built-in CC1101 sub-GHz radio — or an external CC1101 module on the GPIO header.
+#### HEX Editor *(by @dunaevai135)*
+> Edit any file on the SD card in hexadecimal, byte by byte. Navigate to a file, view its hex dump, and modify individual bytes with OK. Useful for editing NFC dump files, tweaking saved Sub-GHz captures, or modifying any binary file without a computer. Save changes back to the file when done.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### HEX Viewer *(by @QtRoS)*
+> View any file on the SD card as a hex dump. Efficiently handles files up to 16MB. Can switch between hex and text representation of bytes. Has a "Scroll to..." feature to jump to any percentage of the file. Very efficient rendering — only 8 canvas draw calls per repaint.
 
-#### ShapShup *(by derskythe)*
-> A simple application for viewing SubGhz RAW files in the form of a signal level as it is shows in SubGHz RAW read mode. ShapShup App for Flipper Zero A simple application for viewing SubGhz RAW files in the form of a signal level as it is shows in SubGHz RAW read mode.
+#### HyperFocus Calc *(by Endika)*
+> Hyperfocal distance calculator for photographers. Enter focal length (mm) and aperture (full-stop sequence), select your sensor size, and get the hyperfocal distance. Circle of confusion auto-calculated from sensor dimensions. Useful for landscape photography where you want maximum depth of field.
 
-**Usage:** Also you can walk through the file with forward and backward buttons
+#### IconEdit *(by Roberto De Feo)*
+> Full icon and animation editor directly on the Flipper. Create images up to 128×64 pixels with pixel-level editing. Draw lines, circles, and rectangles. Create animated icons with configurable frame rates. Save as PNG, .C source code, or XBM format. Send images to your PC without swapping the SD card. Dramatically improves the app development workflow for creating custom icons.
 
-#### Spectrum Analyzer *(by @xMasterX & @theY4Kman & @ALEEF02 (original by @jolcese))*
-> Displays a spectrogram chart to visually represent RF signals around you. This application allows you to plot a chart showing the relationship between amplitude and frequency, detecting nearby signal sources. If there is a nearby source broadcasting a signal at the.
+#### ID Card *(by evillero)*
+> Personal ID card manager. Store and display your name, phone number, address, and notes. Data saved to `id.txt` on the device. Quick way to share your contact info by showing the Flipper's screen.
 
-**Usage:** The app has the following controls: - The OK button adjusts the width of the spectrum.
+#### Key Copier *(by Torron)*
+> Physical key measurement and duplication guide. Place a real key on top of the Flipper's screen, align it with the on-screen contour, and adjust each pin's depth until they match visually. The app displays the bitting code you can take to a locksmith. Supports dozens of key formats including house keys, car keys, and double-sided keys.
 
-#### Sub Analyzer *(by RocketGod)*
-> Analyze SubGhz .sub files to extract all signal properties Flipper Zero SUB Analyzer Extract as much signal data from a Flipper Zero .sub file as possible
+#### LED Blinker *(by Cupprum)*
+> Blinks the Flipper's LED with decreasing frequency over time. Unlike traditional Pomodoro timers, provides visual feedback through LED blinks that gradually slow down. Configurable parameters. A unique approach to time awareness.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### LED Pulsator *(by Leed)*
+> LED light control proof-of-concept. Demonstrates advanced LED capabilities beyond the basic on/off that the standard firmware offers. Pulsing, fading, and color effects.
 
-#### Sub Duplicate Finder *(by Endika)*
-> Identify and clean up duplicate .sub files in storage Sub-GHz Duplicate Finder for Flipper Zero An application for Flipper Zero to identify, manage, and clean up duplicate .sub files from Sub-GHz storage. Development Setup
+#### Letter Beacon *(by nmrr)*
+> Morse code beacon using RFID (125 kHz) and NFC (13.56 MHz) interfaces. Transmits letters, numbers, and symbols in Morse code via the Flipper's radio interfaces. Like Russia's HF letter beacons, but pocket-sized. Supports full alphabet A-Z, digits 0-9, and symbols.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Lightning Distance *(by HyperMuffin12)*
+> Calculate the distance of a lightning strike. Start the timer when you see the flash, stop when you hear thunder. The app calculates the distance based on the speed of sound. Simple physics made practical during storms.
 
-#### Sub-GHz Bruteforcer
-> SubGHz BruteForcer Application for Flipper Zero SubGhz BruteForcer from Unleashed Firmware This software is for experimental purposes only and is not meant for any illegal activity/purposes.
+#### Lishi *(by evillero)*
+> Save values obtained from the Lishi lock decoding tool. Input pin depth values from the decoding process, store them for reference. Supports various Lishi key types. A digital notebook for locksmiths using Lishi tools.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### ListEM *(by Clawzman)*
+> UID dictionary generator for RFID, NFC, and iButton protocols — directly on the Flipper. Generate large customizable UID lists for testing readers. Includes a Fuzzing Mode with bit mutation engine for reader security testing. Previously required Python scripts on a PC; now runs natively on-device.
 
-#### Sub-GHz Jammer Detect *(by PentestSuite / barkandbite)*
-> Detects sustained RF carrier waves indicating SubGHz jamming attacks
+#### Math Wiz *(by Papa_Ghost)*
+> Polynomial solver up to 6th degree. Evaluate polynomials for any x value, calculate derivatives and integrals, and visualize results on screen. A pocket math tool for students and engineers.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Moon Phases *(by w84death)*
+> Displays the current phase of the moon with a visual representation. Shows illumination percentage and additional lunar information. Know whether it's a full moon, new moon, or anything in between.
 
-#### Sub-GHz Playlist *(by @darmiel)*
-> App works with list of sub-ghz files from .txt file that contains paths to target files.
+#### Multi Converter *(by @theisolinearchip)*
+> Multi-unit converter with an expandable system for adding new units. Convert between various measurement systems — length, weight, temperature, and more. Practical for quick conversions without a phone.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Multi Timer *(by C0d3-5t3w)*
+> Run up to 10 simultaneous timers with preset quick options (1, 5, 10, 15, 20, 30 minutes, and 1 hour). Perfect for cooking multiple dishes, workout intervals, or productivity sessions. Features a charming dolphin mascot.
 
-#### Sub-GHz Playlist Creator *(by coolerUA)*
-> App for creating or editing SubGhz playlists SubGhz Playlist Creator A Flipper Zero application for creating and managing playlists of .sub files. - Create new playlists
+#### NFC/RFID Detector *(by SkorP)*
+> Identify whether a reader is NFC (13.56 MHz), RFID (125 kHz), or both. Hold the Kiisu near an unknown reader and the app tells you what frequency it operates on. Useful for determining what type of card or tag a reader expects before trying to interact with it. Simple one-screen display.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Nickname Generator *(by disaxq)*
+> Random name generator. Press Left/Right to change the subject/style of names generated. Creates unique nicknames on the fly. Fun for coming up with usernames, character names, or project codenames.
 
-#### Sub-GHz Playlist Creator *(by coolerUA)*
-> App for creating or editing SubGhz playlists SubGhz Playlist Creator A Flipper Zero application for creating and managing playlists of .sub files. - Create new playlists
+#### Nightstand Clock *(by @nymda & @Willy-JL)*
+> Clock optimized for bedside use at night. Backlight stays on constantly (unlike the normal clock). Control brightness with Up/Down — at 0 brightness, press Down to toggle a dim red notification LED. Date and AM/PM positions are swapped for better nighttime readability.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Notes for FZ
+> Simple note-taking app. Write and save text notes to the SD card. Work in progress.
 
-#### Sub-GHz Remote *(by gid9798 xMasterX)*
-> SubGhz Remote, uses up to 5 .sub files
+#### Orgasmotron *(by Leedave)*
+> Vibration motor demo with multiple vibration patterns and modes. Demonstrates the Flipper's haptic capabilities beyond the basic on/off. A proof-of-concept for creative vibration motor usage.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Paranoia *(by C0d3-5t3w)*
+> Anti-surveillance field tool that scans for hidden wireless cameras and suspicious RF activity. Designed for privacy-conscious users who want to check hotel rooms, Airbnbs, or other spaces for covert recording devices.
 
-#### Sub-GHz Scheduler *(by Patrick Edwards)*
-> Send a Sub-GHz signal repeatedly at a given interval. SubGHz Scheduler A Flipper Zero app to send SubGHz signals at a given interval. Individual .sub or playlist .txt files can be used. Schedule intervals selectable:
+#### Password Generator *(by @anakod & @henrygab)*
+> Generate random passwords of configurable length. Press OK to generate a new random password. The generated password is displayed on screen. Simple and quick — no internet connection needed. Useful when you need a random password and don't have your phone handy.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Password Manager *(by Rrycbarm)*
+> Store usernames and passwords on the Flipper and type them on your PC via USB keyboard emulation. Add credentials (website, username, password), then select an entry and the Flipper types it as if it were a keyboard. A hardware password manager.
 
-#### Sub-GHz Spectrum *(by PentestSuite & barkandbite)*
-> Real-time Sub-GHz spectrum analyzer with waterfall display SubGHz Spectrum ____ _ ____ _ / ___\| _ _\| \|__ / ___\|\| \|__ ____
+#### Pet a Dolphin *(by EugeneSmile)*
+> Reset your Flipper's dolphin companion mood to happy. A quick way to cheer up your digital pet without waiting for the mood to improve naturally.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Pet Your Dolphin *(by dwight9339)*
+> Interactive dolphin petting app. Pet your Flipper's dolphin companion to soothe it while earning XP. A more engaging way to interact with your digital pet.
 
-#### SubGhz Toolkit *(by RocketGod)*
-> Extract SubGhz protocol implementation details and decrypt KeeLoq keys RocketGod's SubGHz Toolkit Reverse engineer Flipper Zero SubGHz protocols and Keeloq Manufacturer Codes
+#### Pomodoro Timer *(by sbrin)*
+> Pomodoro technique timer based on Francesco Cirillo's time management method. Work intervals (typically 25 minutes) separated by short breaks. Multiple timer presets available. Helps maintain focus and productivity.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Flipp Pomodoro
+> Alternative Pomodoro timer implementation with a clean interface. Work/break cycle timer for productivity.
 
-#### TPMS Reader *(by wosk)*
-> Reads Tire Pressure Monitoring System (TPMS) sensors wirelessly. Displays tire pressure and temperature data from nearby vehicles' TPMS sensors using Sub-GHz radio.
+#### Programmer Calculator *(by armixz)*
+> Hex/decimal/binary/octal converter for programmers. Enter a number in any base and instantly see it converted to all other bases. Supports decimal↔binary, decimal↔hex, hex↔binary, and decimal↔character conversions. Essential for embedded development and protocol analysis.
 
-**Usage:** Launch from Sub-GHz menu. Walk near vehicles to pick up TPMS signals. The app decodes and displays pressure/temperature readings from detected sensors.
+#### QR Code *(by Bob Matcuk)*
+> Display QR codes on the Flipper's screen. Create .qrcode text files in the `qrcodes/` folder on SD card — each file contains the QR data. The app renders the QR code on the 128×64 screen for scanning with a phone camera. Useful for sharing URLs, WiFi credentials, contact info, or any text data.
 
-#### TPMS Reader *(by @wosk)*
-> Use SubGHz and RFID to read or activate TPMS sensors
+#### QRCode Generator *(by Thomas Schwarz (aka qw3rtty))*
+> Generate QR codes on-device from text input. Type your text using the on-screen keyboard and the app creates and displays the QR code immediately. No pre-made files needed — generate on the fly.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Quac! *(by Roberto De Feo)*
+> Quick Action remote control — organize previously recorded signals of ANY type (Sub-GHz, RFID, Infrared, NFC, iButton) into a folder structure for instant one-press playback. No more remembering whether a door uses Sub-GHz or RFID — just navigate to the action and press OK. The app doesn't record signals — use the built-in apps first, then organize the saved files for Quac!
 
-#### Weather Station
-> Receive weather data from a wide range of supported Sub-1GHz remote sensor
+#### Quadratic Solver *(by paul-sopin)*
+> Solve quadratic equations in the form ax² + bx + c = 0. Enter a, b, and c values and get the solutions. Quick math tool for students.
 
-**Usage:** Launch from the Sub-GHz/Apps menu. Use d-pad to navigate options and OK to select/capture.
+#### Reality Clock *(by Eris-Margeta)*
+> Dimensional stability monitor using multi-band electromagnetic ratio analysis via the CC1101 radio. Based on the theoretical framework that changes in fundamental physical constants would alter signal propagation ratios across frequencies. Part clock, part physics experiment, part conversation starter.
+
+#### Resistance Calculator *(by Lewis Westbury)*
+> Calculate resistance from colored bands on physical resistors. Pick from 3, 4, 5, or 6 band resistors. Use Left/Right to move between bands, Up/Down to change colors. Resistance, tolerance, and temperature coefficient update instantly. Much faster than looking up color codes on your phone.
+
+#### Roman Decoder
+> Convert Roman numerals to decimal values. Interactive input — use buttons to navigate through Roman characters (I, V, X, L, C, D, M). Real-time conversion as you enter characters.
+
+#### ROT13 *(by nothingbutlucas)*
+> Simple ROT13 cipher tool. Enter text and get the ROT13-encoded version. Since ROT13 is its own inverse, the same operation decodes it. Quick and simple text obfuscation.
+
+#### Rubiks Cube Timer *(by KHOPAN)*
+> Speedcubing timer for Rubik's cube solvers. Time your solves with precision. Track your progress and personal bests. Essential for the cubing community.
+
+#### SD Info *(by sergo)*
+> Display detailed information about the inserted SD card — capacity, free space, filesystem type, and card status. Can also run a performance test. Quick diagnostic for SD card health.
+
+#### Segment Clock *(by Sladkisnovraper)*
+> Simple seven-segment style clock display. Press Up to toggle between 12-hour and 24-hour mode. Clean, retro aesthetic.
+
+#### Sig Diary *(by C0d3-5t3w)*
+> Passive background signal scanner that logs and annotates IR, RF, and NFC signals. Automatically identifies common signals (garage doors, remote controls, access cards) based on fingerprinting. Maintains a timestamped log. Perfect for hobbyist recon or daily security audits.
+
+#### SKIDcity *(by H4W9)*
+> Educational app that explains what the Flipper Zero actually can and cannot do. Addresses common misconceptions from TikTok and Discord — no, it can't hack traffic lights, clone any card, or steal car keys. Explains why, with real technical details. Genuinely helpful for new Flipper owners.
+
+#### Smartra VIN2PIN *(by evillero)*
+> Calculator for SMARTRA2 immobilizer PINs for Hyundai and KIA vehicles. Enter the VIN and get the PIN. Press OK to save the result. Supports most Hyundai/KIA models using SMARTRA2.
+
+#### Space Travel Calculator *(by ejfox)*
+> KSP-style interplanetary transfer planner. Select a destination (Mars, Venus, Jupiter, Europa, Titan, etc.), scroll through launch dates, and see Hohmann transfer orbits drawn on screen. Outputs delta-v requirements and transfer times. For space enthusiasts and KSP players.
+
+#### Spindle Calculator *(by Jordan M)*
+> Trade tool for carpenters — calculate spindle counts and spacings for balustrades. Enter length and spindle size, get the number of spindles that fit within the 99mm building regulation gap limit, plus exact spacing. Uses IMU for stair angle measurement. A real job-site tool.
+
+#### Tasks *(by Stanislav Vasilev(Madman10K))*
+> Simple to-do list application. Add tasks, mark them complete, and delete them. Tasks persist on the SD card between sessions. Navigate with d-pad, OK to toggle completion, and use the menu to add or remove items.
+
+#### TECHART Calendar
+> Monthly calendar with intuitive navigation. Left/Right to change months, Up/Down for years. Displays days of the month in a clean grid layout.
+
+#### Text Viewer *(by @Willy-JL)*
+> View text files on the Flipper's screen. Browse to any .txt file on the SD card and read it line by line. Scroll with Up/Down. Useful for reading notes, documentation, or log files stored on the SD card without connecting to a computer.
+
+#### Time Dilation Calculator *(by ejfox)*
+> Special relativity calculator. Set a velocity (fraction of the speed of light) and a duration, see how much time passes for you versus an observer on Earth. Auto-scales units from seconds to years. For physics enthusiasts and sci-fi fans.
+
+#### Time Tracker *(by MassivDash (hhtps://spaceout.pl))*
+> Multi-task time tracker. Track multiple tasks simultaneously with start/stop/resume. Data stored in CSV format for easy export to Excel. Tasks continue tracking in the background or even when the device is off. Perfect for freelancers tracking billable hours.
+
+#### Timer *(by nagamine-git)*
+> Pomodoro-style timer with 30 minutes of break and 20 minutes of work intervals. Simple start/stop interface.
+
+#### Tone Generator *(by Gerald McAlister)*
+> Generate sound tones through the Flipper's speaker. Select frequency and the Flipper plays a continuous tone. Useful for audio testing, signal generation, or just making noise.
+
+#### Tree Identification *(by fgreil)*
+> Identify trees by answering questions about leaf shapes. A guided decision tree that narrows down the species based on your observations. Educational botany tool.
+
+#### Type Aid
+> Predictive text keyboard with word suggestions. Type faster with auto-complete suggestions as you enter text. Compare with the standard Flipper keyboard to see the difference.
+
+#### uPython *(by Oliver Fabel)*
+> Compile and execute MicroPython scripts directly on the Flipper. Includes a full Python REPL (interactive prompt) and can run .py script files from the SD card. Requires ~80KB of RAM to start — may crash on first launch due to memory fragmentation, just try again. Access Flipper hardware APIs from Python for rapid prototyping.
+
+#### VIN Decoder *(by evillero)*
+> Vehicle Identification Number decoder. Enter a VIN and get information about the vehicle — manufacturer, model year, country of origin, and more. Decode any 17-character VIN on the spot.
+
+#### Voltage Calculator *(by HappyAmos)*
+> Calculate voltage, resistance, or current using Ohm's Law (V = R × I). Enter any two values and the app calculates the third. Use underscore character for decimal points (Flipper keyboard limitation). Simple but handy for quick electrical calculations in the field.
+
+#### Voyah Password *(by bolknote)*
+> Engineering menu password generator for Voyah vehicles. The password depends on the current date calculated in the Chinese time zone. Set your time zone after launching, enter the date, and get the password.
 
 </details>
 
-<details><summary><h3>⚡ Gpio — 87 apps</h3></summary>
+<details><summary><h3>⚡ Gpio — 82 apps</h3></summary>
 
 #### 24Cxx Programmer *(by Dr.Mosfet)*
-> EEPROM 24Cxx programmer via I2C with read, write, erase and dump/restore options. 🔧 24cxxprog - EEPROM 24Cxx Programmer A Comprehensive EEPROM Programmer for Flipper Zero Menu główne z operacjami (Odczyt, Zapis, Kasowanie)
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [A33] Flipper Blackhat *(by machinehum)*
-> Control of the flipper blackhat device The Flipper Blackhat app is used to control the blackhat.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [BMI/LSM] Air Mouse
-> — Piper, a.k.a. Pez Naturally, the quote above applies to Flipper as well. The app allows you to turn your Flipper into a USB or Bluetooth air mouse (you do need an extra module, see the Hardware section below)...
-
-**Usage:** Hold the Flipper in your hand with the buttons pointing towards the screen;
-
-#### [CAN] CAN Commander
-> GPIO-based tool that interfaces with external hardware modules.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [DIAG] GPIO Badge
-> This is an app for the GPIO DIAGNOSTICS BOARD FOR FLIPPER ZERO by MakeItHackin.
-
-**Usage:** - Left/Right buttons to change speed of the effect. - Up/Down buttons to change effect.
-
-#### [GB] Pokemon Trading *(by Kris Bahnsen, Esteban Fuentealba, ProteanReverie, Darryn Cull)*
-> Pokemon exchange from Flipper Zero to Game Boy, supports Generation I & II non-Japanese games Pokemon Trade Tool for Flipper Watch it in Action The video below trades a Bulbasaur from the Flipper to a Game Boy Color with Pokemon Silver. The Game Boy trades its Cyndaquil.
-
-**Usage:** - Instructions for Use - Customizing Pokemon
-
-#### [GPIO] 7-Segment Output *(by jamisonderek)*
-> Control a 7-segment display with GPIO pins GPIO 7-Segment Output This is a GPIO push-pull output demo application for driving a 7-segment display on the Flipper Zero. The goal of this project is to show application developers how GPIO works for push-pull output...
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [GPIO] Controller
-> gpio_controller A visual tool to control the general purpose pins of the Flipper Zero
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [GPIO] Explorer *(by dun-crop)*
-> The most complete app to start exploring the GPIO functionalities Just run the app and start exploring. It has: - Digital rgb led, for which you must have digital rgb led and at least 3 100 Ohm resisters or greater or the led might brown out.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [GPIO] Longwave Clock *(by @m7i-org)*
-> Decode or demonstrate long wave time signals This is a Flipper Zero app to receive and decode, or simulate, multiple time signal broadcasts with different protocols and time formats. For receiving via GPIO, an inexpensive receiver connected t... Protocol support DCF77 (Europe, Germany)
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [GPIO] Oscilloscope *(by anfractuosity)*
-> Oscilloscope application - apply signal to pin 16/PC0, with a voltage ranging from 0V to 2.5V and ground to pin 18/GND To compile and install Alternatively the binary can now be installed from https://lab.flipper.net/apps/flipperscope or the Flipper Mobile App.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [GPIO] Reader (aureli1c) *(by @aureli1c)*
-> Read GPIO pins states, and display them on the screen flipperzero_GPIO_read Plugin to read the GPIOs on the Flipper Zero.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [GPIO] Reader (biotinker)
-> flipperzero-gpioreader This is a fork of the gpio app built into the flipper, with added functionality to read GPIO inputs. Supports pulling high or low.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [GPIO] RGB LED
-> A simple application to control RGB LED's (WS2812, etc) via GPIO
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [GPIO] Sentry Safe *(by @H4ckd4ddy)*
-> App exploiting vulnerability to open any Sentry Safe and Master Lock electronic safes without pin code. Sentry Safe - Flipper Zero Plugin Plugin exploiting vulnerability to open any Sentry Safe or Master Lock electronic safes. 🔓 Based on the vulnerability described here
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [GPIO] Signal Generator
-> Control GPIO pins to generate digital signals
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [GPIO] Timelapse *(by Aurelius Rosenbaum)*
-> Simple intervalometer/timelapse app english version below Blog post: theageoflove.ru TG: t.me/scuko_bled
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [GPIO] Wire Tester *(by @unixispower)*
-> Beeps if a wire is continuous Flipper Wire Tester This is a simple Flipper Zero app that beeps if a wire is continuous. favorite firmware. Run ./fbt launch APPSRC=applications_user/wire_tester to
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [KT0803] FM Transmitter
-> flipperzero-kt0803-transmitter Use KT0803-type chips to transmit signal from module AUX port FM Transmitters are illegal if they are too powerful. Use in well-shielded environment or do not use it for too long.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [LED] Flashlight *(by @xMasterX)*
-> Enables 3.3v on pin 7/C3 when you press Ok and leaves it on when you exit app Simple Flashlight special for @Svaarich by @xMasterX Icon by @Svaarich Connection diagram picture by @Kuronons
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [MAG] MagSpoof *(by Zachary Weiss)*
-> Enables wireless transmission of magstripe data MagSpoof for the Flipper Zero MagSpoof-ing, as coined / invented by Samy Kamkar, is the use of an electromagnet to emulate the data on a traditional magstripe card — wirelessly!
-
-**Usage:** This app ports the original MagSpoof project to the Flipper Zero, adding file management and emulation controls, along with some experimental featu... The GPIO module is a simple electromagnet consisting of an H-bridge, a capacitor, and a coil. One can build the pictured circuit, or purchase a Mag...
-
-#### [Mx2125] Step Counter *(by 47lecoste a.k.a. grugnoymeme)*
-> Step Counter/Pedometer using Memsic2125 module. Flipperzero-StepCounter-fap This is a simple StepCounter/Pedometer for FlipperZero using a Memsic2125 module. !Main menu view
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [RC2014] ColecoVision
-> RC2014 ColecoVision Controller for Flipper Zero A Flipper Zero application and [RC2014] module allowing the Flipper to be used as a controller for ColecoVision games on Running ColecoVision Games on the RC2014
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [SPI] Terminal *(by Jan Wiesemann)*
-> A Terminal Application for the SPI interface
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [TEA5767] FM Radio *(by coolshrimp)*
-> FM Radio App FM Radio - Flipper Zero Application for flipperzero device to control radio boards. Supported boards
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [UART] UART Terminal *(by @cool4uma & @rnadyrshin & (some fixes by @xMasterX))*
-> Control various devices via the Flipper Zero UART interface. UART Terminal for Flipper Zero Flipper Zero app to control various devices via UART interface. - Reading from UART in text or hex mode
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [WII] EC Analyser *(by BlueChip)*
-> Wii Extension Controller Protocol Analyser [FlipperZero] Wii Extension Controller Protocol Analyser This Protocol Analyser offers a full Test and Calibrate system for Wii Extension Controllers.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> EEPROM programmer for 24Cxx series chips via I2C. Read and write data to common I2C EEPROMs. Connect the chip to the Flipper's I2C pins and use the app to dump or program contents.
 
 #### Air Stats *(by thevan4)*
-> CO2 + temperature/humidity/pressure monitor CO2 + climate monitor for Flipper Zero. Reads CO2 (MH-Z19B/C) and temperature/humidity/pressure (BME280, DHT22, etc.) through GPIO. Two sensors at once. Supported (not tested) Inherited from unitemp. Should work — report issues if not.
+> CO2 + climate monitor. Reads CO2 (MH-Z19B/C) and temperature/humidity/pressure (BME280, DHT22, etc.) through GPIO. Supports two sensors simultaneously. Inherited from the Unitemp project.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### Air Mouse
+> Turn Flipper into a wireless air mouse using BMI160 or LSM6DS3 motion sensor. Wave in the air to move cursor. USB or Bluetooth modes. Up=left click, Down=right click, OK=middle click, Left/Right=scroll.
 
 #### Analog Output *(by jamisonderek)*
-> Analog output demo. Uses MCP4725 on I2C. Uses pin A7 PWM with 10uf cap+10K resistor. Input on pin C3
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> DAC demo using MCP4725 on I2C and PWM on pin A7 with RC filter. Input on pin C3. Demonstrates analog output capabilities.
 
 #### Atari SIO Emulator *(by cepetr)*
-> Atari 8-bit computer SIO peripheral emulator Atari SIO Peripheral Emulator for Flipper Zero
-
-**Usage:** sio2flip is a Flipper Zero application that emulates SIO peripherals for Atari 8-bit computers. The project is still in its early stages, but it al... - Floppy drive emulation
+> Atari 8-bit computer SIO peripheral emulator. Connect the Flipper to an Atari via SIO and emulate disk drives or other peripherals.
 
 #### Battery Checker *(by Programistich)*
-> Simple App for check battery voltage ADC for Flipper with a reference voltage of 2.5V Suitable for measuring battery voltage up to 2.5V Using an external divider it is possible to change the measuring range
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Simple battery voltage checker. Read voltage from a battery connected to GPIO. Quick field measurement tool.
 
 #### BunnyConnect *(by C0d3-5t3w)*
-> USB serial communication tool A Flipper Zero application named after the desire to connct to a BashBunny, that bridges serial communication with USB HID keyboard functionality, enabling seamless text input and command execution...
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> USB serial communication tool. Send and receive data over USB serial. Useful for communicating with microcontrollers and other serial devices.
 
 #### C5 Lab *(by Lab_Team)*
-> WiFi Deauther controller for Lab_C5 module via UART Flipper Companion App The Flipper Zero companion app (Lab_C5.fap) mirrors the ESP32-C5 CLI workflows (scan, results, attacks, wardrive, Sniffer Dog, portal control) so you can steer the board from the handheld UI.
+> WiFi Deauther controller for Lab_C5 module via UART. Control a C5 WiFi module from the Flipper's screen.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### CAN Commander
+> Full CAN bus reverse engineering toolkit. Sniff live frames, inject custom messages, analyze traffic, track bit-level changes. Import DBC files for human-readable signal names. Create injection profiles. 20KB stack — the largest app.
 
-#### CAN Transceiver [MCP2515] *(by Chainmanner)*
-> This application allows a Flipper Zero to use an MCP2515 CAN transceiver to send and receive messages on a standard CAN bus. That includes those found in vehicles.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### CAN Transceiver (MCP2515)
+> CAN bus interface using MCP2515 transceiver. Send and receive messages on standard CAN bus including vehicle networks. Sniffing and injection capabilities.
 
 #### CANBUS *(by ElectronicCats)*
-> This app allows you to interact with CAN Bus networks. Now you can interact with CAN Bus transmissions using the Flipper Zero.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> CAN bus interaction app. Sniff and inject CAN bus transmissions. Basic tasks for interacting with vehicle and industrial CAN networks.
 
 #### CANBUS ATTACK *(by jorgepnaranjo25)*
-> Flipper Zero application for performing basic security testing on CAN Bus networks. It was developed as part of a university cybersecurity research project and is intended for educational and ethical use only.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> CAN bus security testing tool for educational/research purposes. Developed as part of a university cybersecurity research project. For authorized testing only.
 
 #### Canon Intervalometer *(by TravisCG)*
-> Canon intervalometer for Flipper Zero. Flipper Zero intervalometer + 2 LTV4N35 octocopuler + 2 220 Ohm resistor
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Camera intervalometer for Canon DSLRs via GPIO. Set interval and the Flipper triggers the shutter repeatedly for time-lapse photography.
 
 #### Coffee EEPROM *(by wh00hw)*
-> Allows you to pentest certain vending machine Coffee-EEPROM-FAP - Vendors Still Allow You to Hack Their Vending Machine - Read credit on load
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Vending machine EEPROM pentesting tool. Read and write EEPROM data from certain vending machines for security research.
 
 #### Continuity Tester *(by Ben Allen)*
-> flipper-zero-apps A collection of applications I made for Flipper Zero
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Simple continuity tester — beeps if a wire is connected between test pins. No menus, no configuration. Touch both ends of a wire to the pins and listen for the beep.
 
 #### DelfiRTL *(by gorebrau)*
-> This project utilizes the RTL8720DN WiFi module in combination with the Flipper Zero to perform various WiFi penetration testing attacks on 2.4GHz and 5GHz networks.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> WiFi penetration testing using RTL8720DN module. Perform attacks on 2.4GHz and 5GHz networks. Requires RTL8720DN hardware connected via GPIO.
 
 #### Digimon F-Com *(by TylerWilley)*
-> A Flipper Zero app that allows the flipper to communicate with Digimon V-Pets. Currently tested: DM20, DMX, PenZ, DMC unsupported Flipper Zero F-Com A Flipper Zero app that allows the flipper to communicate with Digimon V-Pets. Currently tested devices:
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Communicate with Digimon V-Pet devices. Tested with DM20. Connect the Flipper to a Digimon virtual pet and exchange data.
 
 #### E220 LoRa Configurator *(by crackerjacques)*
-> E220-900T22S(JP), a configurator for LoRa modules used only in Japan. Flipper Zero E220 LoraModule Configurator E220-900T22S(JP), a configurator for LoRa modules used only in Japan. I hope to support other modules in due course.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Configure E220-900T22S LoRa modules. Set parameters like frequency, power, and data rate for the E220 series LoRa radio modules.
 
 #### Encoder Reader *(by Engineegor)*
-> This is a simple app for flipper that can read incremental quadrature encoders that show absolute and relative coordinate. This is a simple app for flipper that can read incremental quadrature encoders and show absolute and relative coordinate. Configutarion menu - Start: run reader
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Read incremental quadrature encoders. Shows absolute and relative coordinates. Connect an encoder to GPIO pins and see position data in real-time.
 
 #### Evil BW16 Controller *(by dagnazty)*
-> WiFi Deauther controller for Evil-BW16 module via UART Evil BW16 Controller - Flipper Zero App A Flipper Zero application for controlling the Evil-BW16 WiFi deauther module via UART. Category: GPIO/UART Applications
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> WiFi Deauther controller for Evil-BW16 module via UART. Control the BW16 WiFi attack module from the Flipper's screen.
 
 #### Fencing Test Box *(by Aaron Janeiro Stone)*
-> Test box for assessment of fencing blades and body wires. Fencing Testbox This is a simple emulator of a fencing testbox for the Flipper Zero. The main menu is shown below:
+> Test box for fencing blade and body wire assessment. Connect fencing equipment to GPIO and verify electrical continuity and resistance. A specialized tool for the sport.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### Flashlight
+> Enables 3.3V on pin 7/C3 when you press OK. Stays on after exit. Wire an LED with resistor between pin 7 and GND. One-button operation.
 
 #### Flipagotchi *(by Matt-London)*
-> This program will interface the pwnagotchi with the flipper. This will be accomplished using custom code on the pwnagotchi's end to give the flipper simple rendering instructions over UART. Pwnagotchi-Flipper interface
-
-**Usage:** This program will interface the pwnagotchi with the flipper. This will be accomplished using custom code on the pwnagotchi's end to give the flippe... This project is broken down into two parts: flipagotchi and pwnzero
+> Interface the Flipper with a Pwnagotchi. Display Pwnagotchi status and data on the Flipper's screen. Connect via GPIO.
 
 #### FlipGemini *(by JBlanked)*
-> Chat with Google's Gemini AI on your Flipper Zero Chat with Google's Gemini AI on your Flipper Zero! Original idea from https://github.com/d4rks1d33/Gemini-Flipper - Wi-Fi Developer Board, BW16, Raspberry Pi, or ESP32 device flashed with FlipperHTTP v2.1.4 or higher:.
+> Chat with Google Gemini AI via an ESP module. Send prompts and receive AI responses on the Flipper's screen. Requires WiFi-capable ESP module.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### Flipper Blackhat
+> Control the Flipper Blackhat A33 device via GPIO. Interface with the dedicated security testing hardware module.
 
 #### Flippy Temp *(by n0ciple)*
-> A temperature logging app that works with Flipy Sensor Board Flippy Sensors 🐬 flippy sensor is a WIP multi-sensor board for the flipper zero. It includes a SHT30 for temperature and humidity, a LSM6DS3TR-C for gyro and accelerometer and a PA1010D for GPS. A first batch is cu...
+> Temperature logging app for the Flipy Sensor Board. Record temperature readings over time with the dedicated sensor board.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### FM Radio
+> Listen to FM radio using TEA5767 receiver via I2C. Control frequency, volume, and presets. Requires headphone cable as antenna. VCC→3V3, GND→pin 18, SCL→C0, SDA→C1.
 
-#### FlipTelegram *(by JBlanked)*
-> Flipper Zero Telegram Client Flipper Zero Telegram Client - WiFi Developer Board, Raspberry Pi, BW16, or ESP32 device flashed with FlipperHTTP v2.1 or higher: https://github.com/jblanked/FlipperHTTP - 2.4 GHz or 5 GHz WiFi access point
+#### FM Radio w Vol
+> FM Radio with external volume control. TEA5767 receiver plus PT2257 I2C volume controller. Two I2C devices for full radio experience.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### FM Transmitter
+> Broadcast audio over FM using KT0803 module via I2C. Connect audio source to AUX input, select frequency, and broadcast. Any FM radio nearby can tune in.
 
-#### FM Radio w Vol [TEA+PT] *(by coolshrimp & pchmielewski1)*
-> FM Radio app for controlling an FM receiver and (optionally) an external I2C volume controller flipperzero-radio-with-volume-control Flipper Zero external app for TEA5767 FM reception, PT2257/PT2259-S audio control, and RDS decoding from the TEA5767 MPXO path. Table of Contents
+#### GS1 Parser (UHF)
+> Parse GS1 UHF RFID payloads based on Tag Data Standard v2.2. Currently supports SGTIN formatted EPCs. For UHF RFID inventory and supply chain applications.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### GPIO 7-Segment Output
+> Control a 7-segment display with GPIO pins. Display numbers and characters on an external 7-segment LED display connected to the Flipper.
 
-#### FM Transmitter KT0803 *(by goosedev72-projects)*
-> Use KT0803-type chips to transmit signal from module AUX port flipperzero-kt0803-transmitter Use KT0803-type chips to transmit signal from module AUX port FM Transmitters are illegal if they are too powerful. Use in well-shielded environment or do not use it for too long.
+#### GPIO Badge
+> Companion app for MakeItHackin GPIO Diagnostics Board. LED light effects: sequential patterns, alternating blinks, and "stop the light" game. Left/Right for speed, Up/Down for patterns.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### GPIO Controller
+> Visual GPIO pin control. See all pins with current state, toggle any pin high/low with OK. Essential for quick circuit testing and manual hardware control.
+
+#### GPIO Explorer
+> Three modes: WS2812 RGB LED control, standard LED control, and GPIO Reader. The most complete GPIO exploration app for beginners.
+
+#### GPIO Reader (aureli1c)
+> Read and display all GPIO pin states in real-time. Configure pull-up/pull-down resistors. Continuous updates show changes as they happen.
+
+#### GPIO Reader (biotinker)
+> Alternative GPIO reader implementation. Real-time pin state monitoring with a different interface style.
 
 #### GPIO with I2C
-> THIS IS THE SAME AS THE GPIO APP BUT WITH I2C ADDITIONS FROM [I²C-Scanner #1431 (By GitChris3004)](https://github.com/flipperdevices/flipperzero-firmware/pull/1431) and [read EEPROM of SFP Modules using I2C (By marcusju)](https://github.com/Lambda/flipperzero-firmware-wPlugins/pull/198)
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### GS1 Parser [UHF] *(by Kyle Diller)*
-> This is a GS1 UHF payload parser based on version 2.2 of the Tag Data Standard. This currently only supports parsing SGTIN formatted EPCs. Supporting other EPC formats is possible, but not currently planned. Req: U107 or YRM100.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### HC-11 Modem *(by Giraut)*
-> HC-11 wireless modem HC-11 wireless modem emulator for the Flipper Zero Flipper Zero app send data to / from a HC-11 wireless RF UART communication module. See here, here, here, here or here for a few distributors of the HC-11 module around the world.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Standard GPIO app enhanced with I2C scanner and SFP module EEPROM reader. Combines GPIO control with I2C device discovery.
 
 #### I2C Explorer *(by 4mb3rz)*
-> This is a simple tool for interactive exploration of an I2C bus topology and modification of device register states. Flipper Zero I2C Explorer This is a simple tool for interactive exploration of an I2C bus topology and visualization and modification of device register
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### INA Meter *(by cepetr)*
-> Application for reading TI INAxxx sensors. INA Meter for Flipper Zero INA Meter is an application for Flipper Zero that allows you to read I2C-connected current/power monitors from Texas Instruments. Supported Sensors:
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Interactive I2C bus exploration tool. Discover devices on the bus, read and modify register states. Essential for debugging I2C peripherals.
 
 #### Lab401/DigiLab *(by Lab401 & tixlegeek)*
-> Lab401's Digilab companion app. Lab401's DigiLab by tixlegeek is a Flipper Zero® accessory that introduces a new way to explore electronics. Designed to be the first tool you reach for when you're developing, debugging, tinkering...
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Lab401 DigiLab interface. Control Lab401 hardware modules from the Flipper.
 
 #### Lab401/Light Messenger *(by Lab401 & tixlegeek)*
-> Lab401's LightMessenger companion app. LAB401's LightMessenger by tixlegeek is an additional hardware module designed for the Flipper Zero. It allows users to display messages and images in the air using POV on an array yof RGB Leds. Wi...
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### LAN Tester *(by Dok2d)*
-> Portable LAN tester & security analyzer: ARP, ping, DHCP, LLDP/CDP, port scan, SNMP, NTP, IPMI, RADIUS, TFTP, PXE boot/download, 802.1X, VLAN, rogue DHCP/RA detection via W5500 Flipper Zero LAN Tester (W5500) Turn your Flipper Zero + W5500 Lite module into a professional-grade portable LAN tester.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Lab401 Light Messenger interface. Control LED message displays via the Lab401 hardware platform.
 
 #### LaserCat *(by DroWez)*
-> Application to turn on a GPIO laser. Привет народ! Рад представить вам мое первое приложение для Flipper Zero. Все с чего-то начинают, и я решил начать с простого, но забавного проекта — лазера для кошки. Это приложение включает лазер... Скриншоты приложения Как компилировать приложение
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Turn on a GPIO-connected laser module. Simple on/off control for a laser pointer connected to GPIO.
 
 #### LD2410 Human Detector *(by Oscar Rodriguez)*
-> An application that turns your Flipper Zero into a sophisticated human presence detector using the HLK-LD2410 mmWave sensor. LD2410 Human Detector for Flipper Zero An application that turns your Flipper Zero into a sophisticated human presence detector using the HLK-LD2410 mmWave sensor.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Human presence detector using HLK-LD2410 mmWave radar sensor. Detects human presence through walls and obstacles using millimeter-wave radar. Connect sensor to GPIO.
 
 #### Logic Analyzer *(by g3gg0)*
-> Use flipper as Openbench Logic Sniffer (ols) logic analyzer in PulseView flipper-logic-analyzer Source: https://github.com/g3gg0/flipper-logic_analyzer I'm in the process of bringing this in line with the latest flipper firmwares.
+> Use Flipper as an OpenBench Logic Sniffer (OLS) compatible logic analyzer in PulseView. Capture and analyze digital signals on GPIO pins.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### LoRa Relay *(by ElectronicCats)*
-> LoRa Relay App. This is a LoRa sniffer using Electronic Cats flipper add-on
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### Longwave Clock
+> Decode or simulate long-wave time signals. Supports DCF77 (Germany), MSF (UK), WWVB (US), JJY (Japan). Demo mode generates synthetic signals without hardware.
 
 #### LoRa Sample *(by ElectronicCats)*
-> LoRa Sample App. This is intended to be used as a starting point for new applications with one primary screen. !GitHub release (with filter) !GitHub actions Flipper LoRa Relay App :dolphin:
+> LoRa radio sample application. Starting point for LoRa-based projects using Electronic Cats or similar LoRa modules on GPIO.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### LoRa Relay *(by ElectronicCats)*
+> LoRa sniffer using Electronic Cats flipper add-on. Capture and relay LoRa packets.
 
-#### LoRA_Terminal
-> LoRA Terminal for Flipper Zero Flipper Zero app to control Lora Breakout board. - Read log and command output by uart
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### LoRA Terminal
+> UART terminal for LoRa modules. Send and receive data through LoRa radio modules connected via UART.
 
 #### LoRadar *(by baptleduc)*
-> LoRadar - The Flipper Application to localize stratospheric ballon via LoRa LoRadar - The Flipper Application to localize stratospheric ballons via LoRa LoRadar is an app that allows users to localize stratospheric balloons using their Flipper Zero and LoRa modules.
+> Localize stratospheric balloons via LoRa. Receive LoRa telemetry from weather balloons and display position data.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### MagSpoof
+> Wirelessly emulate magnetic stripe data using an electromagnetic coil module. Based on Samy Kamkar's project. Requires dedicated GPIO module with H-bridge and coil. Create .mag files in `apps_data/magspoof/`. For authorized testing only.
 
 #### MODBUS *(by ElectronicCats)*
-> A Flipper plugin with helpful Modbus RTU features, you will be able to read and write data into a Mobus RTU network. Requires the Electronic Cats Flipper Addon Modbus. !GitHub release (with filter) !GitHub actions flipper-rs485modbus
-
-**Usage:** A Flipper plugin with helpful Modbus RTU features, you will be able to read and write data into a Mobus RTU network. Please visit the wiki for detailed information on how to use the app.
+> Modbus RTU communication tool. Send and receive Modbus commands over RS-485 via GPIO. For industrial automation and building management systems.
 
 #### Moisture Sensor *(by smallwat3r)*
-> Read values from a capacitive moisture sensor v1.2 Moisture Sensor Readings for Flipper Zero A Flipper Zero application that reads values from a Capacitive Moisture Sensor v1.2. !Flipper Zero Moisture Sensor
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Read values from a capacitive moisture sensor v1.2 connected to GPIO. Display soil moisture levels in real-time. For gardening and agriculture projects.
 
 #### Noptel LRF Sampler *(by Giraut)*
-> Noptel LRF rangefinder sampler Noptel LRF rangefinder sampler app for the Flipper Zero Flipper Zero app to get range measurements from a Noptel LRF rangefinder. - Rangefinding in all modes
+> Interface with Noptel LRF laser rangefinders. Sample distance measurements from the professional-grade rangefinder module.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### Oscilloscope
+> Basic oscilloscope on the 128×64 screen. Connect signal to pin 16/PC0 (0-2.5V only — higher damages ADC). Real-time waveform display with frequency measurement. OK to pause/unpause.
 
 #### PIR HC-SR501 Alarm *(by ku6a-cj)*
-> Simple proximity alarm app for Flipper Zero using HC-SR501 PIR sensor. Flipper Zero HC-SR501 PIR Proximity Alarm App Simple proximity alarm app for Flipper Zero using HC-SR501 PIR sensor.
-
-**Usage:** Triggers vibration, LED alerts, and screen notifications. Features 3-second alarm duration with blinking feedback. - Motion Detection: HC-SR501 PIR sensor detects human motion within ~7m range
+> Proximity alarm using HC-SR501 PIR motion sensor. Triggers an alarm when motion is detected. Simple security/notification system.
 
 #### Pokemon Trading *(by EstebanFuentealba & kbembedded)*
-> Pokemon exchange from Flipper Zero to Game Boy for Generation I (Pokemon Red, Blue, Yellow). Flipper Zero emulates a Slave Game Boy connected to a Game Link Cable to be able to exchange any Pokemon from the First Generation (Red, Blue, Yellow) to a real Game Boy.
+> Trade Pokemon between Flipper and Game Boy. Supports Gen I (Red/Blue/Yellow) and Gen II (Gold/Silver/Crystal). Emulates a second Game Boy on the link cable. Modify traded Pokemon: EVs/IVs, Pokerus, held items.
 
-**Usage:** - Instructions for Use - Customizing Pokemon
+#### Pokemon Trading (GB)
+> Alternative Pokemon trading implementation for Game Boy. Same core functionality — trade between Flipper and Game Boy via link cable.
+
+#### RC2014 ColecoVision
+> Use Flipper as a ColecoVision controller for RC2014 retro computer. D-pad maps to directions, OK/Back to fire buttons. Requires RC2014 with TMS9918A video card.
+
+#### RGB LED
+> Control RGB LEDs via GPIO. Set colors and brightness for standard RGB LEDs connected to GPIO pins.
 
 #### SD SPI *(by Gl1tchub)*
-> SD SPI Lock Management Flipperzero-SD-SPI Flipper Zero FAP for Lock and Unlock SD card / Micro SD card through SPI protocol (CMD42). Pinout Without Flipper Zero SDBoard the SD card it must be connected as in the table below
+> SD card SPI lock management. Manage SPI bus access for the SD card interface. Utility for debugging SPI conflicts.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### SERMA CAN-FD-HS *(by serma-safety-security)*
-> USB-to-CAN bridge that turns your Flipper Zero into a CAN bus interface. Compatible with Linux can-utils and slcan driver for automotive diagnostics and CAN bus analysis.
-
-**Usage:** Requires the SERMA CAN FD hardware board plugged into GPIO. Connect Flipper to PC via USB, launch the app, then use can-utils on your computer to communicate with the CAN bus.
-
-#### Servo Tester 2 *(by mhasbini)*
-> App uses A7 pin for servo PWM output. Servo tester app for Flipper Zero This app aims to replicate the behavior of a standard RC servo) tester, by replicating a PWM RC servo signal. You can read more about it in this blog! - Connect the Servo PWM input to A7 Flipper Zero in.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### Sentry Safe
+> Exploit vulnerability in Sentry Safe and Master Lock electronic safes. Sends signal sequence through GPIO to the solenoid. Built-in help page with connection diagrams. For testing your own safes only.
 
 #### Servotester *(by Alexander Semion)*
-> Application uses A7 pin for servo PWM output. Has different modes: Manual, Center, Auto. Flipper servotester application Application uses A7 pin for servo PWM output. Has different modes: Manual, Center, Auto. Go to the releases, download apps.zip and extract it in your SD card.
+> Servo motor tester using A7 pin for PWM output. Manual mode for direct control, plus automated sweep modes.
 
-**Usage:** - Follow official instructions
+#### Servo Tester 2 *(by mhasbini)*
+> Alternative servo tester using A7 pin. Test and calibrate servo motors with PWM signals.
 
 #### SI4713 Tuner *(by rullinoiz)*
-> Basic Adafruit SI4713 tuner for the Flipper Zero
+> Basic Adafruit SI4713 FM transmitter tuner. Configure the SI4713 FM transmitter module via I2C.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### Signal Generator
+> Generate digital signals (square waves) on any GPIO pin at configurable frequency. Select pin, set frequency, press OK to start. 3.3V square wave output.
 
 #### SPI Flash Dump *(by PentestSuite & barkandbite)*
-> Read SPI NOR flash chips via GPIO for firmware extraction ____ ____ ___ _____ _ _ / ___\|\| _ \_ _\| \| ___\| \| __ _ ___\| \|__ \___ \\| \|_) \| \| \| \|_ \| \|/ _ / __\| '_ \
+> Read SPI NOR flash chips via GPIO for firmware extraction. Dump chip contents to SD card for backup or analysis.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### SPI Terminal
+> Interactive SPI communication terminal. Send raw hex data, see responses in real-time. Configure clock speed, SPI mode, and chip select.
 
 #### Spotify Remote *(by Ben Russell)*
-> Allows user to control spotify playback from flipper zero Flipper Zero Spotify Remote An app for the Flipper Zero that lets you control Spotify playback using the Flipper Zero and WiFi Devboard This app is included in the Lambda Firmware, or you can build it from source using ufbt or fbt
+> Control Spotify playback from the Flipper. Requires companion setup for connectivity.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### Step Counter
+> Pedometer using Memsic 2125 accelerometer module. Count steps and track movement via GPIO-connected sensor.
 
 #### StroboMeter *(by L. Jakschik)*
-> A stroboscope application to measure the frequency of cyclical motion. Flipper StroboMeter Flipper StroboMeter is an application designed to measure the RPM (revolutions per minute) of a rotating object using the Flipper Zero device. By connecting an LED to Pin 4(A4) and GND and setting ...
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Stroboscope for measuring cyclical motion frequency. Flash at adjustable rates to "freeze" rotating or vibrating objects and determine their frequency.
 
 #### Tesla Mod *(by hypery11)*
-> Tesla CAN bus toolkit — FSD region-gate bypass, nag killer, BMS dashboard, and more. Requires CAN Add-On. English \| 繁體中文 \| 简体中文 Tesla Mod for Flipper Zero
+> Tesla CAN bus toolkit — FSD region-gate bypass. Interface with Tesla vehicle CAN bus for research purposes.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### u-blox GPS *(by liamur)*
-> App to display and log data from u-blox GPS modules over I2C !Flipper Zero connected to a u-blox GPS, running the u-blox app Flipper Zero app to read from a u-blox GPS over I2C. This app can display data, log a path to a KML file, and sync the Flipper's time to
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### Timelapse
+> Simple intervalometer for cameras with wired remote shutter. Set interval, press OK to start. Triggers shutter at each interval for time-lapse photography.
 
 #### UART Sniff *(by PentestSuite / barkandbite)*
-> UART protocol sniffer — captures bytes on GPIO pins 13/14
+> UART protocol sniffer. Capture bytes on GPIO pins 13/14. Monitor serial communication between devices.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### UART Terminal
+> Full serial terminal for UART devices. Send text, AT commands, fast commands, or raw hex. Configurable baud rates. Toggle text/hex display. Save frequently-used commands.
+
+#### u-blox GPS *(by liamur)*
+> Display and log data from u-blox GPS modules over I2C. Alternative to UART-based GPS apps for I2C-connected u-blox modules.
+
+#### LAN Tester *(by Dok2d)*
+> Portable LAN tester and security analyzer using W5500 Ethernet module. ARP scanning, port checking, and network diagnostics via GPIO.
 
 #### WAV Recorder *(by scrolltex)*
-> WAV Sound Player app
+> Record audio to WAV files using an external microphone on GPIO. Save recordings to SD card.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### WHC SWIO Flasher *(by Vojtech Suk)*
-> A WHC CH32V003 debugger/flasher tool
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### WCH SWIO Flasher
+> Debugger and flasher for WCH CH32V003 RISC-V microcontrollers. Program and debug via the Single Wire Interface (SWIO).
 
 #### Wiegand Reader *(by jamisonderek)*
-> This application supports W4, W8, W24, W26, W32, W34, W37, W40 and W48 formats and can be used to test Wiegand readers and keypads. This application supports W4, W8, W24, W26, W32, W34, W37, W40 and W48 formats. This application can be used to test Wiegand readers and keypads.
+> Read Wiegand protocol data (W4, W26, W34, etc.) from access control systems. Connect to Wiegand data lines and capture card reads.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### Wii EC Analyser
+> Protocol analyser for Wii Extension Controllers. See joystick positions, button presses, accelerometer data in real-time via I2C. Includes calibration tools.
+
+#### Wire Tester
+> Simple continuity tester — beeps if wire is connected between pins 6 and 8. No menus, no configuration. Just plug and test.
 
 #### WS2812B LED Tester *(by jamisonderek)*
-> WS2812B LED Tester App. This is intended to test that WS2812B LEDs are functioning correctly. WS2812B LED Tester This application is used to test WS2812B LEDs. You can connect the WS2812B LEDs to any available GPIO pin.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Test WS2812B addressable LEDs. Verify that individual LEDs in a strip are functioning correctly. Set colors and patterns.
 
 #### YuriCable Pro Max *(by arag0re.eth && PooruTorie)*
-> SWD/DCSD-Cable App implemented for the Flipper Zero !GitHub Repo stars !GitHub watchers !X (formerly Twitter) Follow
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> SWD/DCSD cable app for the Flipper Zero. Interface with Apple devices using specialized debug cables.
 
 </details>
 
-<details><summary><h3>🔴 Infrared — 29 apps</h3></summary>
+<details><summary><h3>📻 Sub-GHz — 33 apps</h3></summary>
+
+#### CaiXianlin Remote
+> Remote control for CaiXianlin shock collars via Sub-GHz radio. Send shock, vibrate, or beep commands with adjustable strength (0-100). For authorized use with your own devices only.
+
+#### Chief Cooker *(by Denr01)*
+> Restaurant pager Swiss army knife — receive, decode, edit, and resend pager signals. Auto-detects station/pager numbers. Save stations by name in categories. Supports Princeton and SMC5326 protocols with Retekess TD157 encoding. Works with external CC1101 for extended range.
+
+#### ClayLoop *(by Bobby Gibbs)*
+> Clay pigeon/skeet shooting controller. Queue up to 4 .sub files and transmit them in sequence with configurable delay, duration, interval, and repeat count. LED/beep countdown, vibration feedback, mid-countdown cancellation. Persistent per-group file path memory.
+
+#### Enhanced Sub-GHz Chat
+> Encrypted text messaging between Flippers over Sub-GHz radio. Multiple encryption methods: none, random key, password-derived, hex key, or NFC key sharing. Uses mbedtls AES encryption. Real-time chat interface. Lock keyboard with long-press OK.
+
+#### Flipper Share *(by @lomalkin)*
+> Direct wireless file transfer between Flippers via Sub-GHz — no cables, phones, or internet. Broadcast-style so multiple receivers can download simultaneously. 60-byte packets with MD5 verification and auto-retry. ~800 bytes/sec, files up to 1.6MB tested.
+
+#### Frequency Analyzer (External)
+> Sub-GHz frequency analyzer extracted from Unleashed firmware. Detect active frequencies in your area using the CC1101 radio. Shows frequency and signal strength.
+
+#### FRSScan *(by thecybermind)*
+> Scans common FRS and GMRS frequencies and plays them through the speaker. Press center button to lock onto a frequency. Listen for radio activity on Family Radio Service and General Mobile Radio Service bands.
+
+#### Genie Door Recorder *(by jamisonderek)*
+> Extract codes from Genie garage door remotes into .GNE files and play them back. No firmware modifications needed — includes the Genie protocol encoder/decoder. Connect remote to GPIO for code extraction.
+
+#### HAM Scanner *(by Clawzman)*
+> Lightweight Sub-GHz radio scanner with real-time RSSI live view during scanning. Behaves like a traditional radio scanner for common bands. Shows signal strength as you scan through frequencies.
+
+#### Marmalade *(by RocketGod-git)*
+> Frequency and preset adjustable Sub-GHz radio frequency tool. Supports multiple frequencies and modulation schemes. Exercise caution and follow local laws. By RocketGod.
+
+#### Music to Sub-GHz Radio
+> Converts Flipper music files (.FMF/.TXT) into .SUB files for Sub-GHz transmission. Another Flipper receives and plays the music through its speaker. Works with the UberGuidoZ music collection. AM650 modulation recommended.
+
+#### OpenShock *(by OpenShock Team)*
+> Control OpenShock-compatible shockers over 433 MHz. Configure model, ID, channel, command type (shock/vibrate/beep), and intensity. Hold OK to transmit continuously. For use with your own OpenShock devices only.
+
+#### POCSAG Pager *(by @xMasterX & @Shmuma)*
+> Capture and decode POCSAG paging messages in real-time at 512/1200/2400 baud. Decodes alphanumeric and numeric messages. Default frequency: DAPNET (439.9875 MHz). Add custom frequencies via settings file on SD card.
+
+#### ProtoPirate
+> Rolling-code analysis for automotive key fobs — Kia, Ford, Subaru, Suzuki, VW/VAG, PSA, Fiat, StarLine, Scher-Khan. Captures and decodes rolling-code protocols showing manufacturer, button, counter, and encrypted payload. Transmission disabled by default. Educational/research only.
+
+#### ProtoView *(by @antirez & (fixes by @xMasterX))*
+> Digital signal Swiss army knife. Visualize raw RF pulses as waveforms, auto-detect protocols (TPMS, Keeloq, Oregon Scientific, PT2262). Edit decoded messages field-by-field and retransmit. Resample signals across different frequencies/modulations.
+
+#### Radio Scanner *(by @RocketGod-git)*
+> Scan CC1101 frequencies and play received signals through the speaker as audio. NOT an FM radio — demodulates Sub-GHz signals into audible sound. Useful for finding active frequencies by ear. OK adjusts spectrum width, Up/Down zoom, Left/Right switch bands.
+
+#### Restaurant Pager *(by leedave)*
+> Brute-force trigger restaurant pagers. Supports Retekess T119, TD157, TD165, TD174. Configure station and pager ranges, cycles through all combinations. Yellow LED = generating, Purple LED = transmitting.
+
+#### Rolling Flaws
+> Educational rolling code simulator by @CodeAllNight. Simulates a receiver with configurable security flaws for practicing replay, clone, future, rollback, and KGB/Subaru MF attacks in a safe sandbox. 12 tutorial scenarios with YouTube walkthrough.
+
+#### RS41 Tracker *(by OK1CHP / yeckel)*
+> Vaisala RS41 radiosonde receiver and decoder. Receives weather balloon telemetry using the CC1101 or external CC1101 module on GPIO. Decodes position, altitude, temperature, and other meteorological data.
+
+#### ShapShup *(by derskythe)*
+> Sub-GHz RAW file viewer. Opens saved .sub files and displays the signal waveform as it appears in the Sub-GHz RAW read mode. Scroll through the signal to analyze pulse patterns.
+
+#### Spectrum Analyzer *(by @xMasterX & @theY4Kman & @ALEEF02 (original by @jolcese))*
+> Real-time RF spectrogram showing signal amplitude vs frequency. Spikes indicate nearby transmitters. OK adjusts width, Up/Down zoom, Left/Right switch bands. Essential first step before capturing — find the frequency, then decode.
+
+#### Sub Analyzer *(by RocketGod)*
+> Offline .sub file analyzer. Opens saved captures and extracts frequency, modulation, protocol, data rate, bit count, and raw pulse timing. No radio hardware used — purely file analysis. Great for reviewing captures away from the target.
+
+#### Sub Duplicate Finder *(by Endika)*
+> Identify and clean up duplicate .sub files in storage. Scans your Sub-GHz folder, finds files with identical signal data, and helps you remove duplicates to keep your collection organized.
+
+#### Sub-GHz Bruteforcer
+> Systematically try all possible codes for static Sub-GHz protocols. Supports CAME, Nice, Princeton, Linear, and others. Each code sent 3x by default (adjustable). CAME 12bit 433MHz is the most common target — 4096 possible codes.
+
+#### Sub-GHz Jammer Detect *(by PentestSuite / barkandbite)*
+> Detects sustained RF carrier waves that indicate Sub-GHz jamming attacks. Monitors for continuous transmissions that could be blocking legitimate signals. Security awareness tool.
+
+#### Sub-GHz Playlist *(by @darmiel)*
+> Play a sequence of .sub files automatically from a text playlist. Configurable delay between files, looping options. Useful for testing multiple signals in sequence or automated demonstrations.
+
+#### Sub-GHz Playlist Creator *(by coolerUA)*
+> Visual editor for creating and managing Sub-GHz playlists. Create new playlists, browse SD card to add .sub files, reorder entries. Saves as .txt files compatible with the Sub-GHz Playlist player.
+
+#### Sub-GHz Remote *(by gid9798 xMasterX)*
+> Map up to 5 saved .sub files to d-pad buttons for instant one-press playback. Create remote configurations for frequently-used signals — garage doors, gates, lights. One press, no menus.
+
+#### Sub-GHz Scheduler *(by Patrick Edwards)*
+> Send Sub-GHz signals at configurable intervals (1 second to 24 hours). Relative or Precise timing modes. Supports individual .sub files or playlists. Configurable TX repeats (1-6x). For periodic beacon testing or timed automation.
+
+#### Sub-GHz Spectrum *(by PentestSuite & barkandbite)*
+> Real-time Sub-GHz spectrum analyzer with waterfall display. Shows signal activity over time with a scrolling waterfall visualization in addition to the standard amplitude graph.
+
+#### SubGhz Toolkit *(by RocketGod)*
+> Reverse engineer Flipper Zero Sub-GHz protocols and decrypt KeeLoq manufacturer codes. Extract protocol implementation details for security research.
+
+#### TPMS Reader *(by wosk)*
+> Read and activate Tire Pressure Monitoring System sensors using Sub-GHz radio and RFID. Decode tire pressure, temperature, and sensor ID. Can activate dormant sensors with wake-up signals. Multiple scan modes for different use cases.
+
+#### Weather Station
+> Receive and decode wireless weather sensor data. Supports Oregon Scientific, Acurite, LaCrosse, Ambient Weather, Solight, and many more. Shows temperature, humidity, wind, rain, and battery status. Sensors appear automatically as they broadcast.
+
+</details>
+
+<details><summary><h3>🔴 Infrared — 27 apps</h3></summary>
 
 #### Cross Remote *(by Leedave)*
-> One-Click, sends multiple commands Flipper Zero Cross Remote - Infrared working - SubGhz working
-
-**Usage:** - IR Timing features working This app combines commands used in IR and SubGhz into playlists that can be run with one click
+> One-click multi-command remote. Combine IR and Sub-GHz commands into playlists that execute with a single button press. Perfect for "movie night" — turn on TV, Blu-ray, surround sound all at once. Supports pause timing between commands.
 
 #### Fire String *(by Ryan Aboueljoud)*
-> Generate truly random strings using IR noise as entropy. 🔥 Fire String 🔥 Generate truly random strings from the Flipper Zero using its IR sensor. Capture the infrared bursts from sparking a flame as an unpredictable entropy source. The app also allows saving and loading...
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Generate truly random strings using IR noise as entropy. Capture infrared bursts from sparking a flame as an unpredictable entropy source. Save and load strings from storage or transfer via USB.
 
 #### Flame RNG *(by OrionW06)*
-> An RNG intended for use with flames and other IR sources. Inspired by this repo I have implemented a similar functionality entirely in the flipper zero It uses the IR sensor on the Flipper Zero to gather entropy from IR sources (such as a lighter) to seed a random number generator.
-
-**Usage:** I am also NOT responsible if you generate insecure keys using this as a source of entropy!
+> Random number generator using IR flame sources. Point the IR receiver at a candle or lighter — the flickering IR pattern creates unpredictable data for true hardware randomness.
 
 #### FlipIRFreq *(by jsammarco)*
-> Transmit IR in carrier or low-frequency pulse modes with burst or continuous output. FlipIRFreq is a Flipper Zero external app for sending either a high-frequency IR carrier or a low-frequency IR pulse train with a user-selected frequency, duty cycle, burst length, and output pin.
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Transmit IR in carrier or low-frequency pulse modes with burst or continuous output. Configure frequency, duty cycle, burst length, and output pin. Two signal paths: carrier mode for standard IR and pulse mode for low-frequency.
 
 #### Flipper Tag *(by thejudge156)*
-> Laser Tag app for the Flipper Zero compatible with the Nerf Phoenix LTX laser tag guns. Flipper Zero FAP FlipperTag Use this code as a foundation for developing Flipper Zero Applications, change the contents of this file when developing a new project - Different Scenes / Views
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Laser tag compatible with Nerf Phoenix LTX laser tag guns. Use the Flipper's IR to play laser tag with actual Nerf blasters.
 
 #### Hard Hat Brigade IR *(by Anomalous68)*
-> Type message, then point at reciever and press enter. The slight pause is when the message is transmitting, once Message sent appears, the hat should display it. Hard Hat Brigade Flipper Zero App Flipper Zero app.
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Send IR messages to DEF CON 33 hard hats. Type your message, point at the receiver, press Save. After a vibration, the message is transmitted to the hard hat's display.
 
 #### Hitachi AC Remote
-> Hitachi Air Conditioner remote controller Hitachi AC Remote Hitachi AC remote controller for Flipper Zero. Emulates the PC-LHxx series remote controller, specifically the PC-LH3 series, and also the PC-LH6Q variant that can be found on AliExpress and similar places.
-
-**Usage:** See the manual for detailed usage. Based on Mitsubishi AC Remote by @achistyakov and Midea AC Remote by @xakep666.
+> Hitachi air conditioner control. Emulates PC-LHxx series remote (PC-LH3 and PC-LH6Q variants). Power, temperature, fan speed, and mode control. See the included usage manual.
 
 #### HTW AC Remote *(by sokogen)*
-> IR remote control for HTW air conditioner HTW AC Remote for Flipper Zero Flipper Zero application for controlling HTW air conditioners via infrared. - Full IR Protocol Support - Complete implementation of HTW AC IR protocol
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> IR remote for HTW air conditioners. Full protocol implementation with all AC modes (Off, Cool, Auto, Dry, Heat, Fan). Complete temperature and fan speed control.
 
 #### InfraFi *(by amd989)*
-> Transmit WiFi credentials via IR to a Linux server Transmit WiFi credentials from a Flipper Zero to a Linux server using infrared. Point, press Send, connected. Built for headless servers (NAS boxes, Intel NUCs, etc.) where typing WiFi passwords is painful or impossible.
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Transmit WiFi credentials from Flipper to a Linux server via infrared. Point, press Send, connected. Built for headless servers (NAS boxes, Intel NUCs) where typing WiFi passwords is painful.
 
 #### IR Blaster *(by Mateusz Szafraniec)*
-> IR Blaster for Flipper Zero. Flipper Zero - IR Blaster IR Blaster for Flipper Zero This application allows you to guess the IR remote control codes for devices.
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Guess IR remote control codes for devices when you don't have the original remote. Cycles through common IR codes to find what works with your device.
 
 #### IR Decoder *(by prplecake)*
-> Shows the same address and command values as the standard IR app, but without any of that silly remote nonsense! Also shows a value that may be usable with lirc. My Flipper Zero stuff. (Not to be confused with any of my projects pertaining to my cat, Flipper).
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Shows IR address and command values like the standard IR app but without the remote interface. Also shows a value usable with lirc (Linux Infrared Remote Control).
 
 #### IR Intervalometer *(by @Nitepone)*
-> Intervalometer for Pentax, Canon, Nikon, and Sony cameras. Uses IR shutter release. An Intervalometer App For Flipper Zero This is a simple configurable valometer app for Sony cameras. It provides a configurable shutter timer and uses the IR blaster to trigger the camera
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Camera shutter control for Pentax, Canon, Nikon, and Sony cameras using IR. Set an interval and the app fires the IR shutter release repeatedly. Useful for time-lapse photography without a wired remote.
 
 #### IR Remote *(by @Hong5489 & @friebel & @d4ve10)*
-> Bind any IR remote button to each button on flipper d-pad, provides another way to use flipper as IR remote. Alternative Infrared Remote for Flipperzero
-
-**Usage:** It is a plugin like UniversalRF Remix but for infrared files. I do this plugin for convenience, because the main IR app need to navigate for differ... It supports short press and long press input for different ir remote buttons. Tested on the unleashed firmware version unlshd-023
+> Map IR remote buttons to the Flipper's d-pad for quick access. Assign any saved IR signal to Up, Down, Left, Right, or OK. One-screen remote where each button fires a different IR command.
 
 #### IR Scope *(by @kallanreed)*
-> App allows to see incoming IR signals.
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> View incoming IR signals in real-time. Shows raw pulse timing data as signals are received. Useful for debugging remotes, verifying transmission, or analyzing unknown protocols.
 
 #### IR Signal Generator *(by Sacriphanius / temboohms68)*
-> Advanced IR Signal Generator with RF Spectrum and External IR Support 🎛️ Flipper-Zero-IR-Signal-Generator - Generate Infrared Signals Easily
-
-**Usage:** The Flipper Zero IR Signal Generator allows you to create and emit infrared signals, making it a valuable tool for various applications. This is pa... ⚙️ Requirements
+> Advanced IR signal generator with RF spectrum and external IR support. Create and emit custom infrared signals for security assessments and hardware testing.
 
 #### IR Transfer *(by WBP20)*
-> File transfer over infrared between two Flipper Zero devices using the NEC protocol for both control and data. IR Transfer (Flipper Zero) — NEC Only File transfer over infrared between two Flipper Zero devices using the NEC protocol for both control and data.
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> File transfer over infrared between two Flippers using the NEC protocol. Send and receive any file from the SD card via IR. Robust flow with error handling. No cables or radio needed.
 
 #### Lasko 2519 Timer *(by LN4CY)*
-> Automates Lasko 2519 fans with a configurable ON/OFF timer cycle. Lasko 2519 Timer for Flipper Zero An automated timer application for the Lasko 2519 Tower Fan (and compatible models). This app uses the Flipper Zero's IR blaster to cycle the fan power ON and OFF at configurable intervals.
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Automated timer for Lasko 2519 tower fans. Configurable ON/OFF cycle using the Flipper's IR blaster. Set desired intervals and the app automatically toggles fan power.
 
 #### LIDAR Emulator *(by regaly)*
-> This app can be used to emulate infrared signals of different LIDARs. Enter the submenu and a LIDAR gun then press and hold OK button to transmit. It will transmit until you hold the OK button. Blue LED lights during the transmit.
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Emulate LIDAR signals using the IR transmitter. Generate pulse patterns mimicking LIDAR distance measurement. Supports external IR boards for higher power. For testing LIDAR receivers or understanding protocols.
 
 #### Midea AC Remote
-> Midea Electric Air Conditioner remote control Midea AC Remote Midea Electric AC remote control for Flipper Zero. Compatible with RG10B(B)/BGEF remote type and probably others similar: RG10B(B1)/BGEFU1, RG10B1(B)/BGEF, RG10B2(B)/BGCEF,
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Midea air conditioner control. Full remote for Midea brand AC units — power, temperature, fan speed, swing, and mode. Compatible with RG10B(B)/BGEF and similar remote types.
 
 #### Miele Scout RX2 *(by Kalle Varavas)*
-> Remote control for Miele Scout RX2 robot vacuum with Drive and Menu modes Miele Scout RX2 - Flipper Zero Remote Flipper Zero app for controlling the Miele Scout RX2 robot vacuum over IR. Grab the pre-built dist/miele_scout.fap from this repo and copy it to your Flipper Zero SD card:
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Remote control for Miele Scout RX2 robot vacuum with Drive and Menu modes. Control your robot vacuum via IR from the Flipper.
 
 #### Mitsubishi AC Remote
-> Mitsubishi Electric Air Conditioner remote control Mitsubishi AC Remote Mitsubishi Electric AC remote control for Flipper Zero. Available to download on the Flipper App Catalog here
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Mitsubishi Electric air conditioner control. Power, temperature, fan speed, and mode settings via IR. Available on the Flipper App Catalog.
 
 #### Netflix TV Remote *(by ablaran)*
-> A simple IR TV remote for Netflix for Sony BRAVIA 4K VH2 Netflix TV Remote for Sony BRAVIA 4K VH2 Infrared remote control app for Netflix on Sony BRAVIA 4K VH2 TV. Death Note-themed graphical interface.
-
-**Usage:** - Buttons for: Netflix, Play/Pause, Mute, Power, Volume Up/Down. - D-pad for navigation (arrows + OK + Back).
+> IR remote for Netflix on Sony BRAVIA 4K VH2 TV. Death Note-themed interface with Netflix, Play/Pause, Mute, Power, and Volume buttons.
 
 #### Pause Timer *(by Matt-London)*
-> Pause your show when the ad break ends Flipper app to ensure that you don't miss parts of your show when using the bathroom during an ad break! This app will play a pre-recorded IR signal back on a countdown, there are a few use cases b...
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
-
-#### R.O.B. Control *(by John Riney III)*
-> Control Nintendo R.O.B. flip_rob - Nintendo R.O.B./Family Computer Robot remote controller for Flipper Zero Do you have one of these? !Nintendo Family Computer Robot, aka R.O.B.
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Pause your show when the ad break ends. Set a countdown and the app sends a pre-recorded IR signal (like Play/Pause) when the timer expires. Never miss the start of your show after a bathroom break.
 
 #### TagTinker *(by i12bp8)*
-> Educational ESL study tool for owned hardware Infrared ESL Research Toolkit for Flipper Zero Protocol study • Signal analysis • Controlled display experiments on authorized hardware Owner-authorized lab display experiment
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Educational ESL (Electronic Shelf Label) research toolkit. Protocol study, signal analysis, and controlled display experiments on authorized hardware. For studying how electronic price tags work.
 
 #### Timed Remote *(by A. Damsgaard)*
-> Send IR commands after timed duration A Flipper Zero application that sends IR (infrared) commands after a configurable time delay. - Browse and select IR signals from existing .ir files - Countdown Mode: Set a timer (HH:MM:SS) and send the signal when it completes
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
-
-#### Xbox Controller *(by gebeto)*
-> Infrared remote control for Xbox One Xbox Controller for Flipper Zero - IR codes for XBOX: Lucaslhm/Flipper-IRDB/Consoles/Microsoft
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Send IR commands after a configurable time delay. Browse and select IR signals from .ir files, set a countdown timer (HH:MM:SS), and the signal fires when the timer completes.
 
 #### Xbox Controller *(by @gebeto)*
-> Infrared remote control for Xbox One Xbox Controller for Flipper Zero - IR codes for XBOX: Lucaslhm/Flipper-IRDB/Consoles/Microsoft
-
-**Usage:** Launch from the Infrared/Apps menu. Point the Flipper's IR port at the target device and select a command.
+> Xbox One IR remote control. Power on/off, navigate menus, media playback controls. Uses the Xbox One's built-in IR sensor. Point the Flipper at the Xbox and use d-pad for navigation.
 
 #### XRemote *(by @kala13x)*
-> Advanced infrared remote application Advanced IR Remote App for Flipper Device Version 1.3 - Changelog
-
-**Usage:** Navigation to the menu to press each button individually can be often uncomfortable because it requires scrolling to the desired button and selecti... Learn new remote
+> Advanced IR remote with macro support. Create complex multi-step IR command sequences, organize remotes by device. More powerful than the built-in IR remote — supports timing delays, custom layouts, and saved configurations.
 
 </details>
 
-<details><summary><h3>🔵 Bluetooth — 12 apps</h3></summary>
+<details><summary><h3>🔵 Bluetooth — 11 apps</h3></summary>
 
 #### Anki Remote *(by Blue5GD)*
-> A customizable BLE keyboard remote What does Anki-Remote do? It lets you assign any keyboard key to each button on your Flipper Zero and use it as a BLE (Bluetooth Low Energy) remote. Key mappings are saved to the SD card inside the apps_data folder.
-
-**Usage:** Enable Bluetooth on your Flipper. Launch the app and pair with the target device.
+> Customizable BLE keyboard remote. Assign any keyboard key to each Flipper button. Save multiple presets to SD card. Perfect for Anki flashcard review or any app that uses keyboard shortcuts. Create, edit, rename, and switch between presets.
 
 #### BLE Clicker *(by Roman)*
-> BLE HID clicker for voice-driven Claude Code workflow on iTerm2 Flipper Zero BLE Clicker BLE HID keyboard for voice-driven Claude Code workflow on iTerm2. Turns Flipper Zero into a wireless remote — dictate, submit, navigate panes and tabs without touching the keyboard.
-
-**Usage:** Enable Bluetooth on your Flipper. Launch the app and pair with the target device.
+> BLE HID keyboard for voice-driven Claude Code workflow on iTerm2. Turns Flipper into a wireless remote — dictate, submit, navigate panes and tabs without touching the keyboard. Designed to be held vertically.
 
 #### BLE Spam *(by @Willy-JL @ECTO-1A @Spooks4576)*
-> Flood BLE advertisements to cause spammy and annoying popups/notifications
-
-**Usage:** Enable Bluetooth on your Flipper. Launch the app and pair with the target device.
+> Flood BLE advertisements to cause spammy popups on nearby Apple, Android, and Windows devices. Generates fake pairing requests (AirPod popups on iPhone, Fast Pair on Android). Range ~10 meters. Use responsibly.
 
 #### BT Trigger *(by @Nem0oo)*
-> Control your smartphone camera via your Flipper Zero Control your smartphone camera via your Flipper Zero With the BT Trigger app, you can remotely take pictures with the help of your Flipper Zero via Bluetooth Low Energy. To take a picture remotely, do as follows:
-
-**Usage:** Enable Bluetooth on your Flipper. Launch the app and pair with the target device.
+> Control your smartphone camera remotely via Bluetooth. The Kiisu pairs as a BLE HID device. Right button takes a photo, OK for continuous shooting with adjustable delay. Shot count displayed, Left to reset. Works with iOS and Android.
 
 #### BTHome *(by Alessandro Ghedini)*
-> BTHome implementation for the Flipper Zero This application turns the Flipper Zero into a BTHome beacon, and can be used to integrate the Flipper with home automation systems that support BTHome, such as Home Assistant.
-
-**Usage:** Enable Bluetooth on your Flipper. Launch the app and pair with the target device.
+> Turn the Flipper into a BTHome beacon for home automation integration. Compatible with Home Assistant and other systems supporting the BTHome protocol. Broadcast sensor data from your Flipper to your smart home.
 
 #### Cookie Clicker *(by jamisonderek)*
-> The goal of this application is use the Flipper Zero's bluetooth connectivity to send mouse clicks to your phone at a given frequency. If you are playing a game, such as Cookie Clicker 2, this will result in a 'screen tap' being simulated.
-
-**Usage:** Enable Bluetooth on your Flipper. Launch the app and pair with the target device.
-
-#### FindMy Flipper *(by MatthewKuKanich)*
-> BLE FindMy Location Beacon FindMy Flipper - AirTag and SmartTag Emulator This app extends the functionality of the FlipperZero's bluetooth capabilities, enabling it to act as an Apple AirTag, Samsung SmartTag, or a Tile Tracker. It utilizes the FlipperZero's BLE beacon ... 1.
-
-**Usage:** 3. Efficient Background Operation: The app is optimized to run in the background, ensuring that your FlipperZero can still be tracked with minimal ... Step 1: Installation
+> BLE mouse auto-clicker. Sends mouse clicks to your phone at a configurable frequency via Bluetooth. If you're playing Cookie Clicker or similar tap games, this automates the tapping. Only connect to devices you own.
 
 #### Flight Monitor *(by Dr.Mosfet)*
-> Monitor aircraft parameters from flight simulator ﻿Flight Monitor - War Thunder Dashboard for Flipper Zero Real-time Aircraft Parameters Monitor for Flipper Zero This is a comprehensive flight monitoring application designed for the Flipper Zero that interfaces with War Thunder flight simulator via.
-
-**Usage:** Flight Parameters Display The application provides accurate and real-time readings for complete flight telemetry:
+> War Thunder flight simulator dashboard. Monitor aircraft parameters from the game displayed on the Flipper's screen via Bluetooth. See speed, altitude, and other telemetry in real-time.
 
 #### Govee Control *(by devdotbo)*
-> Control Govee BLE LED devices Govee Control for Flipper Zero Control Govee H6006 Smart LED Bulbs directly from your Flipper Zero! - BLE device discovery
+> Control Govee H6006 Smart LED Bulbs via BLE. Power on/off control with BLE device discovery. Control your smart lights directly from the Flipper.
 
-**Usage:** Enable Bluetooth on your Flipper. Launch the app and pair with the target device.
-
-#### MagicBand Plus Lights (Unofficial) *(by Henry Willis (Haw8411))*
-> Trigger light effects on compatible bands. Not affiliated with Disney. Disney MagicBand + Lights at home Unofficial project. Not affiliated with, endorsed, or sponsored by The Walt Disney Company. MagicBand and MagicBand+ are trademarks of Disney Enterprises, Inc. Names are used only to
-
-**Usage:** Enable Bluetooth on your Flipper. Launch the app and pair with the target device.
+#### MagicBand Plus Lights
+> Trigger light effects on compatible MagicBand+ wristbands via BLE. Not affiliated with Disney — names used only to describe compatibility.
 
 #### PC Monitor *(by Olejka)*
-> Application for monitoring PC resources Flipper Application for monitoring PC resources A backend running on your PC is required Many thanks to Willy-JL for implementing BLE Serial for the new firmware and bringing the app back to life
-
-**Usage:** Enable Bluetooth on your Flipper. Launch the app and pair with the target device.
+> Monitor your computer's CPU, RAM, GPU, and temperature on the Flipper's screen via Bluetooth. Requires the PC Monitor backend running on your PC. Auto-connects and streams system metrics over BLE Serial.
 
 #### Remote for Kodi *(by coded-with-claws)*
-> Application Bluetooth remote Keynote for Kodi (original app + feature: long press on OK to switch between Space and Return (useful for Kodi to navigate the menus))
-
-**Usage:** Enable Bluetooth on your Flipper. Launch the app and pair with the target device.
+> Bluetooth remote for Kodi media center. Navigate menus, control playback. Long press OK to switch between Space and Return keys (useful for Kodi menu navigation). Based on the original BT HID app with Kodi-specific features.
 
 </details>
 
 <details><summary><h3>🎵 Media — 29 apps</h3></summary>
 
-#### ATM player *(by apfxtech)*
-> ATM music player from Arduventure. ATM — это плеер музыки для Flipper Zero на базе ATM-синтезатора (движок из Arduventure/Arduboy). Приложение читает текстовые файлы .atm из assets/, компилирует их во внутренний бинарный ATM-формат и воспроизводит через ATM.play().
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+#### ATM Player
+> Music player using the ATM synthesizer engine from Arduventure/Arduboy. Reads .atm text files from assets and plays them through the speaker. Chiptune-style audio playback.
 
 #### BPM Tapper *(by @panki27)*
-> Tap center button to measure BPM A BPM Tapper for the Flipper Zero. 1. Navigate to the FAP Build GitHub action workflow, and select the most recent run.
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Tap the center button along with a song to measure its beats per minute. BPM updates in real-time as you tap. Useful for DJs, musicians, or anyone who needs to know a song's tempo.
 
 #### DVD Screensaver *(by shantih19)*
-> DVD Screensaver clone Flipper Zero DVD Screensaver A DVD player inspired screensaver for the Flipper Zero.
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> The classic DVD player screensaver — a logo bouncing around the screen. Watch it and wait for the perfect corner hit. A mesmerizing time-waster.
 
 #### Etch a Sketch *(by @SimplyMinimal)*
-> Turn the Flipper Zero into an Etch A Sketch FlipperZero-Etch-A-Sketch Turn the Flipper Zero into an Etch A Sketch This is a modification of the original paint app.
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Classic drawing toy. Use d-pad to move the cursor and draw lines. Press OK to draw a dot, hold OK for continuous drawing. Hold Back to clear. Simple pixel art on the 128×64 canvas.
 
 #### Fart Sound Generator *(by F. Greil)*
-> A simple app that produces a flatulent sound effect for light relief and to improve your morale during breaks. mitzi-windbreak Flipper Zero App to generate interesting noises. This a bit juvenile sound app allows your Flipper to break winds with adjustable parameters 💨
-
-**Usage:** 1. Navigate: Use Up/Down buttons to select a parameter - Wet/Dry: Controls frequency variation - wet farts have more wobble, dry farts are more stable
+> Adjustable flatulence sound generator. Configure Wet/Dry (frequency variation), duration, and other parameters. Juvenile but entertaining. Uses the Flipper's speaker for maximum effect.
 
 #### Flizzer Tracker *(by LTVA)*
-> An advanced Flipper Zero chiptune tracker with 4 channels Flizzer Tracker A Flipper Zero chiptune tracker. Supports 4 channels, external (through PA6 pin) and internal (built-in buzzer) audio output. Each channel has a functionality akin to MOS Technology SID sound chip ... Telegram channel
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Advanced 4-channel chiptune music tracker. Compose 8-bit music with SID-like sound channels. Supports external audio output (PA6 pin) and internal buzzer. A surprisingly capable music creation tool.
 
 #### Fmatrix *(by misterwaztaken)*
-> Displays a 'matrix rain' screensaver. fmatrix is a simple Flipper Zero app that displays the famous "matrix rain" effect. (suggestions appreciated and welcome!) Make it rain! - Makes it rain (Displays the matrix effect.)
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Matrix rain screensaver — the iconic falling green characters from The Matrix. Open and watch. Press any button to exit.
 
 #### FMF2USBMIDI *(by crackerjacques)*
-> Convert Flipper Zero Music Player file to MIDI Signal and transfer it via USB Port. Flipper_Zero_FMF2USBMIDI Convert Flipper Zero Music Player file to MIDI Signal and transfer it via USB Port. this code was tested in Flipper Zero SDK v50.1 to v54.0
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Convert Flipper Music Player files to MIDI signals and transmit via USB. Connect to a DAW or music software and play Flipper music files as MIDI.
 
 #### Guido Music Score Reader *(by F Greil)*
-> A reader for Guido music score files A Guido musical notation reader for Flipper Zero OK opens file browser if no file is loaded. Otherwise starts/stops playback Up opens file browser to load a different file
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Reader for Guido musical notation files. Load score files, start/stop playback with OK, browse for different files with Up. Plays music from notation files through the speaker.
 
 #### Image Scroller *(by F Greil)*
-> A image scroller where you navigate a cursor over a (large, tiled) background image A simple Flipper Zero to view annotated, tiled images. The user can scroll around a large images (consisting of many small 128x64px-tiles saved in the assets/-folder).
-
-**Usage:** - Arrow Keys: Move cursor around - OK Button: Appears when there is an annotation for the current image position
+> Navigate large annotated images on the Flipper's screen. Scroll around tiled images (128×64px tiles) with a cursor. CSV files specify tile arrangement and annotations.
 
 #### Image Viewer *(by @polioan)*
-> Image viewer for flipper zero! Image viewer for flipper zero! 1. Create image with img2fbm 2. Drop image to SD card
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> View images stored on the SD card. Create images with img2fbm converter, drop on SD card, and browse them on the 128×64 screen.
 
 #### Karl Eido *(by F Greil)*
-> An app that mimics an optical instrument to generate beautiful patterns by using 3 mirrors. mitzi-karl-eido A simple Flipper Zero kaleidoscope app. Detailed description
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Kaleidoscope simulator using 3 virtual mirrors to generate beautiful symmetrical patterns. Debug info shown in top-right corner. A visual toy for the tiny screen.
 
 #### Metronome *(by @panki27 & @xMasterX)*
-> Metronome app A metronome for the Flipper Zero. 1. Navigate to the FAP Build GitHub action workflow, and select the most recent run.
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Musical metronome. Set BPM with Up/Down and the Flipper clicks at that tempo. Essential for musicians practicing timing. Simple and reliable.
 
 #### MIDI Ocarina *(by crackerjacques)*
-> Push button to play midi note over USB Flipper_Zero_MIDI_Ocarina push button to play midi note. I made this to check if the MIDI library TX works.
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Push buttons to play MIDI notes over USB. A simple MIDI instrument — each button sends a different note. Connect to a DAW to hear the output.
 
 #### MIDI RX *(by crackerjacques)*
-> receive midi and play song flipper_zero_midi_rx receive midi and play song
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Receive MIDI signals and play them through the Flipper's speaker. Connect via USB and the Flipper acts as a MIDI sound module.
 
 #### Morse Code *(by @wh00hw & @xMasterX)*
-> Simple Morse Code parser Simple Morse Code parser Flipper Application Package.
-
-**Usage:** - Up/Down buttons to set volume - Left/Right buttons to set Dit length in milliseconds
+> Morse code encoder and decoder. Enter text and hear it as Morse code through the speaker. Up/Down for volume, Left/Right for dit length in milliseconds.
 
 #### Music Beeper
-> Plays music files through the Flipper Zero's built-in speaker using simple beeper tones. Supports RTTTL and FMF music file formats stored on the SD card.
-
-**Usage:** Place music files (.rtttl or .fmf) on your SD card. Launch from Media menu, browse to your file, and press OK to play. Use d-pad to navigate between tracks.
+> Simple music playback through the Flipper's speaker. Basic tone generation for music files.
 
 #### Music Player
-> An app to play RTTL music files
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Play RTTTL (Ring Tone Text Transfer Language) music files through the speaker. Thousands of songs available online in RTTTL format. Place .fmf or .txt files on SD card and browse to play.
 
 #### Music Tracker *(by DrZlo13)*
-> App plays hardcoded tracker song Flipper Zero music tracker MVP Stage: minimum viable player
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Tracker-style music player that plays hardcoded tracker songs. MVP (minimum viable player) stage.
 
 #### Ocarina *(by invalidna-me)*
-> A basic Ocarina (of Time), Controls are the same as the N64 version of the Ocarina of Time flipperzero-ocarina A basic Ocarina (of Time) for the Flipper Zero.
-
-**Usage:** are the same as the N64 version of the Ocarina of Time, the Ok button takes the place of the A button
+> Ocarina of Time instrument. Controls match the N64 version — OK button replaces the A button. Play the iconic Zelda melodies on your Flipper.
 
 #### Paint *(by @n-o-T-I-n-s-a-n-e)*
-> A basic Paint app, Click Ok to draw dot, hold Ok to enable drawing continuously, hold Back to clear the screen
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Basic drawing application. D-pad to move cursor, OK to draw. Simple pixel art tool on the 128×64 screen.
 
 #### SAM AYBABTU
-> Media player/viewer application for Flipper Zero.
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Text-to-speech using SAM (Software Automatic Mouth) — the classic 1982 speech synthesizer. "All Your Base Are Belong To Us" themed. Type text and hear it spoken in SAM's robotic voice.
 
 #### Snowflake *(by F Greil)*
-> Simple app to show aesthetic images mitzi-snowflake A simple Flipper Zero app to create nice-looking 60° or 120° graphics. Watch the iterative growth of a snowflake on 64x64 pixels.
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Aesthetic snowflake growth visualization. Watch iterative growth of a 60° or 120° snowflake on 64×64 pixels. Up/Down to adjust parameters. Beautiful generative art.
 
 #### Space Playground *(by Alan Silva)*
-> A simple space simulation playground for Flipper Zero Space Playground Link to the app: https://lab.flipper.net/apps/fzspground This is a "screensaver" that simulates a space environment with planets and asteroids.
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Space simulation screensaver with planets and asteroids. Highly customizable — configure the simulation to your liking. A relaxing visual experience.
 
 #### Text to SAM *(by @Round-Pi & (Fixes by @Willy-JL))*
-> Convert text to speech on your Flipper Zero with SAM (Software Automatic Mouth). - Type in a message and press the back button (or select save and press back at the text preview) - SAM will say the message and the app will exit.
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Convert text to speech using SAM (Software Automatic Mouth). Type a message, press back, and SAM speaks it through the speaker. The same engine that powered speech on the Commodore 64.
 
 #### Tuning Fork *(by @besya)*
-> Tuning fork for tuning musical instruments and more Tuning fork for tuning musical instruments and more - 6 strings: Standard, Drop D, DADGAD (Dsus4), Standard D, CGCFGC(Csus4), Drop C, CGCFGC - 7 strings: Standard, Drop A, Standard A
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Generate precise reference tones for tuning instruments. Supports guitar (Standard, Drop D, DADGAD, and more), and other instruments. Select your tuning and the Flipper plays the reference pitch.
 
 #### USB-MIDI
-> Turn Flipper into MIDI instrument This is a simple Flipper app, that turns it into a monophonic MIDI instrument. Launch the app, connect to computer via USB, use in music software.
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+> Turn the Flipper into a USB MIDI instrument. Connect to a computer via USB and it appears as a MIDI device. Use buttons to send MIDI notes. Works with any DAW or music software. Monophonic.
 
 #### Video Player *(by LTVA)*
-> An app that plays video along with sound on Flipper Zero. A Flipper Zero application to play video files (with sound). Uses custom video file format. Is proven to work at 30 FPS and 44100 Hz audio sample rate with full 128 by 64 pixels resolution. Maximum...
+> Play video files with synchronized audio on the 128×64 screen. Videos must be converted to Flipper's format (1-bit, 128×64). Surprisingly watchable on the tiny monochrome display.
 
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
-
-#### WAV Player *(by @DrZlo13 & (ported, fixed by @xMasterX), (improved by @LTVA1))*
-> Audio player for WAV files, recommended to convert files to unsigned 8-bit PCM stereo, but it may work with others too A Flipper Zero application for playing wav files.
-
-**Usage:** Launch from the Media/Apps menu. Use d-pad to browse and OK to play/select.
+#### WAV Player *(by @DrZlo13 & (ported)*
+> Play WAV audio files through the speaker. Supports correct playback speed for different sample rates and mono files. Recommended: unsigned 8-bit PCM format. Browse .wav files on SD card.
 
 </details>
 
-<details><summary><h3>🔌 Usb — 26 apps</h3></summary>
+<details><summary><h3>🔌 USB — 26 apps</h3></summary>
 
 #### Agentic Remote USB *(by Kasen Sansonetti)*
-> One-handed USB remote for AI coding agents (Claude Code). 5-button D-pad control, macros, offline manual + quiz.
-
-**Usage:** A one-handed Flipper Zero remote for Claude Code and AI coding agents. Five buttons. No keyboard required. Built by Kasen Sansonetti & Wetware Labs.
+> One-handed USB remote for AI coding agents (Claude Code). 5-button d-pad control — no keyboard required. Dictate and submit code without touching the keyboard.
 
 #### Bad Duck3 *(by dutchpatriot)*
-> DuckyScript 3.0 interpreter with USB/BLE HID support. Loops, variables, conditionals. Bad Duck3 - DuckyScript 3.0 for Flipper Zero The first DuckyScript 3.0 implementation for Flipper Zero with USB and Bluetooth HID support. DuckyScript 3.0 Language
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+> DuckyScript 3.0 interpreter — the first full implementation for Flipper Zero. USB and Bluetooth HID support. Full control flow: variables, conditionals, loops, functions, and more.
 
 #### BadUSB Pro *(by PentestSuite & barkandbite)*
-> Advanced USB HID keystroke injection with LED feedback ____ _ _ _ ____ ____ ____
+> Advanced USB HID keystroke injection with LED feedback. Enhanced version of BadUSB with additional features and visual status indicators.
 
-**Usage:** DuckyScript 3.0 keystroke injection engine for Flipper Zero BadUSB Pro turns Flipper Zero into a USB HID keyboard that executes DuckyScript 3.0 payloads against a connected computer. Unlike the Flipper's bui...
-
-#### BarCode ScannerE *(by Igor Danilov / polarikus)*
-> Emulates a barcode scanner for testing cash registers (Evotor). Why buy a scanner when you have a flipper? Bar code scanner emulator Scanner work at COM-port emulation. Characteristics
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+#### BarCode Scanner Emulator
+> Emulates a barcode scanner for testing cash registers (Evotor). Sends barcode data over USB at 19200 baud. Why buy a scanner when you have a Flipper?
 
 #### CCID Emulator *(by PentestSuite & barkandbite)*
-> Programmable USB smartcard emulator via CCID ____ ____ ___ ____ _____ _ _ / ___/ ___\|_ _\| _ \\| ____\|_ __ ___ _ _\| \| __ _\| \|_ ___ _ __ \____\____\|___\|____/\|_____\|_\| \|_\| \|_\|\__,_\|_\|\__,_\|\__\___/\|_\|
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+> Programmable USB smartcard emulator via CCID (Chip Card Interface Device). Emulate smart cards over USB for testing card readers and applications.
 
 #### Chameleon Ultra *(by Chameleon Flipper Team / muylder)*
-> Control Chameleon Ultra via USB/Bluetooth - Manage slots, transfer tags, emulation Chameleon Flipper - Chameleon Ultra Controller for Flipper Zero Complete Flipper Zero application (.fap) to control and manage your Chameleon Ultra device via USB or Bluetooth.
-
-**Usage:** 🎬 Features fun bar animation when devices connect! Watch Chameleon and Dolphin meet at a bar! 🍺 - 📖 Quick Start Guide - Get started in minutes
+> Control and manage Chameleon Ultra devices via USB or Bluetooth. Manage slots, configure emulation settings. Quick start guide and animation documentation included.
 
 #### Click Recorder *(by 0x78f1935)*
-> Record, shuffle, spam mouse clicks or use as a full mouse over USB or BLE HID Click Recorder for Flipper Zero Turn your Flipper Zero into a powerful mouse automation tool. Record, replay, randomize, or spam mouse clicks over USB or Bluetooth.
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+> Mouse automation tool. Record, replay, randomize, or spam mouse clicks over USB or Bluetooth. Capture exact click timing and replay perfectly. No software needed on the target computer.
 
 #### Clippy *(by mtormento)*
-> Implements a shared clipboard Has ever happened to you when you are setting up your new smartphone and you are asked for the wifi password to feel the extreme urge to start cursing every known divinity? Clippy solves this problem by turning your Flipper Zero into a cross-device shared clipboard.
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+> Cross-device shared clipboard. Copy text on one device, paste on another via the Flipper. Turns your Flipper into a USB keyboard that types whatever you've stored. Solves the "WiFi password on new phone" problem.
 
 #### FlipDeck *(by FlipDeck / ismail-oe)*
-> USB HID Macro Pad with configurable pages Turn your Flipper Zero into a USB macro pad.
+> USB HID macro pad with configurable pages. Media keys work instantly on any OS. Custom keys trigger configurable actions through a lightweight host daemon. Extensible plugin system.
 
-**Usage:** FlipDeck transforms your Flipper Zero into a programmable USB macro pad with media controls, custom shortcuts, and an extensible plugin system. Med... Format: ACTION:Label:Symbol — one per line, up to 6 per page.
+#### FlipPass *(by Arckanos)*
+> KeePass KDBX 4 vault browser with USB and Bluetooth HID typing. Open KeePass vaults stored on SD card, browse groups and entries, and type credentials to another device. Read-only — doesn't modify the database.
 
 #### FlipperTrack *(by pinkpwningclub)*
-> USB HID activity simulator: mouse jitter, keystrokes, and window cycling
-
-**Usage:** USB HID activity simulator for Flipper Zero. Generates periodic mouse movement, keystroke bursts, and window-cycling inputs over USB HID — useful f...
+> USB HID activity simulator — generates periodic mouse movement, keystroke bursts, and window-cycling inputs. Keeps systems active during presentations or testing. Mouse jiggler with extra features.
 
 #### Gatekeeper *(by enexis1337)*
-> Secure BadUSB password launcher with combo lock Gatekeeper is a secure password manager for the Flipper Zero that leverages the BadUSB (HID emulation) capabilities. It allows you to store your most-used credentials and "type" them into any compu...
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+> Secure BadUSB password launcher with combo lock. Store credentials with labels and icons, protected by a combination lock. Select and inject passwords via USB HID.
 
 #### HID Exfil *(by PentestSuite & barkandbite)*
-> HID-based data exfiltration via keyboard LED feedback channel _ _ ___ ____ _____ __ _ _ HID Exfil exploits the USB HID keyboard LED channel as a unidirectional covert data exfiltration path. Normally, keyboard LEDs (CapsLock, NumLock, ScrollLock) are controlled by the host OS to reflect lock state.
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+> HID-based data exfiltration via keyboard LED feedback channel. Demonstrates how data can be extracted from a computer using the keyboard LED status bits as a covert channel. Security research tool.
 
 #### HID File Transfer *(by Kavakuo)*
-> This is an application for the Flipper Zero that allows to exchange files using the HID protocol with around 260kB/s. This approach is especially useful when access to mass storage devices is blocked on a PC.
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+> Exchange files using HID protocol at ~260KB/s. Especially useful when mass storage is blocked on a PC. Requires a Windows/Linux client executable for the data exchange.
 
 #### LEGO Dimensions Toy Pad *(by Seger)*
-> USB Toy Pad emulator for Lego Dimensions Flipper Zero Lego Dimensions ToyPad Emulator Use your Flipper Zero as a Lego Dimensions ToyPad This project emulates the behavior of the original USB ToyPad, allowing you to interact with Lego Dimensions using your Flipper Zero.
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+> Emulate a LEGO Dimensions USB Toy Pad. Play LEGO Dimensions on a console without the physical pad. Place virtual characters and vehicles from the Flipper's screen. Requires MIFARE Classic 1k NFC files.
 
 #### Mass Storage
-> Implements a mass storage device over USB for disk images
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+> Turn the Kiisu into a USB mass storage device for disk images. Mount .img files from SD card as a removable USB drive. Supports spoofing USB identity (manufacturer, product, VID/PID) for testing.
 
 #### Mouse Jiggler *(by Jacob-Tate)*
-> Jiggles mouse over USB
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+> Simple USB mouse jiggler. Keeps your computer awake by generating tiny mouse movements. Prevents screen lock and sleep mode.
 
 #### MTP *(by Alex4386)*
-> Use Flipper Zero as a MTP device. Flipper Zero: MTP See this in action on YouTube! - Latest Release: Download
+> Use the Kiisu as an MTP (Media Transfer Protocol) device. Browse and transfer SD card files through your computer's file manager. Alternative to qFlipper for file management. Works on Windows, macOS, and Linux.
 
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+#### Nintendo Switch Controller
+> Emulate a Nintendo Switch Pro Controller over USB with macro recording and playback. Three control modes: D-Pad, Left Stick, Right Stick. Record button sequences and replay them.
 
 #### PC Monitor USB *(by DonJulve & TheSainEyereg)*
-> Application for monitoring PC resources via USB PC Monitor (USB Version) Flipper Application for monitoring PC resources via USB (Virtual COM Port). A backend running on your PC is required.
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+> Monitor PC resources (CPU, RAM, GPU, temperature) via USB Virtual COM Port. USB version of the Bluetooth PC Monitor app. Requires the PC Monitor backend on your computer.
 
 #### Portal Of Flipper *(by sanjay900)*
-> USB emulator Portal of Flipper Original App by bettse App Icon by mikeonut
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+> USB emulator for portal-style NFC toy figures (Skylanders, Disney Infinity). Emulates the USB portal hardware. Load NFC figure data from saved .nfc files. Requires MIFARE Classic 1k format.
 
 #### SD Card Mounter *(by Aaronjamt)*
-> Use Flipper as an SD card reader! Flipper Zero SD card mounter This is a small Flipper Zero app that lets you connect the internal micro SD card reader directly to your computer.
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
-
-#### Switch Controller *(by Claude)*
-> Nintendo Switch controller emulator with macro recording/playback Switch Controller - Flipper Zero App A Flipper Zero application that emulates a Nintendo Switch Pro Controller over USB with macro recording and playback capabilities. ✅ Compatible with Official Firmware and Momentum Firmware
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+> Use the Flipper as an SD card reader over USB. Raw card contents passed directly to the computer — supports filesystems not normally handled by the Flipper.
 
 #### USB Consumer Control *(by piraija)*
-> USB Consumer Control USB Consumer Control This is a Flipper Zero application for sending Consumer Control Button (CCB) presses as a USB HID device. This is useful for researching how various devices handle USB CCBs, for example in the cont... A more detailed writeup of the topic can be found here.
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
-
-#### USB Game Controller *(by crapbass)*
-> An app that emulates XInput controllers USB Game Controller for Flipper Zero
-
-**Usage:** This is an app for the Flipper Zero that emulates a game controller (specifically the Xbox 360 controller) and lets the user interact with the emul... It also contains a full implementation of XInput for the Flipper Zero that supports every input that a regular Xbox controller does, which you may ...
+> Send USB HID Consumer Control key presses — media keys like play/pause, volume, mute, next track, browser home, calculator launch. Useful for kiosk breakout testing or HID research.
 
 #### USB HID Autofire *(by pbek)*
-> This is a simple Flipper Zero application to send left-clicks as a USB HID device. USB HID Autofire Latest release \| This is a simple Flipper Zero application to send left-clicks as a USB HID device.
+> Send rapid left-clicks as a USB HID device. Simple auto-clicker over USB. Configurable click rate.
 
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+#### USB MIDI Capturing
+> Capture and monitor MIDI signals via USB. Real-time display of Note On/Off, Control Changes, Program Changes, Pitch Bend, and more.
 
-#### USB Midi Capturing *(by F Greil)*
-> A simple Flipper Zero USB Midi capturing app Towards a capturing MIDI signals via USB using Flipper Zero. The goal is to allow real-time monitoring of MIDI events including Note On/Off, Control Changes, Program Changes, Pitch Bend, and more.
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
-
-#### USB Remote *(by Cutch)*
-> Use Flipper as a HID remote control over USB
-
-**Usage:** Connect Flipper to a computer via USB. Launch the app and follow on-screen instructions.
+#### USB Game Controller *(by crapbass)*
+> XInput game controller emulator (Xbox 360). Connect via USB and the computer sees a standard Xbox 360 controller. D-pad = left joystick, OK = A, Back = B. Works with any PC game supporting XInput.
 
 </details>
 
-<details><summary><h3>⚡ Gpio/Sensors — 22 apps</h3></summary>
+<details><summary><h3>🏷️ RFID — 8 apps</h3></summary>
 
-#### [AS7331] UV Meter *(by Michael Baisch)*
-> Measure UV radiation using the AS7331 sensor A Flipper Zero application designed to measure ultraviolet (UV) radiation levels using the AS7331 sensor. It supports individual measurements for UV-A, UV-B, and UV-C wavelengths. The easiest way t...
+#### DCF77 Transmitter *(by arha & xMasterX)*
+> Sends the DCF77 time signal on the 125kHz RFID antenna and GPIO C3 pin. Synchronize radio-controlled clocks. Can transmit at original 77.5kHz or 155kHz for better range. Baseband signal output on C3 for external antenna.
 
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
+#### DCF77 Clock Sync *(by mdaskalov)*
+> Emulate DCF77 time signal on the RFID antenna and GPIO A4 pin. Uses PWM at 77.5kHz on GPIO. Clocks typically sync in 2-5 minutes depending on signal strength.
 
-#### [BH1750] Lightmeter *(by Oleksii Kutuzov)*
-> Lightmeter app for photography Lightmeter app for photography An application that suggests settings for your manual camera based on the reading of the ambient light sensor. Can also be used in a pure lux meter mode. Supported sensors
+#### EM4100 Key Generator *(by @Milk-Cool)*
+> Generate EM4100 key lists from a selected .rfid key file for use with the RFID fuzzer app. Creates systematic variations of a known key to test readers.
 
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
+#### FDX-B Maker *(by snowsign / Skye Gibbs)*
+> Construct ISO-compliant FDX-B animal microchip data on-device. Enter country code (0-999), national ID, and other fields. Saves as standard RFID files for writing to T5577 or EM4305 chips.
 
-#### [GPIO] Unitemp *(by @quen0n & (fixes by @xMasterX))*
-> Universal temperature sensors reader Unitemp - Universal temperature sensor reader Flipper Zero application for reading temperature, humidity, CO2 and pressure sensors like a DHT11/22, DS18B20, BMP280, HTU21, and more. List of supported sensors
+#### Simultaneous UHF RFID Reader *(by @RileyHaffner)*
+> Read up to 150 UHF RFID tags per second using ThingMagic readers (M6E Nano, M7E Hecto, YRM1000). High-speed inventory scanning via GPIO. 28KB stack for dual-reader buffering.
 
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
+#### T5577 Multiwriter *(by @Leptopt1los)*
+> Write multiple different RFID keys to a single T5577 rewritable tag. Store 2-3 different EM41xx identities on one chip. Proof of concept from Dangerous Things forum.
 
-#### [HC-SR] Dist. Sensor *(by @xMasterX (first implementation by @Sanqui))*
-> HC-SR(04) Distance sensor reader
+#### T5577 Raw Writer *(by Torron)*
+> Write raw data directly to T5577 tags. Configure modulation, RF clock, number of blocks, and block data. Load .t5577 files or configure manually. More control than standard RFID write.
 
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
+#### YRM100 UHF RFID
+> Read UHF RFID tags using a YRM100 module via GPIO. UHF operates at 860-960 MHz with much longer range than 125 kHz. Displays tag EPC data. For inventory management and asset tracking.
 
-#### [J305] Atomic Dice Roller
-> flipperzero-atomicdiceroller 🎲☢ An atomic dice roller for the Flipper Zero ☢🎲 Geiger Counter application must work on your Flipper Zero to be able to use this application. You need the same geiger board and this board must be connected in the same way as described in the.
+</details>
 
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
+<details><summary><h3>🔑 iButton — 2 apps</h3></summary>
 
-#### [J305] Geiger Counter *(by @nmrr)*
-> Works with J305 Geiger tube on external board flipperzero-geigercounter A geiger counter application for the Flipper Zero You need a geiger counter board to run this application. This board can be used : https://aliexpress.com/item/1005004074447209.html
+#### iButton Converter *(by @leptopt1los)*
+> Convert Cyfral and Metakom iButton keys to Dallas format. Multiple conversion modes for different key types. Useful when you need a key in a different format for compatibility.
 
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
-
-#### [MH-Z19] CO2 Logger *(by Harry O'Brien)*
-> CO2 Logger with CSV export App for reading CO2 ppm from MH-Z19 sensor and saving to a local csv file. 🌐 Web App - Visualize Your Data CO2 Logger Viewer — Plug in your Flipper, click connect, and instantly see your CO2 data as an interactive chart. No drivers, no apps, just your browser.
-
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
-
-#### [MH-Z19] CO2 Sensor *(by meshchaninov)*
-> Application for measuring carbon dioxide (CO2) with mh-z19 sensor and Flipper zero flipper-zero-mh-z19 Application for measuring carbon dioxide (CO2) with mh-z19 sensor and Flipper zero Instalation Guide
-
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
-
-#### [Mx2125] Accelerometer
-> This is a demostration of using GPIO interrupts to interpret data from the Memsic 2125 (Mx2125) Dual-Axis Accelerometer. This project is intended to be overlayed on top of an existing firmware repo. - Copy the "memsic_2125" folder to the \applications\plugins\memsic_2125 folder in your firmware.
-
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
-
-#### [RCWL-516] Motion Sensor
-> Rcwl-0516 Flippezero This fap plugin (app) for RCWL-0516 radar. RCWL-0516 is a doppler radar microwave motion sensor module
-
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
-
-#### [RCWL0516] Radar Scan *(by @MatthewKuKanich)*
-> Detects the movement of living things using radar Flipper Zero Radar Scanner The Flipper Zero Radar Scanner is an application designed for the Flipper Zeros GPIO capabilities, utilizing the RCWL-0516 Microwave Radar module to detect the presence and movement of living being...
-
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
-
-#### [RCWL0516] Sleep Counter *(by Argentum / silverwolf2r)*
-> Counts how much you move in your sleep Sleep Counter Flipper App This is a flipper app that counts how much you move in your sleep. Shoutout to MatthewKuKanich https://github.com/MatthewKuKanich/flipper-radar he is the one who made the original app for this Radar module.
-
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
-
-#### [USPING] Dist. Sensor *(by privet971)*
-> Ultrasound measurments with PING))) Parallax sensor SKU 28015 (3 wires) FlipperZeroApps
-
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
-
-#### Gas Sensor *(by iancohee)*
-> Simple application that reads BME680 and SGP30 data. Simple application that reads BME680 and SGP30 data. Note that the BEM680 needs to have SD0 and CS connected to the "high" line. !wiring diagram
-
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
-
-#### MAX31855 *(by skotopes)*
-> MAX31855 Thermocouple Sensor Application
-
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
-
-#### MH-Z19 UART *(by Aku)*
-> GPIO-based tool that interfaces with external hardware modules.
-
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
-
-#### Plantower PMSx003 sensor reader *(by 3cky)*
-> Plantower PMSx003 sensor reader Airmon for Flipper Zero A simple Flipper Zero air quality monitoring application. It displays measured PM1.0/PM2.5/PM10 [Particulate Matter] concentrations
-
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
-
-#### Radiation Sensor *(by sionyx)*
-> Works with RadSens external module Flipper application for RadSens module RadSens Application is not official application allows you to get level of current radiation measured by RadSens dosimeter module based on a Geiger tube. The Application stores amount of particles between launches.
-
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
-
-#### UV Meter [AS7331] *(by Michael Baisch)*
-> Measure UV radiation using the AS7331 sensor A Flipper Zero application designed to measure ultraviolet (UV) radiation levels using the AS7331 sensor. It supports individual measurements for UV-A, UV-B, and UV-C wavelengths. The easiest way t...
-
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
-
-#### VEML7700 Lux Meter *(by kamylwnb / Dr.Mosfet)*
-> Measures ambient light in lux using a VEML7700 sensor via I2C bus and displays the value on the screen.
-
-**Usage:** Simple Menu: Intuitive navigation using the Flipper Zero buttons (OK, arrows, Back).
-
-#### VL6180X Distance Sensor [I2C] *(by Kyle Diller)*
-> This is a simple app the makes uses of the Adafruit VL6180X distance sensor. The code for configuring and reading from the VL6180X is a port of the Circuit Python code provided by Adafruit. There is also a C++ library for use with an Arduino.
-
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
-
-#### Water Sensor Reader *(by MatveyStrelov)*
-> Water Sensor Reader is a simple Flipper Zero application that reads an analog water sensor connected to a GPIO pin and displays its values in real-time. The app shows both the raw ADC value and the corresponding voltage in millivolts, along with a visual progress bar.
-
-**Usage:** Connect the sensor to your Flipper's GPIO pins. Launch the app to start reading sensor data on screen.
+#### iButton Fuzzer *(by gid9798 xMasterX)*
+> Fuzzer for iButton readers. Test readers with default UIDs and frequently used UIDs. Identifies "denial of service" vulnerabilities from incorrect UIDs or rapid access. Visual style inspired by the Sub-GHz bruteforcer.
 
 </details>
 
 <details><summary><h3>⚙️ Settings — 7 apps</h3></summary>
 
 #### Animation Switcher *(by lsalik2)*
-> Change your background animations on the fly! Flipper Animation Switcher A Flipper Zero application for creating, managing, and switching animation playlists - template manifest.txt files that control which background animations play on your Flipper. Supports up to 128 ...
+> Create, manage, and switch animation playlists on the fly. Template manifest.txt files control which background animations play. Supports up to 128 animations per playlist. Fine-tune per-animation settings.
 
-**Usage:** Launch from Settings/Apps menu. Use d-pad to navigate options and OK to change values.
-
-#### Antidepressants *(by nymda)*
-> App to change the level, experience and mood/butthurt of your dolphin pet, EXP adjusted for Rogue Master Custom Firmware. FlipperAntidepressants Flipper application that allows changing of the background XP and Butthurt values !Screenshot-20230306-115930
-
-**Usage:** Launch from Settings/Apps menu. Use d-pad to navigate options and OK to change values.
+#### Antidepressants (Dolphin Trainer)
+> Change your Flipper's XP level and butthurt values. Adjust background XP, modify dolphin emotional state, and change levels directly. By Lambda.
 
 #### Extend Range
-> flipperzero-extend-range Extend SubGHz Range Instead of manually changing the configuration of the subghz module (to enable the full potential), this application does it for you.
-
-**Usage:** Launch from Settings/Apps menu. Use d-pad to navigate options and OK to change values.
+> Extend Sub-GHz range by automatically configuring the CC1101 module for full potential. Does what manual configuration changes do, but with one click.
 
 #### Gauge Tool *(by Aku)*
-> Gauge Tool (Use only if you know what you are doing)
-
-**Usage:** Launch from Settings/Apps menu. Use d-pad to navigate options and OK to change values.
+> Gauge calibration tool. Use only if you know what you're doing — modifies hardware calibration settings.
 
 #### Name Changer
-> Change your Flipper Zero's display name without connecting to a computer. The new name appears on the main screen, in Bluetooth, and when connecting to other devices.
-
-**Usage:** Launch from Settings. Type your desired name using the on-screen keyboard and confirm. Your Flipper will reboot with the new name applied.
+> Change your Flipper's display name. Set a custom name that appears on the device and in Bluetooth advertising.
 
 #### Smack My Dolphin Up! *(by siberianbot)*
-> For those whom won't bother yourself with dolphin emotional state Smack My Dolphin Up! For those whom won't bother yourself with dolphin emotional state
-
-**Usage:** Launch from Settings/Apps menu. Use d-pad to navigate options and OK to change values.
+> Reset dolphin emotional state for those who don't want to deal with the virtual pet's mood system. Quick fix for a grumpy dolphin.
 
 #### Theme Manager *(by Hoasker)*
-> Manage dolphin animation themes from SD card 🎨 Theme Manager for Flipper Zero Manage dolphin animation themes directly from your Flipper Zero — no PC required. - Flipper Apps Catalog
-
-**Usage:** Launch from Settings/Apps menu. Use d-pad to navigate options and OK to change values.
+> Manage dolphin animation themes from SD card — no PC required. Browse, preview, and switch between animation themes directly on-device. Available on the Flipper App Catalog.
 
 </details>
 
 <details><summary><h3>🔧 Tools/Educational — 7 apps</h3></summary>
 
 #### ASCII Table *(by x10102)*
-> An ASCII table for your flipper! A pocket ASCII table for your Flipper Zero. You never know when you might need one ;) - UP / DOWN - Pretty self-explanatory - LEFT / RIGHT - Skip 10 symbols
+> Pocket ASCII reference table. Scroll through all ASCII characters with their decimal, hex, and binary values. Up/Down to scroll, Left/Right to skip 10 symbols. You never know when you might need one.
 
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
+#### C Programming Language
+> The C Programming Language reference by Kernighan and Ritchie. Browse the complete guide to ANSI standard C on your Flipper's screen. A programmer's pocket reference.
 
 #### Crypto Dictionary *(by armixz)*
-> Cryptography Dictionary (Flipper Zero Edition) Flipper-Zero-Crypto-Dictionary Cryptography Dictionary is a comprehensive reference tool that provides detailed info on various algorithms.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
+> Comprehensive cryptography reference. Detailed information on various cryptographic algorithms — their history, how they work, and their security properties. Educational reference tool.
 
 #### Extra Demo *(by Milk-Cool)*
-> A pack of extra commands for the Flipper Zero (a C library). A pack of extra commands for the Flipper Zero (a C library). Check out the demo here! In your app directory run: To include it in a plugin:
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
+> A pack of extra commands for the Flipper Zero (C library). Demo application showcasing additional capabilities. Useful as a reference for developers.
 
 #### FAP Boilerplate *(by leedave)*
-> A Boilerplate FAP or FAP template to use as a starting point in your new custom app Flipper Zero FAP Boilerplate Use this code as a foundation for developing Flipper Zero Applications, change the contents of this file when developing a new project - Different Scenes / Views
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
+> Template/starting point for new Flipper Zero applications. Includes start screen, menu, and basic app structure. Change the contents when developing a new project.
 
 #### Flipper Doctor *(by JulanDeAlb)*
-> Lets you view all information's regarding your flippers experience and butthurt. Flipper Doctor for OFW This Flipper application lets you view all information's regarding your flippers experience and butthurt. General XP and Butthurt View
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
+> View all information about your Flipper's experience and butthurt values. General XP and butthurt display. Diagnostic tool for understanding your dolphin's state.
 
 #### Plugin Demo *(by csBlueChip)*
-> A simple plugin for the FlipperZero written as a tutorial example [ie. excessive documentation & error handling]. See code. FlipperZero_plugin_howto A simple plugin for the FlipperZero written as a tutorial example [ie.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### The C Prog. Language *(by armixz)*
-> The C Programming Language, Flipper Zero Edition (by Brian W. Kernighan, Dennis M. Ritchie) Flipper-Zero-The-C-Programming-Language The authors present the complete guide to ANSI standard C language programming. by Brian W. Kernighan, Dennis M. Ritchie.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
+> Simple plugin tutorial with excessive documentation and error handling. Written as an educational example for developers learning to create Flipper Zero applications.
 
 </details>
 
-<details><summary><h3>⚡ Gpio/Debug — 10 apps</h3></summary>
+<details><summary><h3>📦 Misc — 1 apps</h3></summary>
 
-#### [AVR] AVR Flasher
-> Application for flashing AVR microcontrollers
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [FTDI232H] FlipTDI *(by SkorP)*
-> Flipper FTDI232H emulator.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [I2C] i2c Tools *(by @NaejEL)*
-> Set of i2c tools flipperzero-i2ctools Set of i2c tools for Flipper Zero Look for i2c peripherals adresses
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [INA2xx] INA Meter *(by cepetr)*
-> Application for reading TI INAxxx sensors. INA Meter for Flipper Zero INA Meter is an application for Flipper Zero that allows you to read I2C-connected current/power monitors from Texas Instruments. Supported Sensors:
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [SPI] SPI Mem Manager
-> Application for reading and writing 25-series SPI memory chips
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [SWD-JTAG] DAP Link
-> Enables use of Flipper as a debug probe for ARM devices, implements the CMSIS-DAP protocol Flipper Zero as CMSIS DAP/DAP Link Flipper Zero as a Free-DAP based SWD\JTAG debugger. Free-DAP is a free and open source firmware implementation of the CMSIS-DAP debugger.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [SWD] SWD Probe *(by @g3gg0 & (fixes by @xMasterX))*
-> ARM SWD (Single Wire Debug) Probe ARM SWD (Single Wire Debug) Probe Modern microcontrollers have support for the two wire debug interface SWD, which makes wiring a lot simpler.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [W5500] Ethernet *(by @karasevia & @arag0re & @xMasterX)*
-> Test your Ethernet connection with W5500 module and Flipper Flipper Zero Ethernet Troubleshooter This is a small helper that lets you connect your Flipper via RJ45 to your network You can then set the interface-mac and test if you can get an IP via DHCP and the ping addresses.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### AVR Flasher
-> Application for flashing AVR microcontrollers
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### Ethernet Troubleshooter W5500 *(by karasevia)*
-> This is a small helper that lets you connect your Flipper via RJ45 to your network. You can then set the interface-mac and test if you can get an IP via DHCP and the ping addresses.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### Clock (DAB Timer)
+> Clock with stopwatch and configurable alarm (default 80 seconds, adjustable in 5-second intervals). Sound options configurable. A utility clock with timer functionality.
 
 </details>
 
-<details><summary><h3>⚡ Gpio/Esp32 — 22 apps</h3></summary>
+<details><summary><h3>⚡ GPIO/Sensors — 21 apps</h3></summary>
 
-#### [CAM] Morse Flash v0.1 *(by eried)*
-> ESP32-CAM app to stream a message in morse using the powerful flashlight. [Unplug the USB cable to test with Mayhem] UART Terminal for Flipper Zero Flipper Zero app to control various devices via UART interface. - Read log and command output by uart
+#### Plantower PMSx003
+> Air quality monitor using Plantower PMS sensors. Displays PM1.0/PM2.5/PM10 particulate matter concentrations and calculated Air Quality Index (AQI).
 
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
+#### Atomic Dice Roller
+> True random number generator using a J305 Geiger-Müller tube. Radioactive decay events generate genuinely random dice rolls. Hardware RNG at its most literal.
 
-#### [ESP32] Camera *(by Z4urce)*
-> ESP32-CAM live feed and photo capture Camera application for Flipper Zero - Up - Increase contrast - Down - Decrease contract
+#### CO2 Logger (MH-Z19)
+> CO2 data logger with CSV export. Record carbon dioxide levels over time using an MH-Z19 sensor. Export data for analysis.
 
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
+#### Distance Sensor (USPING)
+> Ultrasonic distance measurement using Parallax PING))) sensor (SKU 28015, 3-wire). Displays distance readings in real-time.
+
+#### Gas Sensor *(by iancohee)*
+> Read BME680 and SGP30 environmental sensor data. Monitor air quality, temperature, humidity, and pressure with these popular I2C sensors.
+
+#### Geiger Counter (J305)
+> Radiation detector using J305 Geiger-Müller tube on external board. Displays counts per minute and estimated radiation dose.
+
+#### Distance Sensor (HC-SR)
+> Ultrasonic distance measurement using HC-SR04 sensor. Displays distance in centimeters. Simple and accurate for short-range measurements.
+
+#### Lightmeter (BH1750)
+> Photography lightmeter using BH1750 ambient light sensor via I2C. Measure light levels for exposure calculations.
+
+#### MAX31855 *(by skotopes)*
+> Thermocouple temperature reader using MAX31855 sensor. Read high-temperature measurements from K-type thermocouples.
+
+#### Accelerometer (Mx2125)
+> Read acceleration data from Memsic 2125 dual-axis accelerometer. Display tilt and motion data.
+
+#### CO2 Sensor (MH-Z19)
+> Real-time CO2 measurement using MH-Z19 sensor. Display current carbon dioxide concentration.
+
+#### MH-Z19 UART *(by Aku)*
+> Alternative MH-Z19 CO2 sensor interface via UART. Direct serial communication with the sensor.
+
+#### Radar Scanner (RCWL0516)
+> Detect movement of living things using RCWL-0516 microwave radar module. Detects motion through walls and obstacles.
+
+#### Radiation Sensor *(by sionyx)*
+> Interface with RadSens external radiation detection module. Display radiation levels from the dedicated sensor board.
+
+#### Motion Sensor (RCWL-516)
+> Motion detection using RCWL-516 radar module. Simple presence detection without line-of-sight requirement.
+
+#### Sleep Counter (RCWL0516)
+> Count how much you move in your sleep using RCWL-0516 radar. Place near your bed and track nighttime movement. Interesting sleep quality data.
+
+#### Unitemp
+> Universal sensor reader supporting 20+ temperature, humidity, pressure, and CO2 sensors. DHT11/22, DS18B20, BMP280, BME280, SHT30, AHT10/20, and many more. Auto-detects connected sensors. The go-to app for environmental monitoring.
+
+#### UV Meter (AS7331)
+> Measure UV radiation using AS7331 sensor via I2C. Monitor ultraviolet light levels — useful for sun safety and UV curing applications.
+
+#### VEML7700 Lux Meter *(by kamylwnb / Dr.Mosfet)*
+> Measure ambient light in lux using VEML7700 sensor via I2C. Displays real-time light level readings.
+
+#### VL6180X Distance Sensor
+> Distance measurement using VL6180X time-of-flight sensor via I2C. Accurate short-range distance readings. Ported from Adafruit's CircuitPython library.
+
+#### Water Sensor Reader *(by MatveyStrelov)*
+> Read analog water sensor values via GPIO. Displays raw ADC value and corresponding voltage in millivolts. For leak detection and water level monitoring.
+
+</details>
+
+<details><summary><h3>⚡ GPIO/ESP32 — 14 apps</h3></summary>
 
 #### BLE Killer *(by H4lo)*
-> A Bluetooth expansion board based on flipper zero to scan surrounding low-power Bluetooth devices and Bluetooth device controllers The Bluetooth expansion board (ble ext) based on flipper zero realizes the scanning of surrounding low-power Bluetooth devices and the integrated Bluetooth device.
-
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
+> Bluetooth expansion board scanner. Scan surrounding BLE devices and controllers using ESP32 Dev Board.
 
 #### BLE Scanner *(by PentestSuite / barkandbite)*
-> BLE advertisement scanner via ESP32 Dev Board — detects AirTags, skimmers, rogue beacons
-
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
+> BLE advertisement scanner via ESP32 Dev Board. Detects AirTags and other BLE beacons in the area.
 
 #### BT Audio *(by Father Divine)*
-> Control ESP32 Bluetooth Audio via UART BT Audio - Bluetooth Audio Player for Flipper Zero A Flipper Zero application that plays MP3 audio (Bluetooth A2DP audio streaming) by controlling ESP32-based boards over UART. The ESP32 acts as an A2DP source by default, streaming audio TO Bluetoo...
+> Control ESP32 Bluetooth audio via UART. Use the Flipper to manage an ESP32-based Bluetooth speaker or audio receiver.
 
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
-
-#### Evil BLE *(by PentestSuite / barkandbite)*
-> BLE advertisement cloning — scans with ESP32, re-broadcasts as clone via Flipper BLE
-
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
-
-#### FlipDownloader *(by JBlanked)*
-> Download apps and assets via WiFi directly to your Flipper Zero - Discord: https://discord.gg/5aN9qwkEc6 - YouTube: https://www.youtube.com/@jblanked - Instagram: https://www.instagram.com/jblanked
-
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
-
-#### FlipLibrary *(by JBlanked)*
-> Utilize WiFi to retrieve data from 20 different APIs FlipLibrary App for Flipper Zero
-
-**Usage:** The FlipLibrary app for Flipper Zero is a versatile and user-friendly application that offers a wide range of features to enhance your Flipper Zero... The app includes a dictionary, random facts, and numerous additional functionalities, all accessible directly from your Flipper Zero device. It is ...
-
-#### FlipRPI *(by jblanked)*
-> Use your Flipper Zero to control your Raspberry Pi. Use your Flipper Zero to control your Raspberry Pi. - MicroSD Card (32GB or larger) - MicroUSB Cable (data-capable)
-
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
-
-#### FlipSocial *(by jblanked)*
-> Social media platform for the Flipper Zero. The first social media app for Flipper Zero. Connect with other users directly on your device through WiFi. The highlight of this app is customizable pre-saves, which, as explained below, aim to address the challenges of typing with the directional pad.
-
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
-
-#### FlipTrader *(by JBlanked)*
-> Use WiFi to get the price of stocks and currency pairs on your Flipper Zero. FlipTrader is an app for the Flipper Zero that uses WiFi to fetch the prices of stocks and currency pairs directly on your device. It utilizes the FlipperHTTP flash for the WiFi Devboard, originall...
-
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
-
-#### FlipWeather *(by JBlanked)*
-> Use WiFi to get GPS and Weather information on your Flipper Zero. FlipWeather is an innovative app for the Flipper Zero that uses WiFi to fetch GPS and weather information, making your Flipper Zero even more versatile. It leverages the FlipperHTTP flash for the W...
-
-**Usage:** - WiFi Settings Management: Allows configuration of WiFi settings (SSID and password) for current and future features that utilize network connecti...
-
-#### FlipWiFi *(by JBlanked)*
-> FlipperHTTP companion app. FlipWiFi is the companion app for the popular FlipperHTTP firmware. It allows you to scan and save Wi-Fi networks for use across all FlipperHTTP apps, set up captive portals, and send deauthenticat...
-
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
-
-#### FlipWorld *(by JBlanked)*
-> The first open-world multiplayer game, best played with the VGM. The first open-world multiplayer game for the Flipper Zero, best played with the VGM.
-
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
-
-#### Gemini IA *(by d4rks1d33 & jamisonderek)*
-> This is an app to interact with Google Gemini IA using the ESP32. Currently in development (Beta phase), anyone who wants to join and help improve it can make their PR and also C developers who want to help improve the Flipper native app are welcome.
-
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
+#### Camera (ESP32)
+> ESP32-CAM live feed and photo capture. View camera feed on Flipper's screen in real-time. Left/Right for orientation, Up/Down for brightness, OK to save screenshot.
 
 #### Gravity *(by chris-bc)*
-> App to control ESP32 Gravity wireless exploration platform. Gravity for Flipper Zero The Unseen Force This Flipper Zero application (FAP) is a companion application to ESP32-Gravity.
+> Control ESP32 Gravity wireless exploration platform. Comprehensive WiFi and Bluetooth toolkit running on dedicated ESP32 hardware.
 
-**Usage:** supports a variety of wireless exploration, offensive and defensive features. ESP32-Gravity can be used without a Flipper, but Flipper-Gravity can't be used
+#### Evil BLE *(by PentestSuite / barkandbite)*
+> BLE advertisement cloning. Scan BLE advertisements with ESP32 and clone/replay them. For BLE security research.
+
+#### FlipRPI *(by jblanked)*
+> Control your Raspberry Pi from the Flipper Zero. Send commands and monitor status via GPIO connection.
+
+#### Gemini IA *(by d4rks1d33 & jamisonderek)*
+> Interact with Google Gemini AI using ESP32 for WiFi connectivity. Send prompts and receive AI responses on the Flipper's screen.
+
+#### Morse Flash (CAM)
+> ESP32-CAM app to stream messages in Morse code using the camera's flashlight LED. Powerful flash visible at distance. Unplug USB cable before testing.
 
 #### Postman *(by MassivDash)*
-> Flipper Postman can be used to send HTTP requests from a flipper device using the the esp32s2 postman firmware.
-
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
+> Send HTTP requests from the Flipper using ESP32S2 with Postman firmware. Make GET/POST requests and see responses. API testing from a tiny device.
 
 #### Ray Hunter Client *(by PentestSuite / barkandbite)*
-> IMSI catcher detection — Ray Hunter status display via ESP32 WiFi bridge
-
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
+> IMSI catcher detection. Displays Ray Hunter status via ESP32 WiFi bridge. Detect fake cell towers (stingrays) in your area.
 
 #### Rogue AP Detector *(by PentestSuite / barkandbite)*
-> Detects evil twin / rogue WiFi access points via ESP32 Dev Board
+> Detect evil twin and rogue WiFi access points via ESP32 Dev Board. Identify suspicious access points that may be impersonating legitimate networks.
 
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
-
-#### Web Crawler *(by JBlanked)*
-> Browse the web, fetch API data, and more. Browse the web, fetch API data, and more on your Flipper Zero. - WiFi Developer Board, Raspberry Pi, or ESP32 device flashed with FlipperHTTP version 1.6 or higher: https://github.com/jblanked/FlipperHTTP - 2.4 GHz WiFi Access Point
-
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
-
-#### Wendigo BT+BLE+WiFi Monitor *(by Chris BC)*
-> Monitor nearby radios and their signal strength, allowing a device of interest to be identified and located based on its RSSI. [![Contributors][contributors-shield]][contributors-url] [![Forks][forks-shield]][forks-url] [![Stargazers][stars-shield]][stars-url]
-
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
+#### Wendigo
+> BT + BLE + WiFi monitor. Monitor nearby radio signals and their strength using ESP32. See all wireless activity around you.
 
 #### WiFi Mapping *(by carvilsi)*
-> An ESP32 and FlipperZero wifi mapping. Check the ESP32 side at: esp32-wifi-map https://github.com/carvilsi/esp32-wifi-map An ESP32 and FlipperZero wifi mapping Check the ESP32 side at: esp32-wifi-map And do not forget to have both sides on the last version.
-
-**Usage:** Requires an ESP32 module connected via GPIO/UART. Launch the app and use the on-screen menu to interact with the module.
+> WiFi mapping with ESP32 and Flipper. Scan and map WiFi networks with location data. Check the ESP32 side at esp32-wifi-map.
 
 </details>
 
-<details><summary><h3>⚡ Gpio/Esp — 10 apps</h3></summary>
+<details><summary><h3>⚡ GPIO/ESP — 10 apps</h3></summary>
 
-#### [ESP32] Evil Portal *(by bigbrodude6119)*
-> Create an evil captive portal Wi-Fi access point Flipper Zero Evil Portal An evil captive portal Wi-Fi access point using the Flipper Zero and Wi-Fi dev board This project is a work in progress.
+#### Camera Suite
+> ESP32-CAM live feed and photo capture. View camera feed on screen, change orientation/mode, adjust brightness, save screenshots. Requires ESP32-CAM module. Unplug USB before testing.
 
-**Usage:** Requires an ESP module connected via GPIO. Launch the app and follow the on-screen prompts.
+#### ESP8266 Deauther
+> Interface for DSTIKE ESP8266 Deauther module. Control WiFi deauthentication from the Flipper's screen. Select targets, start/stop, monitor status.
 
-#### [ESP32] Ghost ESP
-> GhostESP Flipper Zero App A Flipper Zero application for interfacing with the GhostESP: Revival firmware. WiFi Operations
+#### ESP Flasher
+> Flash firmware onto ESP32/ESP8266 modules directly from the Flipper. Supports Marauder, Ghost ESP, BlackMagic, FlipperHTTP. Handles bootloader mode automatically.
 
-**Usage:** Requires an ESP module connected via GPIO. Launch the app and follow the on-screen prompts.
+#### Evil Portal
+> Create captive portal WiFi access point using ESP module. Victims see a customizable login page. Credentials captured and displayed on Flipper. Custom HTML pages on SD card.
 
-#### [ESP32] WiFi Marauder
-> Companion app for the ESP32 WiFi Marauder firmware. Provides a full interface for WiFi scanning, packet capture, deauthentication, beacon spam, and other WiFi analysis tools.
+#### Ghost ESP
+> Companion for Ghost ESP firmware on ESP32. WiFi: scan, beacon spam, deauth, packet capture, evil portal. Bluetooth: Flipper discovery, Pineapple detection, AirTag scanning. GPS: wardriving in WiGLE format.
 
-**Usage:** Requires an ESP32 module flashed with Marauder firmware connected via GPIO/UART. Launch the app, select your attack or scan type from the menu, and control everything from the Flipper's screen.
+#### IFTTT Button
+> Trigger IFTTT webhooks from Flipper using ESP8266. Press a button to fire an IFTTT event over WiFi. For home automation and notifications.
 
-#### [ESP32CAM] Camera Suite *(by @CodyTolene @Z4urce @leedave @rnadyrshin)*
-> A camera suite application for the Flipper Zero ESP32-CAM module.
+#### Wardriver
+> Sniff WiFi APs and log with GPS coordinates in WiGLE format. Requires ESP for WiFi + GPS module. Drive around logging every network. Upload to WiGLE.net.
 
-**Usage:** Requires an ESP module connected via GPIO. Launch the app and follow the on-screen prompts.
+#### WiFi Deauther v2
+> Interface for ESP8266 Deauther v2 by SpacehuhnTech. More advanced — scanning, target selection, multiple attack modes. ESP8266 handles WiFi; Flipper provides UI.
 
-#### [ESP32GPS] Wardriver *(by @Sil333033)*
-> Sniff WiFi access points with GPS location coordinates
+#### WiFi Marauder
+> Companion for ESP32 Marauder firmware. Comprehensive WiFi toolkit: scan APs/stations, sniff packets, deauth, beacon spam. Supports Marauder v1.8+.
 
-**Usage:** Requires an ESP module connected via GPIO. Launch the app and follow the on-screen prompts.
-
-#### [ESP8266] Deauther *(by @SequoiaSan & @xMasterX)*
-> DSTIKE Deauther module interface, based on ESP8266
-
-**Usage:** Requires an ESP module connected via GPIO. Launch the app and follow the on-screen prompts.
-
-#### [ESP8266] Deauther v2 *(by @Timmotools & @xMasterX)*
-> Works with ESP8266 Deauther v2 by @SpacehuhnTech (github) flipperzero_esp8266_deautherv2 Flipper Zero esp8266 deauther app. Based off the WiFi Marauder App from 0xchocolate.
-
-**Usage:** Requires an ESP module connected via GPIO. Launch the app and follow the on-screen prompts.
-
-#### [ESP8266] IFTTT Btn
-> Turns your Flipper Zero into a wireless IFTTT trigger button using an ESP8266 module. Press a button on the Flipper to fire IFTTT webhooks and automate smart home actions.
-
-**Usage:** Requires an ESP8266 module connected via GPIO. Configure your IFTTT webhook key in the app settings, then press OK to trigger your configured IFTTT applets.
-
-#### [ESP] ESP Flasher
-> Flash firmware onto ESP32/ESP8266/ESP32-S2/S3/C3 modules directly from your Flipper Zero. Includes built-in firmware binaries for popular projects like Marauder, Evil Portal, and more.
-
-**Usage:** Connect your ESP module to the Flipper's GPIO pins. Launch the app, select the target board and firmware to flash, then press OK to begin. Progress is shown on screen.
-
-#### [ESP] WiFi Scanner *(by @SequoiaSan & @xMasterX)*
-> WiFi scanner module interface, based on ESP8266
-
-**Usage:** Requires an ESP module connected via GPIO. Launch the app and follow the on-screen prompts.
+#### WiFi Scanner
+> Scan nearby WiFi networks using ESP module. Shows SSID, signal strength (RSSI), channel, and encryption type. Quick WiFi survey tool.
 
 </details>
 
-<details><summary><h3>🏠 Main — 1 apps</h3></summary>
-
-#### Clock *(by Lambda)*
-> A clock with stopwatch and 80 seconds alarm. 80 second alarm can be changed at 5 second intervals and so can the sound options. Dab Timer / Clock (By Lambda) - We were the first clock created for Flipper Zero - Has 10 different clock faces
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-</details>
-
-<details><summary><h3>🏷️ Rfid — 8 apps</h3></summary>
-
-#### DCF77 Clock Sync *(by mdaskalov)*
-> Emulate DCF77 time signal on the RFID antena and the A4 GPIO pin Flipper-Zero DCF77 Clock Sync Emulates the DCF77 time signal on the RFID antenna and on GPIO A4 pin. Uses PWM with frequency of 77.5 kHz on the GPIO pin to simulate the signal.
-
-**Usage:** Launch from the RFID/Apps menu. Hold an RFID tag near the Flipper's bottom edge to read.
-
-#### DCF77 Transmitter *(by arha & xMasterX)*
-> Sends the DCF77 time signal (badly) on the 125khz LFRFID antenna and on GPIO C3 pin DCF77 Master Wall Clock? Sends the DCF77 time signal (badly) on the 125khz LFRFID antenna. This should allow you to update radio clocks.
-
-**Usage:** Launch from the RFID/Apps menu. Hold an RFID tag near the Flipper's bottom edge to read.
-
-#### EM4100 Key Generator *(by @Milk-Cool)*
-> Generates EM4100 key lists from selected rfid key file for RFID fuzzer app fz-em4100-generator
-
-**Usage:** A program that generates universal keys from a EM4100 key Click the FAP badge, connect your flipper and click "Install".
-
-#### FDX-B Maker *(by snowsign / Skye Gibbs)*
-> FDX-B format file maker for animal microchips Construct fully ISO-compliant FDX-B animal microchip data right on your Flipper Zero! The data gets stored as plain RFID files on the SD card, which you can then write to T5577 or EM4305 cards/chip... 0 to 999.
-
-**Usage:** Launch from the RFID/Apps menu. Hold an RFID tag near the Flipper's bottom edge to read.
-
-#### Simultaneous UHF RFID Reader *(by @RileyHaffner)*
-> Simultaneous UHF RFID Reader that supports the M6E Nano, M7E Hecto, and YRM1000 series Readers. Read up to 150 UHF tags per second [Using ThingMagic Readers]!
-
-**Usage:** Launch from the RFID/Apps menu. Hold an RFID tag near the Flipper's bottom edge to read.
-
-#### T5577 Multiwriter *(by @Leptopt1los)*
-> Application for writing several keys to one t5577 T5577 multivriter fap for flipper zero PoC of https://forum.dangerousthings.com/t/hack-store-2-to-3-different-em41xx-on-a-single-t5577/12116
-
-**Usage:** Launch from the RFID/Apps menu. Hold an RFID tag near the Flipper's bottom edge to read.
-
-#### T5577 Raw Writer *(by Torron)*
-> @README.md T5577 Raw Writer App An easy to use T5577 raw writer app for Flipper Zero. Discord project page. Configure the modulation, RF Clock, number of blocks, and block data in the 'Config' menu.
-
-**Usage:** Launch from the RFID/Apps menu. Hold an RFID tag near the Flipper's bottom edge to read.
-
-#### YRM100 UHF RFID
-> [UHF]RFID App for FlipperZero a UHF RFID application developed for FlipperZero, a versatile multi-tool device. The app leverages the YRM100 module to enable UHF RFID functionality.
-
-**Usage:** - Added a settings page to allow for changing of the module's settings.
-
-</details>
-
-<details><summary><h3>⚡ Gpio/Flipperhttp — 11 apps</h3></summary>
+<details><summary><h3>⚡ GPIO/FlipperHTTP — 11 apps</h3></summary>
 
 #### FlipDownloader *(by JBlanked)*
-> Download apps and assets via WiFi directly to your Flipper Zero - Discord: https://discord.gg/5aN9qwkEc6 - YouTube: https://www.youtube.com/@jblanked - Instagram: https://www.instagram.com/jblanked
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Download apps and assets via WiFi directly to Flipper. Browse GitHub repos, download .fap files, install without a computer. Requires FlipperHTTP ESP module.
 
 #### FlipLibrary *(by JBlanked)*
-> Utilize WiFi to retrieve data from 20 different APIs FlipLibrary App for Flipper Zero
-
-**Usage:** The FlipLibrary app for Flipper Zero is a versatile and user-friendly application that offers a wide range of features to enhance your Flipper Zero... The app includes a dictionary, random facts, and numerous additional functionalities, all accessible directly from your Flipper Zero device. It is ...
+> Retrieve data from 20+ APIs via WiFi. Random facts, quotes, weather, dictionary definitions, and more. Each API accessible from a simple menu.
 
 #### FlipMap *(by JBlanked)*
-> Find Flipper Zero Users A Flipper Zero app to find Flipper Zero Users. - Wi-Fi Developer Board, BW16, Raspberry Pi, or ESP32 device flashed with FlipperHTTP v2.1 or higher: https://github.com/jblanked/FlipperHTTP - 2.4 GHz or 5 GHz Wi-Fi access point
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Find other Flipper Zero users on a map. Register your location, see where others are worldwide. Community-driven, privacy-conscious.
 
 #### FlipSocial *(by JBlanked)*
-> Social media platform for the Flipper Zero. The first social media app for Flipper Zero. Connect with other users directly on your device through WiFi. The highlight of this app is customizable pre-saves, which, as explained below, aim to address the challenges of typing with the directional pad.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Social media platform for Flipper Zero. Post messages, read feeds, comment, interact with other users. A social network on a 128×64 screen.
 
 #### FlipTelegram *(by JBlanked)*
-> Flipper Zero Telegram Client Flipper Zero Telegram Client - WiFi Developer Board, Raspberry Pi, BW16, or ESP32 device flashed with FlipperHTTP v2.1 or higher: https://github.com/jblanked/FlipperHTTP - 2.4 GHz or 5 GHz WiFi access point
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Telegram messaging client. Send and receive messages from the Flipper's screen. Configure with your bot token.
 
 #### FlipTrader *(by JBlanked)*
-> Use WiFi to get the price of stocks and currency pairs on your Flipper Zero. FlipTrader is an app for the Flipper Zero that uses WiFi to fetch the prices of stocks and currency pairs directly on your device. It utilizes the FlipperHTTP flash for the WiFi Devboard, originall...
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Stock prices and currency exchange rates. Enter a ticker or currency pair, get real-time price data via WiFi.
 
 #### FlipWeather *(by JBlanked)*
-> Use WiFi to get GPS and Weather information on your Flipper Zero. FlipWeather is an innovative app for the Flipper Zero that uses WiFi to fetch GPS and weather information, making your Flipper Zero even more versatile. It leverages the FlipperHTTP flash for the W...
-
-**Usage:** - WiFi Settings Management: Allows configuration of WiFi settings (SSID and password) for current and future features that utilize network connecti...
+> GPS coordinates and weather information. Current temperature, conditions, wind speed, forecast. Fahrenheit and Celsius.
 
 #### FlipWiFi *(by JBlanked)*
-> FlipperHTTP companion app. FlipWiFi is the companion app for the popular FlipperHTTP firmware. It allows you to scan and save Wi-Fi networks for use across all FlipperHTTP apps, set up captive portals, and send deauthenticat...
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> FlipperHTTP companion and configuration app. Set up ESP module WiFi — enter SSID/password, test connectivity. Run this first before other FlipperHTTP apps.
 
 #### FlipWorld *(by JBlanked)*
-> The first open-world multiplayer game, best played with the VGM.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> First open-world multiplayer game for Flipper. Explore 2D world, encounter players, fight enemies, collect items. Best with Video Game Module.
 
 #### Free Roam *(by JBlanked)*
-> 3D Open World Multiplayer Game 3D Open World Multiplayer Game for the Flipper Zero - WiFi Developer Board, BW16, Raspberry Pi, or ESP32 device flashed with FlipperHTTP v2.0 or higher: https://github.com/jblanked/FlipperHTTP - 2.4 GHz or 5 GHz Wi-Fi access point
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> 3D open-world multiplayer game. Minimap, first-person perspective on the tiny screen. Requires FlipperHTTP for multiplayer.
 
 #### Web Crawler *(by JBlanked)*
-> Browse the web, fetch API data, and more. Browse the web, fetch API data, and more on your Flipper Zero. - WiFi Developer Board, Raspberry Pi, or ESP32 device flashed with FlipperHTTP version 1.6 or higher: https://github.com/jblanked/FlipperHTTP - 2.4 GHz WiFi Access Point
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Browse the web from your Flipper. Enter a URL, fetch page content, display text. Also makes API calls and shows JSON responses.
 
 </details>
 
-<details><summary><h3>⚡ Gpio/Flipboard — 8 apps</h3></summary>
+<details><summary><h3>⚡ GPIO/NRF24 — 11 apps</h3></summary>
 
-#### FlipBoard Blinky *(by jamisonderek)*
-> FlipBoard Blinky turns your FlipBoard into a blinky badge. The FlipBlinky application turns your Flipper Zero + FlipBoard into a blinky badge for wearing at conferences. The application is written in C and uses the FlipBoard common code for the majority o...
+#### NRF24 Batch
+> Batch operations for NRF24L01+ modules. Run multiple NRF24 operations in sequence.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### NRF24 Channel Scan
+> Scan 2.4GHz frequency band for usage data. See which channels are busy and which are clear. Useful for finding clean channels for your wireless projects.
 
-#### FlipBoard Blinky
-> FlipBoard Blinky turns your FlipBoard into a blinky badge. The FlipBlinky application turns your Flipper Zero + FlipBoard into a blinky badge for wearing at conferences. The application is written in C and uses the FlipBoard common code for the majority o...
+#### NRF24 Mouse Jacker
+> Perform mousejack attacks using captured addresses from the NRF24 Sniffer app. Inject keystrokes into vulnerable wireless mice and keyboards.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### NRF24 Scanner
+> Scan for NRF24L01+ devices in the area. Discover active NRF24 transmitters and their addresses.
 
-#### FlipBoard Keyboard
-> FlipBoard Keyboard turns your FlipBoard into a keyboard. The FlipKeyboard application turns your Flipper Zero and FlipBoard into a MacroPad Keyboard. It also becomes a musical light-up keyboard that you can use to play songs. It supports both USB and BL...
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### FlipBoard Keyboard *(by jamisonderek)*
-> FlipBoard Keyboard turns your FlipBoard into a keyboard. The FlipKeyboard application turns your Flipper Zero and FlipBoard into a MacroPad Keyboard. It also becomes a musical light-up keyboard that you can use to play songs. It supports both USB and BL...
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### FlipBoard Signal
-> FlipBoard Signal turns your FlipBoard into a signal sender.
-
-**Usage:** The FlipSignal application turns your Flipper Zero and FlipBoard into an Infrared and Sub-GHz signal sender. Turn on/off devices using the buttons... The application sends a Sub-GHz signal (RAW or Protocol) and then it sends any IR signals. Configuration of signals is done by saving files using ...
-
-#### FlipBoard Signal *(by jamisonderek)*
-> FlipBoard Signal turns your FlipBoard into a signal sender.
-
-**Usage:** The FlipSignal application turns your Flipper Zero and FlipBoard into an Infrared and Sub-GHz signal sender. Turn on/off devices using the buttons... The application sends a Sub-GHz signal (RAW or Protocol) and then it sends any IR signals. Configuration of signals is done by saving files using ...
-
-#### FlipBoard Simon *(by codeallnight)*
-> Simon memory game for the FlipBoard. The FlipSimon application turns your Flipper Zero and FlipBoard into a memory game. FlipSimon was originally written as a step-by-step tutorial to teach C, Flipper Zero Code, and FlipBoard common ...
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### FlipBoard Simon *(by codeallnight)*
-> Simon memory game for the FlipBoard. The FlipSimon application turns your Flipper Zero and FlipBoard into a memory game. FlipSimon was originally written as a step-by-step tutorial to teach C, Flipper Zero Code, and FlipBoard common ...
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-</details>
-
-<details><summary><h3>📦 Misc — 3 apps</h3></summary>
-
-#### FlipPass
-> FlipPass lets Flipper Zero open a KeePass vault and send credentials to another device through USB HID or Bluetooth HID. - Browse KeePass KDBX 4 vaults stored on the SD card. - Navigate groups and entries without modifying the database.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### hc11_modem
-> HC-11 wireless modem emulator for the Flipper Zero Flipper Zero app send data to / from a HC-11 wireless RF UART communication module. See here, here, here, here or here for a few distributors of the HC-11 module around the world.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### Prince Of Arabia
-> FlipperPrinceOfArabia Inspired by a timeless classic, Press-Play-On-Tape presents 'Prince of Arabia'! Escape the dungeons and free the princess!
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-</details>
-
-<details><summary><h3>⚡ Gpio/Nrf24 — 11 apps</h3></summary>
-
-#### [NRF24] Batch
-> Flipper Zero application for nRF24L01 external board. Sends batch commands. Приложение для Flipper Zero, предназначено для отправки пакетных команд на удаленные устройства, использующие радио nRF24L01. Можно использовать для настройки или чтения данных с удаленного устройства.
-
-**Usage:** Requires an NRF24 module connected via GPIO/SPI. Launch the app and use the d-pad to navigate options.
-
-#### [NRF24] Channel Scan *(by HTotoo)*
-> Scans 2.4Ghz frequency for usage data.
-
-**Usage:** Requires an NRF24 module connected via GPIO/SPI. Launch the app and use the d-pad to navigate options.
-
-#### [NRF24] Mouse Jacker *(by @mothball187 & @xMasterX)*
-> App works with NRF24 Sniffer app to perform mousejack attacks
-
-**Usage:** Requires an NRF24 module connected via GPIO/SPI. Launch the app and use the d-pad to navigate options.
-
-#### [NRF24] Scanner
-> NRF24 scanner with logging and resend ability for Flipper Zero An NRF24 driver for the Flipper Zero device. The NRF24 is a popular line of 2.4GHz radio transceivers from Nordic Semiconductors. NRF24L01+ Enhanced ShockBurst packet decoder example using Python: nrf24_packet_decoder.py
-
-**Usage:** Requires an NRF24 module connected via GPIO/SPI. Launch the app and use the d-pad to navigate options.
-
-#### [NRF24] Sniffer *(by @mothball187 & @xMasterX)*
-> App captures addresses to use with NRF24 Mouse Jacker app to perform mousejack attacks
-
-**Usage:** Requires an NRF24 module connected via GPIO/SPI. Launch the app and use the d-pad to navigate options.
-
-#### AZERTY Mouse Jacker *(by mothball187 & xMasterX)*
-> App works with NRF24 Sniffer app to perform mousejack attacks flipperzero-nrf24 An NRF24 driver for the Flipper Zero device. The NRF24 is a popular line of 2.4GHz radio transceivers from Nordic Semiconductors. This library is not currently complete, but functional.
-
-**Usage:** Requires an NRF24 module connected via GPIO/SPI. Launch the app and use the d-pad to navigate options.
-
-#### FZ nRF24 Jammer *(by W0rthlessS0ul)*
-> The FZ nRF24 jammer is a powerful tool that requires an Flipper Zero and NRF24 module to assemble. It is designed to create interference, disrupting the normal operation of Bluetooth devices, BLE technology, drones, Wi-Fi networks and Zigbee.
-
-**Usage:** Requires an NRF24 module connected via GPIO/SPI. Launch the app and use the d-pad to navigate options.
-
-#### Mouse Jacker MS *(by coded-with-claws)*
-> Applications Mousejacker for Microsoft mouse (hardcoded) flipperzero-tools Various tools for Flipper Zero See README inside directory.
-
-**Usage:** Generates .sub for given 12bits keys with CAME and NICE protocols. It's an adaptation from UberGuidoZ's CAME_brute_force and there is also code re-use from tobiabocchi's flipperzero-bruteforce. URLs of those code b...
-
-#### NRF24 Jammer *(by huuck)*
-> 2.4Ghz jammer leveraging NRF24 For educational purposes only, inside a confined environment (e.g. faraday cage). JAMMING IS ILLEGAL! Flipper Zero nRF24 Jammer
-
-**Usage:** Simple Flipper Zero nRF24 jammer for the 2.4Ghz spectrum I use to study wireless protocol hardening. Turn your Flipper Zero into a bluetooth or wif... For custom channels navigate to custom by pressing UP and then LEFT to select a .txt file in format ch1,ch2,ch3 and so on.
+#### NRF24 Sniffer
+> Capture NRF24L01+ addresses for use with Mouse Jacker. Passively listen for wireless mouse/keyboard communications.
 
 #### NRF24 Monitor *(by CyberDemon73)*
-> Monitor and analyze NRF24L01+ wireless traffic NRF24L01+ Tester for Flipper Zero !Flipper Zero with NRF24 Module A real-time SPI communication tester for NRF24L01+ modules on Flipper Zero, featuring hardware status monitoring and register reading capabilities.
+> Monitor and analyze NRF24L01+ wireless traffic in real-time. See packet data and communication patterns.
 
-**Usage:** Requires an NRF24 module connected via GPIO/SPI. Launch the app and use the d-pad to navigate options.
+#### NRF24 Jammer (FZ)
+> 2.4GHz interference tool using NRF24L01+ module. Creates interference on the 2.4GHz band.
+
+#### NRF24 Jammer (huuck)
+> Alternative 2.4GHz jammer leveraging NRF24 module. Different implementation of 2.4GHz interference.
+
+#### AZERTY Mouse Jacker *(by mothball187 & xMasterX)*
+> Mouse Jacker variant for AZERTY keyboard layout. Performs mousejack attacks with French keyboard mapping.
+
+#### Mouse Jacker MS *(by coded-with-claws)*
+> Mouse Jacker hardcoded for Microsoft wireless mice. Targeted implementation for Microsoft wireless peripherals.
 
 #### Sniffer MS *(by coded-with-claws)*
-> Applications NRF Sniff & Mousejacker for Microsoft mouse (hardcoded) flipperzero-tools Various tools for Flipper Zero See README inside directory.
-
-**Usage:** Generates .sub for given 12bits keys with CAME and NICE protocols. It's an adaptation from UberGuidoZ's CAME_brute_force and there is also code re-use from tobiabocchi's flipperzero-bruteforce. URLs of those code b...
+> NRF24 sniffer and mousejacker hardcoded for Microsoft wireless mice. Combined sniff-and-attack for Microsoft devices.
 
 </details>
 
-<details><summary><h3>⚡ Gpio/Malveke — 8 apps</h3></summary>
+<details><summary><h3>⚡ GPIO/FlipBoard — 5 apps</h3></summary>
 
-#### [GB/GBC] Cartridge *(by Esteban Fuentealba)*
-> GAME BOY Cartridge (GB/GBC) MALVEKE MALVEKE Prototype V2.3 Official \| Unleashed \| RogueMaster \| Xtreme
+#### FlipBoard Blinky
+> Turn your FlipBoard into a blinky badge with LED patterns and effects.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### FlipBoard Keyboard
+> Turn your FlipBoard into a USB/BLE keyboard with customizable key mappings.
 
-#### [GB] Emulator *(by Esteban Fuentealba)*
-> GAME BOY Emulator (POC). GAME BOY Emulator (POC) MALVEKE From Talcahuano 🇨🇱 with ❤
+#### FlipBoard Signal
+> Turn your FlipBoard into a signal sender for Sub-GHz, IR, or other protocols.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### FlipBoard Simon *(by codeallnight)*
+> Simon memory game on the FlipBoard hardware. Watch the LED sequence and repeat it.
 
-#### [GB] Link-Camera *(by Esteban Fuentealba)*
-> extract your GAME BOY Camera picture via WIFI, so they can be easily shared with your phone, tablet or pc. Easy to use, just hook up to your GAME BOY and print as usual, the device will store the images and share them on a web server via WIFI.
-
-**Usage:** These instructions assume that you are starting at the Flipper Zero desktop. Otherwise, press the Back button until you are at the desktop.
-
-#### [GB] Live Camera *(by Esteban Fuentealba)*
-> Insert a GAME BOY Camera cartridge, you can use it as a camera and take snapshots from the Flipper Zero. GAME BOY Live Camera MALVEKE MALVEKE Prototype V2.3 Official \| Unleashed \| RogueMaster \| Xtreme
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [GB] Photo *(by Esteban Fuentealba)*
-> Game Boy Camera save RAM photo to BMP from the Flipper Zero. GAME BOY PHOTO MALVEKE Official \| Unleashed \| RogueMaster \| Xtreme :- \| :- \| :- \| :-
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [GB] PIN Test *(by Esteban Fuentealba)*
-> ESP32 GAME BOY CAMERA live feed and photo capture, use left/right for exposition and center for saving a screenshot.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [GBA] Cartridge *(by Esteban Fuentealba)*
-> GAME BOY ADVANCE Cartridge MALVEKE MALVEKE Prototype V2.3 Official \| Unleashed \| RogueMaster \| Xtreme
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### GB Printer *(by kbembedded)*
-> Print photos from camera to flipper, saves are sequentially numbered and in a format meant for importing. Flipper Zero Game Boy Printer Emulator A Game Boy Printer Emulator for Flipper Zero that saves images as PNG on the microSD card. Hardware Interface
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### FlipBoard Simon (alt)
+> Alternative Simon game implementation for FlipBoard.
 
 </details>
 
-<details><summary><h3>⚡ Gpio/Gps — 2 apps</h3></summary>
+<details><summary><h3>⚡ GPIO/Debug — 8 apps</h3></summary>
 
-#### [NMEA] GPS *(by @ezod & @xMasterX)*
-> Works with GPS modules via UART, using NMEA protocol. GPS for Flipper Zero A simple Flipper Zero application for NMEA 0183 serial GPS modules. Heavy lifting (NMEA parsing) provided by [minmea].
+#### AVR Flasher
+> Flash AVR microcontrollers (ATmega, ATtiny) directly from the Flipper via ISP. Program Arduino-compatible chips without a computer.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### DAP Link
+> Use Flipper as a CMSIS-DAP debug probe for ARM devices via SWD/JTAG. Debug ARM microcontrollers with standard tools like OpenOCD.
 
-#### [NMEA] Nearby Files *(by Stichoza)*
-> A GPS-enabled file browser that displays files sorted by distance from your current location. A GPS-enabled file browser for Flipper Zero that displays SubGHz, NFC, and RFID files sorted by distance from your current location.
+#### Ethernet (W5500)
+> Test Ethernet connections with W5500 module. Verify network connectivity and diagnose Ethernet issues.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### FlipTDI (FTDI232H)
+> FTDI232H USB-to-serial emulator. Use the Flipper as an FTDI-compatible serial adapter.
 
-</details>
+#### I2C Tools
+> Set of I2C diagnostic tools. Scan the bus, read/write registers, and debug I2C communication issues.
 
-<details><summary><h3>🔑 Ibutton — 2 apps</h3></summary>
+#### INA Meter (INA2xx)
+> Read TI INA-series current/voltage/power sensors. Monitor power consumption of circuits in real-time.
 
-#### iButton Converter *(by @leptopt1los)*
-> Cyfral and Metakom to Dallas converter iButton Converter iButton Converter is a Flipper Zero application designed for converting iButton key dumps from Metakom or Cyfral formats into the Dallas format. The application supports multiple conversion modes f...
+#### SPI Mem Manager
+> Read and write 25-series SPI flash chips (W25Q, AT25SF, MX25L). Dump firmware, write images, verify contents. Chip identification via JEDEC ID.
 
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-#### iButton Fuzzer *(by gid9798 xMasterX)*
-> Fuzzer for ibutton readers Flipper Zero app for checking ibutton and RFID(125khz) readers . Not meant for any illegal activity/purposes. You can check your readers for vulnerabilities using the default UIDs and frequently used UIDs.
-
-**Usage:** Launch from the Applications menu on your Flipper. Use d-pad to navigate and OK to confirm.
-
-</details>
-
-<details><summary><h3>⚡ Gpio/Mayhem — 6 apps</h3></summary>
-
-#### [MAYHEM] Camera *(by Z4urce)*
-> ESP32-CAM live feed and photo capture, use left/right for orientation/mode, up/down for brightness and center for saving a screenshot. [Unplug the USB cable to test with Mayhem]
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [MAYHEM] Marauder
-> ESP32-CAM version of Marauder. Includes all functionality from the original plus some options to trigger the camera and flashlight. [Unplug the USB cable to test with Mayhem]
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [MAYHEM] Morse Flash
-> ESP32-CAM app to stream a message in morse using the powerful flashlight. [Unplug the USB cable to test with Mayhem] UART Terminal for Flipper Zero Flipper Zero app to control various devices via UART interface. - Read log and command output by uart
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [MAYHEM] Motion Detection *(by eried)*
-> ESP32-CAM Motion detection. It generates a beep when motion is detected. Can be extended to trigger more stuff in the code. [Unplug the USB cable to test with Mayhem]
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [MAYHEM] Nanny Cam *(by eried)*
-> ESP32-CAM simple app to start a remote camera. [Unplug the USB cable to test with Mayhem]
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [MAYHEM] QR Code *(by eried)*
-> ESP32-CAM simple app to show a payload from QR codes. Can be extended to trigger more stuff in the code. [Unplug the USB cable to test with Mayhem]
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### SWD Probe
+> ARM Single Wire Debug probe. Debug ARM microcontrollers using the SWD protocol directly from the Flipper.
 
 </details>
 
-<details><summary><h3>⚡ Gpio/Games — 2 apps</h3></summary>
+<details><summary><h3>⚡ GPIO/MAYHEM — 6 apps</h3></summary>
 
-#### UART Pong *(by Olejka)*
-> A multiplayer ping pong game using UART
+#### MAYHEM Camera
+> ESP32-CAM live feed and photo capture for Mayhem boards. Unplug USB cable before testing.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### MAYHEM Marauder
+> ESP32-CAM Marauder with camera and flashlight control. All original Marauder functionality plus camera features.
 
-#### VL6180X Pong *(by Kyle Diller)*
-> Simple pong game with control from a VL6180X
+#### MAYHEM Morse Flash
+> Stream Morse code messages using ESP32-CAM's powerful flashlight LED.
 
-**Usage:** This is a copy of the Flipper Zero Pong game, but uses a VL6180x module to control the paddle instead of the buttons. See the VL6180X README for more details on setting the Flipper up with the VL6180X.
+#### MAYHEM Motion Detection
+> ESP32-CAM motion detection with beep alert. Detects movement in the camera's field of view.
+
+#### MAYHEM Nanny Cam
+> ESP32-CAM remote camera. Start a WiFi-accessible camera stream.
+
+#### MAYHEM QR Code
+> ESP32-CAM QR code reader. Decode QR codes using the camera.
 
 </details>
 
-<details><summary><h3>⚡ Gpio/Vgm — 4 apps</h3></summary>
+<details><summary><h3>⚡ GPIO/VGM — 4 apps</h3></summary>
 
-#### [VGM] Air Mouse
-> Turn Flipper Zero with the Video Game Module into an air mouse
+#### VGM Air Mouse
+> Turn Flipper with Video Game Module into an air mouse. Tilt to move cursor, buttons for clicks.
 
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
-
-#### [VGM] Video Game Module Tool
-> This app is a standalone firmware updater/installer for the Video Game Module
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+#### Video Game Module Tool
+> Standalone firmware updater/installer for the Video Game Module. Keep your VGM up to date.
 
 #### VGM Game Remote *(by JBlanked)*
-> Companion app for the VGM Game Engine Collection of files for the Video Game Module. The VGM Engine is not affiliated with Flipper Devices and utilizes the PicoDVI and pico-game-engine libraries. Developers can create their own games or recreate their Flipper games with the advanta...
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Companion app for the VGM Game Engine. Control games running on the Video Game Module.
 
 #### Video Game Module Console *(by JBlanked)*
-> Flipper Zero console handling game display rendering and input forwarding Video Game Module Console Turn your Flipper Zero into a console for the Video Game Module — handles display output and button input so developers can focus on their hardware. 1.
-
-**Usage:** Connect the required hardware to GPIO pins. Launch from the GPIO menu and use d-pad to navigate.
+> Flipper Zero console for VGM — handles display rendering and input forwarding so developers can focus on hardware.
 
 </details>
 
+<details><summary><h3>⚡ GPIO/Games — 2 apps</h3></summary>
 
+#### UART Pong *(by Olejka)*
+> Multiplayer Pong over UART. Connect two Flippers via UART and play Pong against each other.
+
+#### VL6180X Pong *(by Kyle Diller)*
+> Pong controlled by VL6180X distance sensor. Wave your hand to move the paddle instead of pressing buttons.
+
+</details>
+
+<details><summary><h3>⚡ GPIO/GPS — 2 apps</h3></summary>
+
+#### GPS (NMEA)
+> Display real-time GPS data from UART NMEA modules. Latitude, longitude, altitude, speed, heading, satellites. GPS TX→pin 14, VCC→3V3, GND→pin 18. Default 9600 baud.
+
+#### Nearby Files
+> GPS-enabled file browser showing saved .sub/.nfc/.rfid files sorted by distance from current location. Find which saved signal belongs to a nearby gate or door. Web version at flipper-map.stichoza.com.
+
+</details>
+
+<details><summary><h3>⚡ GPIO/MALVEKE — 8 apps</h3></summary>
+
+#### GB/GBC Cartridge
+> Read Game Boy and Game Boy Color cartridges using MALVEKE hardware. Dump ROM and save data.
+
+#### GB Emulator
+> Game Boy emulator proof-of-concept using MALVEKE hardware. Run Game Boy ROMs on the Flipper.
+
+#### GB Link-Camera
+> Extract Game Boy Camera pictures via WiFi using MALVEKE. Print as usual and the device stores images on a web server.
+
+#### GB Live Camera
+> Use a Game Boy Camera cartridge as a live camera with MALVEKE. View the camera feed on the Flipper's screen and take snapshots.
+
+#### GB Photo
+> Save Game Boy Camera RAM photos as BMP files from the Flipper. Extract photos without the original Game Boy.
+
+#### GB PIN Test
+> ESP32 Game Boy Camera live feed and photo capture test. Verify camera functionality with MALVEKE hardware.
+
+#### GBA Cartridge
+> Read Game Boy Advance cartridges using MALVEKE hardware. Dump GBA ROM data.
+
+#### GB Printer *(by kbembedded)*
+> Emulate a Game Boy Printer. Receive photos from the Game Boy Camera and save as sequentially numbered PNG files on SD card.
+
+</details>
 <h2 align="center">Install</h2>
 
 There are 4 methods to install Momentum, we recommend you use the **Web Updater**, but choose whichever one you prefer:
