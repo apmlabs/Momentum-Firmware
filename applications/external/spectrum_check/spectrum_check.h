@@ -121,8 +121,12 @@ typedef struct {
 
     // Spectrum data
     uint8_t channel_ss[SC_NUM_CHANNELS];
+    uint8_t channel_peak[32]; // peak-hold values (decay slowly)
     float max_rssi;
     uint8_t max_rssi_channel;
+    float held_rssi;          // held peak for display (3s hold)
+    uint8_t held_channel;
+    uint32_t held_tick;       // when the held value was set
 
     // Frequency analyzer
     float trigger;

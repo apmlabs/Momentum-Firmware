@@ -268,6 +268,16 @@ static void sc_decode_signal(SpectrumCheckApp* app, SCSignal* sig) {
     }
 }
 
+
+// Find a slot for a new signal. If buffer full, evict oldest unidentified.
+static uint8_t sc_find_slot(SpectrumCheckApp* app) {
+    if(app->signal_count < SC_MAX_SIGNALS) return app->signal_count;
+    // Buffer full — find oldest unidentified signal to evict
+    for(uint8_t i = SC_MAX_SIGNALS - 1; i > 0; i--) {
+        if(!app->signals[i].protocol_decoded) return i;
+    }
+    return SC_MAX_SIGNALS - 1; // all decoded, overwrite last
+}
 // ============== Raw capture callback ==============
 static volatile uint16_t sc_cap_idx;
 static int32_t* sc_cap_buf;
@@ -334,13 +344,28 @@ static int32_t sc_worker(void* ctx) {
 
                 furi_mutex_acquire(app->mutex, FuriWaitForever);
                 int8_t db = (int8_t)rssi + 138;
-                app->channel_ss[i] = (db < 0) ? 0 : ((db > 80) ? 80 : (uint8_t)db);
+                uint8_t val = (db < 0) ? 0 : ((db > 80) ? 80 : (uint8_t)db);
+                app->channel_ss[i] = val;
+                // Peak hold: rise instantly, decay by 2 per scan
+                if(val > app->channel_peak[i]) {
+                    app->channel_peak[i] = val;
+                } else if(app->channel_peak[i] > 2) {
+                    app->channel_peak[i] -= 2;
+                } else {
+                    app->channel_peak[i] = 0;
+                }
                 if(rssi > best_rssi) { best_rssi = rssi; best_ch = i; }
                 furi_mutex_release(app->mutex);
             }
             furi_mutex_acquire(app->mutex, FuriWaitForever);
             app->max_rssi = best_rssi;
             app->max_rssi_channel = best_ch;
+            // Hold peak display for 3 seconds
+            if(best_rssi > app->held_rssi || furi_get_tick() - app->held_tick > 3000) {
+                app->held_rssi = best_rssi;
+                app->held_channel = best_ch;
+                app->held_tick = furi_get_tick();
+            }
             furi_mutex_release(app->mutex);
 
         } else if(app->current_view == SCViewFreqAnalyzer) {
@@ -375,7 +400,7 @@ static int32_t sc_worker(void* ctx) {
                     // Signal present! Capture it
                     furi_mutex_acquire(app->mutex, FuriWaitForever);
                     app->signal_found = true;
-                    uint8_t slot = app->signal_count < SC_MAX_SIGNALS ? app->signal_count : SC_MAX_SIGNALS - 1;
+                    uint8_t slot = sc_find_slot(app);
                     SCSignal* sig = &app->signals[slot];
                     memset(sig, 0, sizeof(SCSignal));
                     sig->frequency = freq;
@@ -460,7 +485,7 @@ static int32_t sc_worker(void* ctx) {
                             subghz_devices_set_frequency(app->radio_device, fine_freq);
 
                             furi_mutex_acquire(app->mutex, FuriWaitForever);
-                            uint8_t slot = app->signal_count < SC_MAX_SIGNALS ? app->signal_count : SC_MAX_SIGNALS - 1;
+                            uint8_t slot = sc_find_slot(app);
                             SCSignal* sig = &app->signals[slot];
                             memset(sig, 0, sizeof(SCSignal));
                             sig->frequency = fine_freq;
@@ -558,10 +583,10 @@ static void sc_draw_spectrum(Canvas* canvas, SpectrumCheckApp* app) {
     #define GRAPH_TOP 10
     #define GRAPH_BOT 54
 
-    // Find noise floor (minimum across all channels)
+    // Find noise floor (minimum across peak-hold values)
     uint8_t noise = 80;
     for(uint8_t i = 0; i < 32; i++) {
-        if(app->channel_ss[i] < noise) noise = app->channel_ss[i];
+        if(app->channel_peak[i] < noise) noise = app->channel_peak[i];
     }
 
     for(uint8_t i = 0; i < 32; i++) {
@@ -571,7 +596,7 @@ static void sc_draw_spectrum(Canvas* canvas, SpectrumCheckApp* app) {
         else x = SEP2_X + 2 + (i - 20) * (BAR_W + 1);
 
         // Subtract noise floor
-        int8_t val = (int8_t)app->channel_ss[i] - (int8_t)noise;
+        int8_t val = (int8_t)app->channel_peak[i] - (int8_t)noise;
         if(val < 0) val = 0;
         uint8_t h = val * (GRAPH_BOT - GRAPH_TOP) / 50;
         if(h > (GRAPH_BOT - GRAPH_TOP)) h = GRAPH_BOT - GRAPH_TOP;
@@ -615,9 +640,9 @@ static void sc_draw_spectrum(Canvas* canvas, SpectrumCheckApp* app) {
     canvas_draw_str(canvas, SEP1_X + 4, 63, "400");
     canvas_draw_str(canvas, SEP2_X + 4, 63, "900");
 
-    // Top: peak info + protocol if known
-    if(app->max_rssi > -90.0f) {
-        uint32_t peak_freq = spec_freqs[app->max_rssi_channel];
+    // Top: held peak info (stable for 3s)
+    if(app->held_rssi > -90.0f) {
+        uint32_t peak_freq = spec_freqs[app->held_channel];
         const char* proto = NULL;
         for(uint8_t s = 0; s < app->signal_count; s++) {
             if(app->signals[s].protocol_decoded && app->signals[s].frequency == peak_freq) {
@@ -626,10 +651,10 @@ static void sc_draw_spectrum(Canvas* canvas, SpectrumCheckApp* app) {
             }
         }
         if(proto) {
-            snprintf(buf, sizeof(buf), "%.0fdB %s", (double)app->max_rssi, proto);
+            snprintf(buf, sizeof(buf), "%.0fdB %s", (double)app->held_rssi, proto);
         } else {
             snprintf(buf, sizeof(buf), "%.0fdB %ld.%02ld",
-                (double)app->max_rssi,
+                (double)app->held_rssi,
                 peak_freq / 1000000, (peak_freq / 10000) % 100);
         }
         canvas_draw_str(canvas, 0, 7, buf);
@@ -731,9 +756,13 @@ static void sc_draw_decoder(Canvas* canvas, SpectrumCheckApp* app) {
             sig->pulse_count, sig->min_pulse_us < UINT32_MAX ? sig->min_pulse_us : 0,
             sig->total_duration_us / 1000);
         canvas_draw_str(canvas, 0, 19, buf);
-        if(sig->est_rate_hz > 0) {
-            snprintf(buf, sizeof(buf), "Rate: ~%ldHz", sig->est_rate_hz);
-            canvas_draw_str(canvas, 0, 29, buf);
+        // Show hit count from log if available
+        for(uint8_t i = 0; i < app->log_size; i++) {
+            if(app->log[i].frequency == sig->frequency) {
+                snprintf(buf, sizeof(buf), "Seen %dx  RSSI:%ddB", app->log[i].count, app->log[i].rssi_max);
+                canvas_draw_str(canvas, 0, 29, buf);
+                break;
+            }
         }
     } else {
         canvas_draw_str(canvas, 0, 19, "Not analyzed");
@@ -755,7 +784,7 @@ static void sc_draw_waveform(Canvas* canvas, SpectrumCheckApp* app) {
         return;
     }
 
-    // Multi-row waveform: 4 rows, 12px each
+    // Multi-row waveform: 3 rows, 16px each
     static const uint32_t scales[] = {50, 100, 200, 500, 1000, 2000};
     #define SCALE_COUNT 6
     uint8_t zoom = app->waveform_zoom < SCALE_COUNT ? app->waveform_zoom : 0;
@@ -765,8 +794,8 @@ static void sc_draw_waveform(Canvas* canvas, SpectrumCheckApp* app) {
     uint32_t remaining_dur = 0;
     bool level = false;
 
-    for(uint8_t row = 0; row < 4 && idx < sig->raw_count; row++) {
-        uint8_t y_base = 2 + row * 15;
+    for(uint8_t row = 0; row < 3 && idx < sig->raw_count; row++) {
+        uint8_t y_base = 2 + row * 17;
         for(uint8_t x = 0; x < 128 && idx < sig->raw_count; x++) {
             if(remaining_dur < us_per_pixel / 2) {
                 int32_t val = sig->raw_data[idx];
@@ -774,7 +803,7 @@ static void sc_draw_waveform(Canvas* canvas, SpectrumCheckApp* app) {
                 remaining_dur = level ? (uint32_t)val : (uint32_t)(-val);
                 idx++;
             }
-            uint8_t y = level ? y_base : y_base + 10;
+            uint8_t y = level ? y_base : y_base + 12;
             canvas_draw_dot(canvas, x, y);
             if(remaining_dur > us_per_pixel)
                 remaining_dur -= us_per_pixel;
@@ -837,19 +866,19 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* event) {
                 app->trigger -= SC_TRIGGER_STEP;
                 if(app->trigger < SC_RSSI_MIN) app->trigger = SC_RSSI_MIN;
             } else {
-                // Page up in log
-                if(app->log_scroll >= 5) app->log_scroll -= 5;
-                else app->log_scroll = 0;
+                // Move cursor up one line
+                if(app->log_scroll > 0) app->log_scroll--;
             }
         } else if(app->current_view == SCViewDecoder) {
             // Browse signals
             if(app->signal_selected > 0) app->signal_selected--;
         } else if(app->current_view == SCViewWaveform) {
             if(event->type == InputTypeLong || event->type == InputTypeRepeat) {
-                if(app->waveform_scroll >= 10) app->waveform_scroll -= 10;
-                else app->waveform_scroll = 0;
+                // Long L: previous signal
+                if(app->signal_selected > 0) app->signal_selected--;
+                app->waveform_scroll = 0;
             } else {
-                // Page back (jump ~50 samples)
+                // Short L: page back
                 if(app->waveform_scroll >= 50) app->waveform_scroll -= 50;
                 else app->waveform_scroll = 0;
             }
@@ -862,8 +891,8 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* event) {
                 app->trigger += SC_TRIGGER_STEP;
                 if(app->trigger > SC_RSSI_MAX) app->trigger = SC_RSSI_MAX;
             } else {
-                // Page down in log
-                if(app->log_scroll + 5 < app->log_size) app->log_scroll += 5;
+                // Move cursor down one line
+                if(app->log_scroll + 1 < app->log_size) app->log_scroll++;
             }
         } else if(app->current_view == SCViewDecoder) {
             if(app->signal_selected + 1 < app->signal_count) app->signal_selected++;
@@ -871,18 +900,21 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* event) {
             SCSignal* sig = app->signal_count > 0 ? &app->signals[app->signal_selected] : NULL;
             if(sig) {
                 if(event->type == InputTypeLong || event->type == InputTypeRepeat) {
-                    app->waveform_scroll += 10;
+                    // Long R: next signal
+                    if(app->signal_selected + 1 < app->signal_count) app->signal_selected++;
+                    app->waveform_scroll = 0;
                 } else {
-                    app->waveform_scroll += 50; // Page forward
+                    // Short R: page forward
+                    app->waveform_scroll += 50;
+                    if(app->waveform_scroll >= sig->raw_count) app->waveform_scroll = sig->raw_count > 1 ? sig->raw_count - 1 : 0;
                 }
-                if(app->waveform_scroll >= sig->raw_count) app->waveform_scroll = sig->raw_count > 1 ? sig->raw_count - 1 : 0;
             }
         }
         break;
 
     case InputKeyOk:
         if(event->type == InputTypeLong) {
-            // Long OK: save current signal, or cycle sort on freq analyzer
+            // Long OK: sort on freq analyzer, save on decoder/waveform
             if(app->current_view == SCViewFreqAnalyzer) {
                 app->log_sort = (app->log_sort + 1) % SCLogSortModes;
                 sc_log_sort(app->log, app->log_size, app->log_sort);
@@ -904,20 +936,15 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* event) {
                     app->frequency = app->detected_freq;
                 }
             } else if(app->current_view == SCViewFreqAnalyzer) {
-                if(app->locked) {
-                    // Unlock
-                    app->locked = false;
-                } else if(app->log_size > 0) {
-                    // Lock onto the top entry in current sort
-                    SCLogEntry* e = &app->log[app->log_scroll];
-                    app->locked = true;
-                    app->locked_freq = e->frequency;
-                    app->locked_mod = 0;
-                } else {
-                    // No log entries — cycle sort
-                    app->log_sort = (app->log_sort + 1) % SCLogSortModes;
-                    sc_log_sort(app->log, app->log_size, app->log_sort);
-                    app->log_scroll = 0;
+                if(event->type == InputTypeShort) { // Only toggle on single press, not repeat
+                    if(app->locked) {
+                        app->locked = false;
+                    } else if(app->log_size > 0) {
+                        SCLogEntry* e = &app->log[app->log_scroll];
+                        app->locked = true;
+                        app->locked_freq = e->frequency;
+                        app->locked_mod = 0;
+                    }
                 }
             } else if(app->current_view == SCViewDecoder) {
                 // Cycle modulation and trigger new capture
