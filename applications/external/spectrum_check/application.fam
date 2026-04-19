@@ -1,0 +1,14 @@
+App(
+    appid="spectrum_check",
+    name="Spectrum Check",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="spectrum_check_app",
+    requires=["gui", "subghz"],
+    stack_size=10 * 1024,
+    fap_libs=["hwdrivers"],
+    fap_icon="spectrum_check.png",
+    fap_category="Sub-GHz",
+    fap_author="@apmlabs",
+    fap_version="1.0",
+    fap_description="All-in-one Sub-GHz tool: spectrum view, frequency analyzer with hit log, protocol decoder, and raw waveform viewer.",
+)
