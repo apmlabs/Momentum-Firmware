@@ -104,6 +104,9 @@ typedef struct {
     const SubGhzDevice* radio_device;
     SubGhzEnvironment* environment;
     SubGhzReceiver* receiver;
+    // Layer 3: extra protocols (weather, tpms, pocsag)
+    SubGhzEnvironment* extra_environment;
+    SubGhzReceiver* extra_receiver;
 
     // Current state
     SCView current_view;

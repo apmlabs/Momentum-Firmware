@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <float_tools.h>
+#include "protocols/sc_protocol_registry.h"
 
 extern const SubGhzProtocolRegistry subghz_protocol_registry;
 
@@ -122,19 +123,27 @@ static void sc_decode_callback(
 static void sc_decode_signal(SpectrumCheckApp* app, SCSignal* sig) {
     if(sig->raw_count < 4 || !app->receiver) return;
 
-    // Reset decoder state
+    // Layer 1: Main protocol registry (50+ protocols)
     sc_decode_found = false;
     sc_decode_name[0] = 0;
     sc_decode_string[0] = 0;
-
     subghz_receiver_reset(app->receiver);
-
-    // Feed all raw samples through the protocol decoders
     for(uint16_t i = 0; i < sig->raw_count; i++) {
         bool level = sig->raw_data[i] > 0;
         uint32_t duration = level ? (uint32_t)sig->raw_data[i] : (uint32_t)(-sig->raw_data[i]);
         subghz_receiver_decode(app->receiver, level, duration);
         if(sc_decode_found) break;
+    }
+
+    // Layer 3: Extra protocols (weather, TPMS, POCSAG) if Layer 1 didn't match
+    if(!sc_decode_found && app->extra_receiver) {
+        subghz_receiver_reset(app->extra_receiver);
+        for(uint16_t i = 0; i < sig->raw_count; i++) {
+            bool level = sig->raw_data[i] > 0;
+            uint32_t duration = level ? (uint32_t)sig->raw_data[i] : (uint32_t)(-sig->raw_data[i]);
+            subghz_receiver_decode(app->extra_receiver, level, duration);
+            if(sc_decode_found) break;
+        }
     }
 
     if(sc_decode_found) {
@@ -690,6 +699,13 @@ int32_t spectrum_check_app(void* p) {
     subghz_receiver_set_filter(app->receiver, SubGhzProtocolFlag_Decodable);
     subghz_receiver_set_rx_callback(app->receiver, sc_decode_callback, app);
 
+    // Layer 3: extra protocols (weather, TPMS, POCSAG)
+    app->extra_environment = subghz_environment_alloc();
+    subghz_environment_set_protocol_registry(app->extra_environment, (void*)&sc_extra_protocol_registry);
+    app->extra_receiver = subghz_receiver_alloc_init(app->extra_environment);
+    subghz_receiver_set_filter(app->extra_receiver, SubGhzProtocolFlag_Decodable);
+    subghz_receiver_set_rx_callback(app->extra_receiver, sc_decode_callback, app);
+
     app->view_port = view_port_alloc();
     view_port_draw_callback_set(app->view_port, sc_draw_callback, app);
     view_port_input_callback_set(app->view_port, sc_input_callback, app);
@@ -723,6 +739,8 @@ int32_t spectrum_check_app(void* p) {
     subghz_devices_deinit();
     subghz_receiver_free(app->receiver);
     subghz_environment_free(app->environment);
+    subghz_receiver_free(app->extra_receiver);
+    subghz_environment_free(app->extra_environment);
     furi_record_close(RECORD_NOTIFICATION);
     furi_message_queue_free(app->event_queue);
     furi_mutex_free(app->mutex);
