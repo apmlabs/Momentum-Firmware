@@ -40,7 +40,7 @@
 - **Official** (Primary) - flipperzero-firmware
 - **Unleashed** - unleashed-firmware
 - **Momentum** (includes Xtreme) - Momentum-Firmware
-- **RogueMaster** (Secondary) - roguemaster-firmware
+- **Lambda** (Secondary) - lambda-firmware
 
 ---
 
@@ -77,7 +77,7 @@ See **[BUILD_MULTI_FIRMWARE.md](BUILD_MULTI_FIRMWARE.md)** for detailed build in
 
 ```bash
 # Build for specific firmware
-./build.sh [official|unleashed|momentum|roguemaster]
+./build.sh [official|unleashed|momentum|lambda]
 
 # Build and deploy to connected Flipper
 ./deploy.sh [firmware]
@@ -114,7 +114,7 @@ Before releasing any update, **ALL** tests must pass on **ALL** supported firmwa
 - [ ] Official firmware: builds without warnings
 - [ ] Unleashed firmware: builds without warnings
 - [ ] Momentum firmware: builds without warnings
-- [ ] RogueMaster firmware: builds without warnings (or document known issues)
+- [ ] Lambda firmware: builds without warnings (or document known issues)
 
 #### Core Functionality Tests
 
@@ -204,7 +204,7 @@ Follow this procedure **for each supported firmware** when a new version is rele
 
 #### Step 1: Update Local Firmware Clone
 ```bash
-cd /home/work/flipperzero-firmware  # or unleashed/momentum/roguemaster
+cd /home/work/flipperzero-firmware  # or unleashed/momentum/lambda
 git fetch --all --tags
 git checkout <new-version>  # or release branch
 git submodule update --init --recursive
@@ -418,14 +418,14 @@ Test **every combination**:
 | Official | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Unleashed | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Momentum | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| RogueMaster | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ |
+| Lambda | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ |
 
 **Legend**:
 - ✅ Fully tested and working
 - ⚠️ Tested with known issues documented
 - ❌ Not working (blocking issue)
 
-**Goal**: All checkmarks green before release (RogueMaster warnings acceptable if documented).
+**Goal**: All checkmarks green before release (Lambda warnings acceptable if documented).
 
 ---
 

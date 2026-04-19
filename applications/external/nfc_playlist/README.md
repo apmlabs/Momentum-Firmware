@@ -15,7 +15,7 @@ Any feedback is welcome and would be very much appreciated as it helps me to imp
 ## Supported Firmwares
 As i know these firmwares are supported and working if you know any more please let me know
 - <a href="https://github.com/Next-Flip/Momentum-Firmware" target="_blank">Momentum</a>
-- <a href="https://github.com/RogueMaster/flipperzero-firmware-wPlugins" target="_blank">RogueMaster</a>
+- <a href="https://github.com/Lambda/flipperzero-firmware-wPlugins" target="_blank">Lambda</a>
 - <a href="https://github.com/DarkFlippers/unleashed-firmware" target="_blank">Unleashed</a>
 ## Settings:
 - Emulate time (How long the NFC card will be emulated for)

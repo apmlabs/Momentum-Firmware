@@ -44,7 +44,7 @@ When a migration is needed, copy this template and fill it out:
 ### YYYY-MM-DD: [Brief Description]
 
 **Date**: YYYY-MM-DD
-**Firmware(s) Affected**: [Official/Unleashed/Momentum/RogueMaster/All]
+**Firmware(s) Affected**: [Official/Unleashed/Momentum/Lambda/All]
 **Firmware Version**: [tag/commit where change was introduced]
 **API Changed**: [module and function names]
 **Change Type**: [Deprecated/Removed/Behavioral Change/New API Required]
@@ -94,7 +94,7 @@ nfc_worker_start_ex(worker, callback, context);
 - [ ] Builds without warnings on Official
 - [ ] Builds without warnings on Unleashed
 - [ ] Builds without warnings on Momentum
-- [ ] Builds without warnings on RogueMaster
+- [ ] Builds without warnings on Lambda
 - [ ] Feature works on all firmwares
 - [ ] No regressions in other features
 - [ ] Settings persistence still works
@@ -109,7 +109,7 @@ nfc_worker_start_ex(worker, callback, context);
 - Official: [affected/not affected/workaround needed]
 - Unleashed: [affected/not affected/workaround needed]
 - Momentum: [affected/not affected/workaround needed]
-- RogueMaster: [affected/not affected/workaround needed]
+- Lambda: [affected/not affected/workaround needed]
 
 #### References
 
@@ -249,7 +249,7 @@ Before updating firmware versions, always read:
 - Official: `CHANGELOG.md` in flipperzero-firmware
 - Unleashed: Release notes on GitHub
 - Momentum: `CHANGELOG.md` in Momentum-Firmware
-- RogueMaster: Check releases page
+- Lambda: Check releases page
 
 ### 4. Test Early, Test Often
 

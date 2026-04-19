@@ -73,7 +73,7 @@ For Nova there is a helpful script to setup dev env.
 
 Special thanks to:
 - [@xMasterX](https://github.com/xMasterX) for distributing and support
-- [@RogueMaster](https://github.com/RogueMaster) for distribution and support
+- [@Lambda](https://github.com/Lambda) for distribution and support
 - [@Willy-JL](https://github.com/@Willy-JL) for fixes
 - [@panki27](https://github.com/@panki27) for inspiration
 - The Flipper Zero community for support and feedback

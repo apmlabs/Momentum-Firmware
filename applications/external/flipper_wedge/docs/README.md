@@ -125,7 +125,7 @@ Builds and uploads to connected Flipper via USB.
 ./build-all-firmwares.sh
 ```
 
-Builds FAPs for all supported firmwares (Official, Unleashed, Momentum, RogueMaster).
+Builds FAPs for all supported firmwares (Official, Unleashed, Momentum, Lambda).
 
 ---
 
@@ -136,7 +136,7 @@ Builds FAPs for all supported firmwares (Official, Unleashed, Momentum, RogueMas
 | **Official** | ✅ Primary | `./build.sh official` | Main target, most stable |
 | **Unleashed** | ✅ Supported | `./build.sh unleashed` | Fully compatible |
 | **Momentum** | ✅ Supported | `./build.sh momentum` | Includes Xtreme |
-| **RogueMaster** | ⚠️ Secondary | `./build.sh roguemaster` | Test thoroughly |
+| **Lambda** | ⚠️ Secondary | `./build.sh lambda` | Test thoroughly |
 
 **Details**: See [FIRMWARE_COMPATIBILITY.md](FIRMWARE_COMPATIBILITY.md) for tested versions and known issues.
 
@@ -194,7 +194,7 @@ This project is **feature-complete**. Focus is on:
 - **Official Firmware**: https://github.com/flipperdevices/flipperzero-firmware
 - **Unleashed**: https://github.com/DarkFlippers/unleashed-firmware
 - **Momentum**: https://github.com/Next-Flip/Momentum-Firmware
-- **RogueMaster**: https://github.com/RogueMaster/flipperzero-firmware-wPlugins
+- **Lambda**: https://github.com/Lambda/flipperzero-firmware-wPlugins
 
 ### Community
 - **Flipper Forum**: https://forum.flipper.net/

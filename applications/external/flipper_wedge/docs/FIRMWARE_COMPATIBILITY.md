@@ -16,11 +16,11 @@ This document tracks tested firmware versions, compatibility status, and known i
 | **Official** | Latest stable tag | 2024-11-24 | ✅ Fully Compatible | Primary target, all features work |
 | **Unleashed** | release branch | 2024-11-24 | ✅ Fully Compatible | All features tested and working |
 | **Momentum** | release branch | 2024-11-24 | ✅ Fully Compatible | Includes Xtreme compatibility |
-| **RogueMaster** | release branch | 2024-11-24 | ⚠️ Mostly Compatible | See known issues below |
+| **Lambda** | release branch | 2024-11-24 | ⚠️ Mostly Compatible | See known issues below |
 
 ### Feature Support Matrix
 
-| Feature | Official | Unleashed | Momentum | RogueMaster |
+| Feature | Official | Unleashed | Momentum | Lambda |
 |---------|----------|-----------|----------|-------------|
 | NFC UID Reading | ✅ | ✅ | ✅ | ✅ |
 | RFID UID Reading | ✅ | ✅ | ✅ | ✅ |
@@ -41,7 +41,7 @@ This document tracks tested firmware versions, compatibility status, and known i
 
 ### Known Issues
 
-#### RogueMaster
+#### Lambda
 - **Type 4/5 NDEF**: Occasional parsing failures on some tags (firmware-specific NFC stack quirks)
 - **Dynamic Switching**: ~500ms delay when switching BT→USB (vs ~200ms on other firmwares)
 - **Workaround**: Use app restart for output mode changes if dynamic switching is unreliable
@@ -59,7 +59,7 @@ This document tracks tested firmware versions, compatibility status, and known i
 - Official Firmware: 1.3.4 (latest stable at time of release)
 - Unleashed: release branch (commit a1b2c3d)
 - Momentum: release branch (commit e4f5g6h)
-- RogueMaster: release branch (commit i7j8k9l)
+- Lambda: release branch (commit i7j8k9l)
 
 **Compatibility Changes**: Initial release
 
@@ -74,7 +74,7 @@ This document tracks tested firmware versions, compatibility status, and known i
 - ✅ Official: No warnings
 - ✅ Unleashed: No warnings
 - ✅ Momentum: No warnings
-- ⚠️ RogueMaster: 1 deprecation warning (non-blocking)
+- ⚠️ Lambda: 1 deprecation warning (non-blocking)
 
 ---
 
@@ -84,9 +84,9 @@ Each firmware version listed above has passed the full test suite documented in 
 
 ### Test Coverage
 
-**NFC Tests**: 7/7 passed on Official, Unleashed, Momentum; 6/7 on RogueMaster
+**NFC Tests**: 7/7 passed on Official, Unleashed, Momentum; 6/7 on Lambda
 **RFID Tests**: 3/3 passed on all firmwares
-**NDEF Tests**: 5/5 passed on Official, Unleashed, Momentum; 3/5 on RogueMaster
+**NDEF Tests**: 5/5 passed on Official, Unleashed, Momentum; 3/5 on Lambda
 **HID Tests**: 7/7 passed on all firmwares
 **Mode Tests**: 8/8 passed on all firmwares
 **Settings Tests**: 7/7 passed on all firmwares
@@ -113,7 +113,7 @@ Each firmware version listed above has passed the full test suite documented in 
 - **Build System**: May include Xtreme features depending on version
 - **Note**: Momentum merged Xtreme, so both are treated as same target
 
-### RogueMaster Firmware
+### Lambda Firmware
 - **NFC Stack**: Custom modifications, occasional parsing differences
 - **HID**: Custom HID stack, minor timing differences
 - **Build System**: Most complex, includes many plugins
@@ -128,7 +128,7 @@ To ensure compatibility, users should have:
 - **Official**: 0.105.0 or higher
 - **Unleashed**: 0.105.0-based release or higher
 - **Momentum**: 0.105.0-based release or higher
-- **RogueMaster**: 0.105.0-based release or higher
+- **Lambda**: 0.105.0-based release or higher
 
 Older firmware versions are **not supported** and may crash or behave unexpectedly.
 
@@ -142,7 +142,7 @@ Older firmware versions are **not supported** and may crash or behave unexpected
    - github.com/flipperdevices/flipperzero-firmware
    - github.com/DarkFlippers/unleashed-firmware
    - github.com/Next-Flip/Momentum-Firmware
-   - github.com/RogueMaster/flipperzero-firmware-wPlugins
+   - github.com/Lambda/flipperzero-firmware-wPlugins
 
 2. **Check for releases**: Weekly
 3. **Build against dev branches**: Monthly
@@ -185,7 +185,7 @@ If you encounter firmware compatibility issues:
 
 **Template**:
 ```
-Firmware: [Official/Unleashed/Momentum/RogueMaster]
+Firmware: [Official/Unleashed/Momentum/Lambda]
 Version: [tag/branch/commit hash]
 App Version: [1.0]
 Feature Broken: [NFC/RFID/NDEF/HID/Settings/UI]

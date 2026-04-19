@@ -46,7 +46,7 @@ A Flipper Zero application that transforms your device into a contactless tag-to
   - Official firmware
   - Unleashed firmware
   - Xtreme firmware
-  - RogueMaster firmware
+  - Lambda firmware
 
 ### From Flipper App Store (Recommended)
 1. Open Flipper Mobile App

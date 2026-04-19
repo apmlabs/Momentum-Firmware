@@ -40,7 +40,7 @@ A Flipper Zero application that transforms your device into a contactless tag-to
 
 **Prerequisites:**
 - Flipper Zero with firmware version 0.105.0 or higher
-- Compatible with Official, Unleashed, Momentum, and RogueMaster firmwares
+- Compatible with Official, Unleashed, Momentum, and Lambda firmwares
 
 **From Flipper App Store (Recommended):**
 1. Open Flipper Mobile App

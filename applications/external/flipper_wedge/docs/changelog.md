@@ -68,7 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical Details
 - Built on official Flipper Zero firmware (0.105.0+)
-- Compatible with Unleashed, Xtreme, and RogueMaster firmwares
+- Compatible with Unleashed, Xtreme, and Lambda firmwares
 - Modular architecture with separate helpers for NFC, RFID, HID, and formatting
 - Comprehensive error handling and user feedback
 - Clean separation of concerns (scenes, views, helpers)

@@ -141,7 +141,7 @@ NearbyFilesApp* nearby_files_app_alloc(void) {
         "calculate the distance.\n"
         "\n"
         "Some custom firmwares like\n"
-        "Momentum and RogueMaster\n"
+        "Momentum and Lambda\n"
         "add these coordinates at the\n"
         "time of recording if the GPS\n"
         "option is enabled.\n"

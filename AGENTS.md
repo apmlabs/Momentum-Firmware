@@ -1,7 +1,7 @@
 # Kiisu Combined Firmware — Project Notes
 
 ## What This Is
-Combined Flipper Zero firmware: Momentum + Kiisu v4b hardware + 600+ apps from RogueMaster.
+Combined Flipper Zero firmware: Momentum + Kiisu v4b hardware + 600+ apps from Lambda.
 Branch: `kiisu-dev` on `apmlabs/Momentum-Firmware`
 
 ## CRITICAL RULES
@@ -16,8 +16,8 @@ FBT_NO_SYNC=1 ./fbt fap_<appid>            # Single app
 FBT_NO_SYNC=1 ./fbt updater_package --keep-going  # Show all errors
 ```
 
-## API: Momentum vs RogueMaster
-When adding apps from RogueMaster, these changes are needed:
+## API: Momentum vs Lambda
+When adding apps from Lambda, these changes are needed:
 - `cfw/cfw.h` → `momentum/momentum.h`, `cfw_settings` → `momentum_settings`
 - `Cli*` → `CliRegistry*`, `cli_add_command` → `cli_registry_add_command`
 - `elements_scrollable_text_line`: 8 args → 7 (remove last bool)

@@ -37,9 +37,9 @@
 #define UART_CH (momentum_settings.uart_esp_channel)
 #elif defined FW_ORIGIN_RM
 /**
- * Enable the following line for "RogueMaster Firmware".
+ * Enable the following line for "Lambda Firmware".
  * 
- * @see https://github.com/RogueMaster/flipperzero-firmware-wPlugins
+ * @see https://github.com/Lambda/flipperzero-firmware-wPlugins
 */
 #include <cfw/cfw.h>
 #define UART_CH (cfw_settings.uart_esp_channel)

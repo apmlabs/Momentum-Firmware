@@ -63,7 +63,7 @@ From the start screen on flipper press down to enter the favorites menu. Navigat
 
 ## Thank you notes
 - [Willy-JL](https://github.com/Willy-JL) for code contributions and distributing in Momentum Firmware
-- [Roguemaster](https://github.com/RogueMaster/flipperzero-firmware-wPlugins) for distributing in Roguemaster Firmware
+- [Lambda](https://github.com/Lambda/flipperzero-firmware-wPlugins) for distributing in Lambda Firmware
 - [Miccayo](https://github.com/miccayo) for contributing the loop transmit feature
 
 ## Licensing

@@ -108,7 +108,7 @@ test_firmware_build() {
 test_firmware_build "official" "Official"
 test_firmware_build "unleashed" "Unleashed"
 test_firmware_build "momentum" "Momentum"
-test_firmware_build "roguemaster" "RogueMaster"
+test_firmware_build "lambda" "Lambda"
 
 # Summary
 echo "========================================="

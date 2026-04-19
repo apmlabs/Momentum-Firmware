@@ -15,8 +15,8 @@ git clone --recursive https://github.com/DarkFlippers/unleashed-firmware.git
 # Momentum Firmware (Xtreme successor)
 git clone --recursive https://github.com/Next-Flip/Momentum-Firmware.git
 
-# RogueMaster Firmware (optional - less stable)
-git clone --recursive https://github.com/RogueMaster/flipperzero-firmware-wPlugins.git roguemaster-firmware
+# Lambda Firmware (optional - less stable)
+git clone --recursive https://github.com/Lambda/flipperzero-firmware-wPlugins.git lambda-firmware
 ```
 
 ### 2. Use the Build Scripts
@@ -34,14 +34,14 @@ I've created three helper scripts for you:
 # Build for Momentum
 ./build.sh momentum
 
-# Build for RogueMaster
-./build.sh roguemaster
+# Build for Lambda
+./build.sh lambda
 
 # Aliases work too
 ./build.sh ofw        # Official
 ./build.sh ul         # Unleashed
 ./build.sh mntm       # Momentum
-./build.sh rm         # RogueMaster
+./build.sh rm         # Lambda
 ```
 
 #### `deploy.sh` - Build and deploy to connected Flipper
@@ -66,7 +66,7 @@ Output FAP files will be in `dist/` with firmware-specific names:
 - `flipper_wedge_official.fap`
 - `flipper_wedge_unleashed.fap`
 - `flipper_wedge_momentum.fap`
-- `flipper_wedge_roguemaster.fap`
+- `flipper_wedge_lambda.fap`
 
 ---
 
@@ -87,8 +87,8 @@ cd /home/work/unleashed-firmware
 cd /home/work/Momentum-Firmware
 ./fbt fap_flipper_wedge
 
-# RogueMaster
-cd /home/work/roguemaster-firmware
+# Lambda
+cd /home/work/lambda-firmware
 ./fbt fap_flipper_wedge
 ```
 
@@ -124,7 +124,7 @@ To test different firmware builds:
 | Official | ⭐⭐⭐⭐⭐ | `./build.sh official` | ✅ 100% |
 | Unleashed | ⭐⭐⭐⭐⭐ | `./build.sh unleashed` | ✅ ~98% |
 | Momentum | ⭐⭐⭐⭐ | `./build.sh momentum` | ✅ ~95% |
-| RogueMaster | ⭐⭐⭐ | `./build.sh roguemaster` | ⚠️ ~80% |
+| Lambda | ⭐⭐⭐ | `./build.sh lambda` | ⚠️ ~80% |
 
 **Recommendation**: Primary testing on Official, Unleashed, and Momentum firmwares.
 
@@ -144,8 +144,8 @@ cd /home/work/unleashed-firmware && git pull --recurse-submodules
 # Momentum
 cd /home/work/Momentum-Firmware && git pull --recurse-submodules
 
-# RogueMaster
-cd /home/work/roguemaster-firmware && git pull --recurse-submodules
+# Lambda
+cd /home/work/lambda-firmware && git pull --recurse-submodules
 ```
 
 ---

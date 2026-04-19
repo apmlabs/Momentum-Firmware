@@ -345,7 +345,7 @@ Quick checklist for creating a new release:
 | **Official** | Latest stable tag | `./build.sh official` |
 | **Unleashed** | release | `./build.sh unleashed` |
 | **Momentum** | release | `./build.sh momentum` |
-| **RogueMaster** | release | `./build.sh roguemaster` |
+| **Lambda** | release | `./build.sh lambda` |
 
 **Quick Test**: If unsure which firmware to test, always test Official first.
 
