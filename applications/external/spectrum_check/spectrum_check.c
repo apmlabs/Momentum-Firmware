@@ -6,17 +6,120 @@
 
 extern const SubGhzProtocolRegistry subghz_protocol_registry;
 
-static const char* sc_view_names[] = {"SPECTRUM", "FREQ ANALYZER", "DECODER", "WAVEFORM"};
 static const char* sc_sort_names[] = {"Count", "RSSI", "Freq", "Recent"};
-static const char* sc_mod_names[] = {"AM650", "AM270", "FM2.4", "FM47.6"};
-static const FuriHalSubGhzPreset sc_presets[] = {
-    FuriHalSubGhzPresetOok650Async, FuriHalSubGhzPresetOok270Async,
-    FuriHalSubGhzPreset2FSKDev238Async, FuriHalSubGhzPreset2FSKDev476Async,
+static const char* sc_mod_names[] = {
+    "AM650", "AM270", "FM2.4", "FM47.6",
+    "TPMS-F", "TPMS-O", "TPMS-G", "OOK40k", "FSK40k"};
+
+// Custom CC1101 register presets (from ProtoView)
+
+// TPMS1: 20kBaud 2FSK, 28.56kHz deviation, 325kHz BW
+static const uint8_t sc_preset_tpms1_fsk[] = {
+    CC1101_IOCFG0, 0x0D, CC1101_FSCTRL1, 0x06,
+    CC1101_PKTCTRL0, 0x32, CC1101_PKTCTRL1, 0x04,
+    CC1101_MDMCFG0, 0x00, CC1101_MDMCFG1, 0x02,
+    CC1101_MDMCFG2, 0x04, CC1101_MDMCFG3, 0x93,
+    CC1101_MDMCFG4, 0x59, CC1101_DEVIATN, 0x41,
+    CC1101_MCSM0, 0x18, CC1101_FOCCFG, 0x16,
+    CC1101_AGCCTRL0, 0x91, CC1101_AGCCTRL1, 0x00, CC1101_AGCCTRL2, 0x07,
+    CC1101_WORCTRL, 0xFB, CC1101_FREND0, 0x10, CC1101_FREND1, 0x56,
+    0, 0, // end
+    0xC0, 0, 0, 0, 0, 0, 0, 0 // PATABLE
 };
+
+// TPMS2: 10kBaud OOK, 650kHz BW
+static const uint8_t sc_preset_tpms2_ook[] = {
+    CC1101_IOCFG0, 0x0D, CC1101_FIFOTHR, 0x07,
+    CC1101_PKTCTRL0, 0x32, CC1101_FSCTRL1, 0x06,
+    CC1101_MDMCFG0, 0x00, CC1101_MDMCFG1, 0x00,
+    CC1101_MDMCFG2, 0x30, CC1101_MDMCFG3, 0x93,
+    CC1101_MDMCFG4, 0x18, CC1101_MCSM0, 0x18,
+    CC1101_FOCCFG, 0x18,
+    CC1101_AGCCTRL0, 0x91, CC1101_AGCCTRL1, 0x00, CC1101_AGCCTRL2, 0x07,
+    CC1101_WORCTRL, 0xFB, CC1101_FREND0, 0x11, CC1101_FREND1, 0xB6,
+    0, 0, // end
+    0, 0xC0, 0, 0, 0, 0, 0, 0 // PATABLE (OOK)
+};
+
+// TPMS3: 20kBaud GFSK, 19kHz dev, 325kHz BW (Toyota)
+static const uint8_t sc_preset_tpms3_gfsk[] = {
+    CC1101_IOCFG0, 0x0D, CC1101_FSCTRL1, 0x06,
+    CC1101_PKTCTRL0, 0x32, CC1101_PKTCTRL1, 0x04,
+    CC1101_MDMCFG0, 0x00, CC1101_MDMCFG1, 0x02,
+    CC1101_MDMCFG2, 0x10, CC1101_MDMCFG3, 0x93,
+    CC1101_MDMCFG4, 0x59, CC1101_DEVIATN, 0x34,
+    CC1101_MCSM0, 0x18, CC1101_FOCCFG, 0x16,
+    CC1101_AGCCTRL0, 0x80, CC1101_AGCCTRL1, 0x58, CC1101_AGCCTRL2, 0x87,
+    CC1101_WORCTRL, 0xFB, CC1101_FREND0, 0x10, CC1101_FREND1, 0x56,
+    0, 0,
+    0xC0, 0, 0, 0, 0, 0, 0, 0
+};
+
+// OOK 40kBaud (short pulses ~25µs)
+static const uint8_t sc_preset_ook_40k[] = {
+    CC1101_IOCFG0, 0x0D, CC1101_FIFOTHR, 0x07,
+    CC1101_PKTCTRL0, 0x32, CC1101_FSCTRL1, 0x06,
+    CC1101_MDMCFG0, 0x00, CC1101_MDMCFG1, 0x00,
+    CC1101_MDMCFG2, 0x30, CC1101_MDMCFG3, 0x93,
+    CC1101_MDMCFG4, 0x1A, CC1101_MCSM0, 0x18,
+    CC1101_FOCCFG, 0x18,
+    CC1101_AGCCTRL0, 0x91, CC1101_AGCCTRL1, 0x00, CC1101_AGCCTRL2, 0x07,
+    CC1101_WORCTRL, 0xFB, CC1101_FREND0, 0x11, CC1101_FREND1, 0xB6,
+    0, 0,
+    0, 0xC0, 0, 0, 0, 0, 0, 0
+};
+
+// FSK 40kBaud, 28kHz dev, 270kHz BW
+static const uint8_t sc_preset_fsk_40k[] = {
+    CC1101_IOCFG0, 0x0D, CC1101_FSCTRL1, 0x06,
+    CC1101_PKTCTRL0, 0x32, CC1101_PKTCTRL1, 0x04,
+    CC1101_MDMCFG0, 0x00, CC1101_MDMCFG1, 0x02,
+    CC1101_MDMCFG2, 0x04, CC1101_MDMCFG3, 0x93,
+    CC1101_MDMCFG4, 0x6A, CC1101_DEVIATN, 0x41,
+    CC1101_MCSM0, 0x18, CC1101_FOCCFG, 0x16,
+    CC1101_AGCCTRL0, 0x91, CC1101_AGCCTRL1, 0x00, CC1101_AGCCTRL2, 0x07,
+    CC1101_WORCTRL, 0xFB, CC1101_FREND0, 0x10, CC1101_FREND1, 0x56,
+    0, 0,
+    0xC0, 0, 0, 0, 0, 0, 0, 0
+};
+
+// Preset loading helper
+static void sc_load_preset(const SubGhzDevice* dev, uint8_t mod) {
+    switch(mod) {
+    case SCModAM650: subghz_devices_load_preset(dev, FuriHalSubGhzPresetOok650Async, NULL); break;
+    case SCModAM270: subghz_devices_load_preset(dev, FuriHalSubGhzPresetOok270Async, NULL); break;
+    case SCModFM238: subghz_devices_load_preset(dev, FuriHalSubGhzPreset2FSKDev238Async, NULL); break;
+    case SCModFM476: subghz_devices_load_preset(dev, FuriHalSubGhzPreset2FSKDev476Async, NULL); break;
+    case SCModTPMS_FSK: subghz_devices_load_preset(dev, FuriHalSubGhzPresetCustom, (uint8_t*)sc_preset_tpms1_fsk); break;
+    case SCModTPMS_OOK: subghz_devices_load_preset(dev, FuriHalSubGhzPresetCustom, (uint8_t*)sc_preset_tpms2_ook); break;
+    case SCModTPMS_GFSK: subghz_devices_load_preset(dev, FuriHalSubGhzPresetCustom, (uint8_t*)sc_preset_tpms3_gfsk); break;
+    case SCModOOK_40k: subghz_devices_load_preset(dev, FuriHalSubGhzPresetCustom, (uint8_t*)sc_preset_ook_40k); break;
+    case SCModFSK_40k: subghz_devices_load_preset(dev, FuriHalSubGhzPresetCustom, (uint8_t*)sc_preset_fsk_40k); break;
+    default: subghz_devices_load_preset(dev, FuriHalSubGhzPresetOok650Async, NULL); break;
+    }
+}
+
+// Preset name strings for .sub file saving (one per SCMod enum value)
 static const char* sc_preset_names[] = {
-    "FuriHalSubGhzPresetOok650Async", "FuriHalSubGhzPresetOok270Async",
-    "FuriHalSubGhzPreset2FSKDev238Async", "FuriHalSubGhzPreset2FSKDev476Async",
+    "FuriHalSubGhzPresetOok650Async",
+    "FuriHalSubGhzPresetOok270Async",
+    "FuriHalSubGhzPreset2FSKDev238Async",
+    "FuriHalSubGhzPreset2FSKDev476Async",
+    "FuriHalSubGhzPresetCustom", // TPMS_FSK
+    "FuriHalSubGhzPresetCustom", // TPMS_OOK
+    "FuriHalSubGhzPresetCustom", // TPMS_GFSK
+    "FuriHalSubGhzPresetCustom", // OOK_40k
+    "FuriHalSubGhzPresetCustom", // FSK_40k
 };
+
+
+// Spectrum scan frequencies (32 points across 3 bands)
+static const uint32_t spec_freqs[] = {
+    300000000, 307000000, 310000000, 315000000, 318000000, 330000000, 340000000, 348000000,
+    390000000, 410000000, 418000000, 425000000, 430000000, 433920000, 438000000, 445000000, 450000000, 455000000, 460000000, 464000000,
+    779000000, 800000000, 820000000, 840000000, 860000000, 868000000, 880000000, 900000000, 915000000, 920000000, 925000000, 928000000,
+};
+#define SPEC_FREQ_COUNT 32
 
 // Safe CC1101 bands (datasheet limits, no extended range)
 typedef struct { uint32_t min; uint32_t center; uint32_t max; } SCBand;
@@ -217,19 +320,6 @@ static int32_t sc_worker(void* ctx) {
     while(app->worker_running) {
         if(app->current_view == SCViewSpectrum) {
             // Scan all 3 bands using fixed frequency points
-            // Band 1: 300-348 (8 points), Band 2: 387-464 (12 points), Band 3: 779-928 (12 points)
-            static const uint32_t spec_freqs[] = {
-                // Band 1: 300 MHz
-                300000000, 307000000, 310000000, 315000000, 318000000, 330000000, 340000000, 348000000,
-                // Band 2: 400 MHz
-                390000000, 410000000, 418000000, 425000000, 430000000, 433920000, 438000000, 445000000, 450000000, 455000000, 460000000, 464000000,
-                // Band 3: 900 MHz
-                779000000, 800000000, 820000000, 840000000, 860000000, 868000000, 880000000, 900000000, 915000000, 920000000, 925000000, 928000000,
-            };
-            #define SPEC_FREQ_COUNT 32
-            #define SPEC_BAND1_END 8
-            #define SPEC_BAND2_END 20
-
             subghz_devices_idle(app->radio_device);
             subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetOok650Async, NULL);
 
@@ -255,63 +345,126 @@ static int32_t sc_worker(void* ctx) {
 
         } else if(app->current_view == SCViewFreqAnalyzer) {
             subghz_devices_idle(app->radio_device);
-            subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetOok650Async, NULL);
 
-            float best_rssi = -127.0f;
-            uint32_t best_freq = 0;
-            for(uint8_t i = 0; i < SC_SCAN_COUNT && app->worker_running; i++) {
-                subghz_devices_set_frequency(app->radio_device, sc_scan_freqs[i]);
+            bool is_locked = false;
+            furi_mutex_acquire(app->mutex, FuriWaitForever);
+            is_locked = app->locked;
+            furi_mutex_release(app->mutex);
+
+            if(is_locked) {
+                // LOCK MODE: listen on locked freq with current preset, cycle on silence
+                uint32_t freq = app->locked_freq;
+                uint8_t mod = app->locked_mod;
+
+                subghz_devices_idle(app->radio_device);
+                sc_load_preset(app->radio_device, mod);
+                subghz_devices_set_frequency(app->radio_device, freq);
+
+                // Check RSSI first
                 subghz_devices_set_rx(app->radio_device);
                 furi_delay_us(2000);
                 float rssi = subghz_devices_get_rssi(app->radio_device);
                 subghz_devices_idle(app->radio_device);
-                if(rssi > best_rssi) { best_rssi = rssi; best_freq = sc_scan_freqs[i]; }
-            }
 
-            if(best_rssi > app->trigger && best_freq > 0) {
-                // Fine scan
-                subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetOok270Async, NULL);
-                float fine_rssi = -127.0f;
-                uint32_t fine_freq = 0;
-                for(uint32_t f = best_freq - 300000; f <= best_freq + 300000; f += 20000) {
-                    if(!sc_freq_valid(f)) continue;
-                    subghz_devices_set_frequency(app->radio_device, f);
+                furi_mutex_acquire(app->mutex, FuriWaitForever);
+                app->detected_freq = freq;
+                app->detected_rssi = rssi;
+                furi_mutex_release(app->mutex);
+
+                if(rssi > app->trigger) {
+                    // Signal present! Capture it
+                    furi_mutex_acquire(app->mutex, FuriWaitForever);
+                    app->signal_found = true;
+                    uint8_t slot = app->signal_count < SC_MAX_SIGNALS ? app->signal_count : SC_MAX_SIGNALS - 1;
+                    SCSignal* sig = &app->signals[slot];
+                    memset(sig, 0, sizeof(SCSignal));
+                    sig->frequency = freq;
+                    sig->modulation = mod;
+                    sc_cap_buf = sig->raw_data;
+                    sc_cap_idx = 0;
+                    furi_mutex_release(app->mutex);
+
+                    sc_load_preset(app->radio_device, mod);
+                    subghz_devices_set_frequency(app->radio_device, freq);
+                    subghz_devices_start_async_rx(app->radio_device, sc_raw_callback, app);
+                    furi_delay_ms(400);
+                    subghz_devices_stop_async_rx(app->radio_device);
+
+                    furi_mutex_acquire(app->mutex, FuriWaitForever);
+                    sig->raw_count = sc_cap_idx;
+                    if(sig->raw_count > 10) {
+                        sc_analyze_signal(sig); sc_decode_signal(app, sig);
+                        if(app->signal_count < SC_MAX_SIGNALS) {
+                            app->signal_count++;
+                        }
+                        app->signal_selected = slot;
+                        if(sig->protocol_decoded) {
+                            // Decoded! Unlock automatically
+                            app->locked = false;
+                        }
+                    }
+                    furi_mutex_release(app->mutex);
+                } else {
+                    // No signal — advance to next preset
+                    furi_mutex_acquire(app->mutex, FuriWaitForever);
+                    app->signal_found = false;
+                    app->locked_mod = (app->locked_mod + 1) % SCModCount;
+                    furi_mutex_release(app->mutex);
+                }
+                furi_delay_ms(100); // Brief pause between cycles
+            } else {
+                // FREE SCAN MODE: scan all frequencies, capture first hit
+                subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetOok650Async, NULL);
+
+                float best_rssi = -127.0f;
+                uint32_t best_freq = 0;
+                for(uint8_t i = 0; i < SC_SCAN_COUNT && app->worker_running; i++) {
+                    subghz_devices_set_frequency(app->radio_device, sc_scan_freqs[i]);
                     subghz_devices_set_rx(app->radio_device);
                     furi_delay_us(2000);
                     float rssi = subghz_devices_get_rssi(app->radio_device);
                     subghz_devices_idle(app->radio_device);
-                    if(rssi > fine_rssi) { fine_rssi = rssi; fine_freq = f; }
+                    if(rssi > best_rssi) { best_rssi = rssi; best_freq = sc_scan_freqs[i]; }
                 }
-                furi_mutex_acquire(app->mutex, FuriWaitForever);
-                if(fine_rssi > app->trigger) {
-                    app->signal_found = true;
-                    app->detected_freq = fine_freq;
-                    app->detected_rssi = fine_rssi;
-                    sc_log_update(app, fine_freq, fine_rssi);
 
-                    // Auto-capture: try all modulations, only keep if decoded
-                    bool already_decoded = false;
-                    for(uint8_t s = 0; s < app->signal_count; s++) {
-                        if(app->signals[s].frequency == fine_freq && app->signals[s].protocol_decoded) {
-                            already_decoded = true;
-                            break;
-                        }
+                if(best_rssi > app->trigger && best_freq > 0) {
+                    // Fine scan
+                    subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetOok270Async, NULL);
+                    float fine_rssi = -127.0f;
+                    uint32_t fine_freq = 0;
+                    for(uint32_t f = best_freq - 300000; f <= best_freq + 300000; f += 20000) {
+                        if(!sc_freq_valid(f)) continue;
+                        subghz_devices_set_frequency(app->radio_device, f);
+                        subghz_devices_set_rx(app->radio_device);
+                        furi_delay_us(2000);
+                        float rssi = subghz_devices_get_rssi(app->radio_device);
+                        subghz_devices_idle(app->radio_device);
+                        if(rssi > fine_rssi) { fine_rssi = rssi; fine_freq = f; }
                     }
-                    if(!already_decoded) {
-                        furi_mutex_release(app->mutex);
-                        // Try each modulation preset
-                        for(uint8_t mod = 0; mod < SCModCount && app->worker_running; mod++) {
+                    furi_mutex_acquire(app->mutex, FuriWaitForever);
+                    if(fine_rssi > app->trigger) {
+                        app->signal_found = true;
+                        app->detected_freq = fine_freq;
+                        app->detected_rssi = fine_rssi;
+                        sc_log_update(app, fine_freq, fine_rssi);
+
+                        // Always capture on AM650 (most likely to get data)
+                        bool already_have = false;
+                        for(uint8_t s = 0; s < app->signal_count; s++) {
+                            if(app->signals[s].frequency == fine_freq) { already_have = true; break; }
+                        }
+                        if(!already_have) {
+                            furi_mutex_release(app->mutex);
                             subghz_devices_idle(app->radio_device);
-                            subghz_devices_load_preset(app->radio_device, sc_presets[mod], NULL);
+                            subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetOok650Async, NULL);
                             subghz_devices_set_frequency(app->radio_device, fine_freq);
 
                             furi_mutex_acquire(app->mutex, FuriWaitForever);
-                            // Use a temp slot
                             uint8_t slot = app->signal_count < SC_MAX_SIGNALS ? app->signal_count : SC_MAX_SIGNALS - 1;
                             SCSignal* sig = &app->signals[slot];
                             memset(sig, 0, sizeof(SCSignal));
                             sig->frequency = fine_freq;
-                            sig->modulation = mod;
+                            sig->modulation = SCModAM650;
                             sc_cap_buf = sig->raw_data;
                             sc_cap_idx = 0;
                             furi_mutex_release(app->mutex);
@@ -324,29 +477,25 @@ static int32_t sc_worker(void* ctx) {
                             sig->raw_count = sc_cap_idx;
                             if(sig->raw_count > 10) {
                                 sc_analyze_signal(sig); sc_decode_signal(app, sig);
-                                if(sig->protocol_decoded) {
-                                    // Keep it!
-                                    if(app->signal_count < SC_MAX_SIGNALS) {
-                                        app->signal_count++;
-                                    }
-                                    app->signal_selected = slot;
-                                    furi_mutex_release(app->mutex);
-                                    break; // Found a match, stop trying modulations
+                                if(app->signal_count < SC_MAX_SIGNALS) {
+                                    app->signal_count++;
                                 }
+                                app->signal_selected = slot;
                             }
                             furi_mutex_release(app->mutex);
+                        } else {
+                            furi_mutex_release(app->mutex);
                         }
-                        furi_mutex_acquire(app->mutex, FuriWaitForever);
+                    } else {
+                        app->signal_found = false;
+                        furi_mutex_release(app->mutex);
                     }
                 } else {
+                    furi_mutex_acquire(app->mutex, FuriWaitForever);
                     app->signal_found = false;
+                    furi_mutex_release(app->mutex);
                 }
-                furi_mutex_release(app->mutex);
-            } else {
-                furi_mutex_acquire(app->mutex, FuriWaitForever);
-                app->signal_found = false;
-                furi_mutex_release(app->mutex);
-            }
+            } // end of free scan else block
 
         } else if(app->current_view == SCViewDecoder || app->current_view == SCViewWaveform) {
             // Only capture when explicitly requested
@@ -358,7 +507,7 @@ static int32_t sc_worker(void* ctx) {
                 uint32_t freq = app->detected_freq ? app->detected_freq : app->frequency;
                 if(!sc_freq_valid(freq)) { app->capturing = false; furi_delay_ms(100); continue; }
                 subghz_devices_idle(app->radio_device);
-                subghz_devices_load_preset(app->radio_device, sc_presets[app->modulation], NULL);
+                sc_load_preset(app->radio_device, app->modulation);
                 subghz_devices_set_frequency(app->radio_device, freq);
 
                 furi_mutex_acquire(app->mutex, FuriWaitForever);
@@ -402,72 +551,130 @@ static int32_t sc_worker(void* ctx) {
 
 // ============== Drawing ==============
 static void sc_draw_spectrum(Canvas* canvas, SpectrumCheckApp* app) {
-    char buf[32];
-    // 32 channels across 128px = 3px per bar + 1px gap, plus 2 separator lines
-    // Band 1: channels 0-7 (8 bars), Band 2: 8-19 (12 bars), Band 3: 20-31 (12 bars)
+    char buf[48];
     #define BAR_W 3
-    #define SEP1_X (8 * (BAR_W + 1))   // after band 1
-    #define SEP2_X (SEP1_X + 2 + 12 * (BAR_W + 1)) // after band 2
+    #define SEP1_X (8 * (BAR_W + 1))
+    #define SEP2_X (SEP1_X + 2 + 12 * (BAR_W + 1))
+    #define GRAPH_TOP 10
+    #define GRAPH_BOT 54
+
+    // Find noise floor (minimum across all channels)
+    uint8_t noise = 80;
+    for(uint8_t i = 0; i < 32; i++) {
+        if(app->channel_ss[i] < noise) noise = app->channel_ss[i];
+    }
 
     for(uint8_t i = 0; i < 32; i++) {
         uint8_t x;
-        if(i < 8) {
-            x = i * (BAR_W + 1);
-        } else if(i < 20) {
-            x = SEP1_X + 2 + (i - 8) * (BAR_W + 1);
-        } else {
-            x = SEP2_X + 2 + (i - 20) * (BAR_W + 1);
-        }
-        uint8_t h = app->channel_ss[i] * 38 / 80;
+        if(i < 8) x = i * (BAR_W + 1);
+        else if(i < 20) x = SEP1_X + 2 + (i - 8) * (BAR_W + 1);
+        else x = SEP2_X + 2 + (i - 20) * (BAR_W + 1);
+
+        // Subtract noise floor
+        int8_t val = (int8_t)app->channel_ss[i] - (int8_t)noise;
+        if(val < 0) val = 0;
+        uint8_t h = val * (GRAPH_BOT - GRAPH_TOP) / 50;
+        if(h > (GRAPH_BOT - GRAPH_TOP)) h = GRAPH_BOT - GRAPH_TOP;
         if(h > 0) {
-            canvas_draw_box(canvas, x, SC_FREQ_BOTTOM_Y - h, BAR_W, h);
+            canvas_draw_box(canvas, x, GRAPH_BOT - h, BAR_W, h);
         }
         // Peak marker
         if(i == app->max_rssi_channel && app->max_rssi > -90.0f) {
-            canvas_draw_frame(canvas, x - 1, SC_FREQ_BOTTOM_Y - h - 2, BAR_W + 2, h + 3);
+            canvas_draw_frame(canvas, x - 1, GRAPH_BOT - h - 2, BAR_W + 2, h + 3);
         }
     }
 
-    // Band separator lines (dotted)
-    for(uint8_t y = 12; y < SC_FREQ_BOTTOM_Y; y += 2) {
+    // Band separators
+    for(uint8_t y = GRAPH_TOP; y < GRAPH_BOT; y += 2) {
         canvas_draw_dot(canvas, SEP1_X, y);
         canvas_draw_dot(canvas, SEP2_X, y);
     }
 
-    // Band labels
-    canvas_draw_str(canvas, 2, 62, "300");
-    canvas_draw_str(canvas, SEP1_X + 4, 62, "400");
-    canvas_draw_str(canvas, SEP2_X + 4, 62, "900");
+    // Decoded signal markers (triangles at bottom)
+    for(uint8_t s = 0; s < app->signal_count; s++) {
+        if(!app->signals[s].protocol_decoded) continue;
+        uint32_t f = app->signals[s].frequency;
+        // Find which channel this freq is closest to
+        uint8_t closest = 0;
+        uint32_t min_diff = UINT32_MAX;
+        for(uint8_t i = 0; i < 32; i++) {
+            uint32_t diff = (f > spec_freqs[i]) ? f - spec_freqs[i] : spec_freqs[i] - f;
+            if(diff < min_diff) { min_diff = diff; closest = i; }
+        }
+        uint8_t x;
+        if(closest < 8) x = closest * (BAR_W + 1) + 1;
+        else if(closest < 20) x = SEP1_X + 2 + (closest - 8) * (BAR_W + 1) + 1;
+        else x = SEP2_X + 2 + (closest - 20) * (BAR_W + 1) + 1;
+        canvas_draw_dot(canvas, x, GRAPH_BOT + 2);
+        canvas_draw_dot(canvas, x - 1, GRAPH_BOT + 3);
+        canvas_draw_dot(canvas, x + 1, GRAPH_BOT + 3);
+    }
 
-    // Peak info
+    // Band labels
+    canvas_draw_str(canvas, 2, 63, "300");
+    canvas_draw_str(canvas, SEP1_X + 4, 63, "400");
+    canvas_draw_str(canvas, SEP2_X + 4, 63, "900");
+
+    // Top: peak info + protocol if known
     if(app->max_rssi > -90.0f) {
-        snprintf(buf, sizeof(buf), "%.0fdB", (double)app->max_rssi);
-        canvas_draw_str(canvas, 95, 62, buf);
+        uint32_t peak_freq = spec_freqs[app->max_rssi_channel];
+        const char* proto = NULL;
+        for(uint8_t s = 0; s < app->signal_count; s++) {
+            if(app->signals[s].protocol_decoded && app->signals[s].frequency == peak_freq) {
+                proto = app->signals[s].protocol_name;
+                break;
+            }
+        }
+        if(proto) {
+            snprintf(buf, sizeof(buf), "%.0fdB %s", (double)app->max_rssi, proto);
+        } else {
+            snprintf(buf, sizeof(buf), "%.0fdB %ld.%02ld",
+                (double)app->max_rssi,
+                peak_freq / 1000000, (peak_freq / 10000) % 100);
+        }
+        canvas_draw_str(canvas, 0, 7, buf);
     }
 }
 
 static void sc_draw_freq_analyzer(Canvas* canvas, SpectrumCheckApp* app) {
     char buf[64];
-    canvas_set_font(canvas, FontBigNumbers);
-    if(app->detected_freq > 0) {
-        snprintf(buf, sizeof(buf), "%03ld.%03ld", app->detected_freq / 1000000 % 1000, app->detected_freq / 1000 % 1000);
-        if(app->signal_found) { canvas_draw_box(canvas, 2, 10, 124, 19); canvas_set_color(canvas, ColorWhite); }
-        canvas_draw_str(canvas, 6, 26, buf);
+    canvas_set_font(canvas, FontPrimary);
+    if(app->locked) {
+        snprintf(buf, sizeof(buf), "LOCK %ld.%03ld [%s]",
+            app->locked_freq / 1000000 % 1000, app->locked_freq / 1000 % 1000,
+            sc_mod_names[app->locked_mod]);
+        canvas_draw_box(canvas, 0, 0, 128, 11);
+        canvas_set_color(canvas, ColorWhite);
+        canvas_draw_str(canvas, 2, 9, buf);
+        canvas_set_color(canvas, ColorBlack);
+    } else if(app->detected_freq > 0) {
+        snprintf(buf, sizeof(buf), "%03ld.%03ld MHz  %.0fdB",
+            app->detected_freq / 1000000 % 1000, app->detected_freq / 1000 % 1000,
+            (double)app->detected_rssi);
+        if(app->signal_found) { canvas_draw_box(canvas, 0, 0, 128, 11); canvas_set_color(canvas, ColorWhite); }
+        canvas_draw_str(canvas, 2, 9, buf);
         canvas_set_color(canvas, ColorBlack);
     } else {
-        canvas_draw_str(canvas, 6, 26, "----.---");
+        canvas_draw_str(canvas, 2, 9, "Scanning...");
     }
     canvas_set_font(canvas, FontSecondary);
     snprintf(buf, sizeof(buf), "T:%.0f  %d sig  %s", (double)app->trigger, app->signal_count, app->log_size > 0 ? sc_sort_names[app->log_sort] : "");
-    canvas_draw_str(canvas, 0, 36, buf);
+    canvas_draw_str(canvas, 0, 20, buf);
 
     canvas_set_font(canvas, FontKeyboard);
-    for(uint8_t i = 0; i < 3 && (app->log_scroll + i) < app->log_size; i++) {
+    for(uint8_t i = 0; i < 5 && (app->log_scroll + i) < app->log_size; i++) {
         SCLogEntry* e = &app->log[app->log_scroll + i];
         snprintf(buf, sizeof(buf), "%03ld.%03ld %2dx %2ddB",
             e->frequency / 1000000 % 1000, e->frequency / 1000 % 1000,
             e->count, e->rssi_max);
-        canvas_draw_str(canvas, 0, 44 + i * 9, buf);
+        canvas_draw_str(canvas, 0, 28 + i * 8, buf);
+    }
+    // Page indicator
+    if(app->log_size > 5) {
+        uint8_t page = app->log_scroll / 5 + 1;
+        uint8_t pages = (app->log_size + 4) / 5;
+        snprintf(buf, sizeof(buf), "%d/%d", page, pages);
+        canvas_draw_str(canvas, 105, 63, buf);
     }
     canvas_set_font(canvas, FontSecondary);
 }
@@ -485,52 +692,54 @@ static void sc_draw_decoder(Canvas* canvas, SpectrumCheckApp* app) {
     }
 
     SCSignal* sig = &app->signals[app->signal_selected];
-    // Header: signal index + freq
-    snprintf(buf, sizeof(buf), "[%d/%d] %ld.%03ld %s",
+
+    // Line 1: signal index + freq + modulation (compact)
+    snprintf(buf, sizeof(buf), "%d/%d  %ld.%03ld %s",
         app->signal_selected + 1, app->signal_count,
         sig->frequency / 1000000, (sig->frequency / 1000) % 1000,
         sc_mod_names[sig->modulation]);
-    canvas_draw_str(canvas, 0, 18, buf);
+    canvas_draw_str(canvas, 0, 7, buf);
 
-    if(sig->analyzed) {
-        if(sig->protocol_decoded) {
-            canvas_set_font(canvas, FontPrimary);
-            canvas_draw_str(canvas, 0, 30, sig->protocol_name);
-            canvas_set_font(canvas, FontSecondary);
-            if(sig->decoded_string[0]) {
-                // Draw first 2 lines of decoded string
-                const char* p = sig->decoded_string;
-                uint8_t y = 40;
-                for(uint8_t line = 0; line < 2 && *p && y < 58; line++) {
-                    const char* nl = strchr(p, '\n');
-                    uint8_t len = nl ? (uint8_t)(nl - p) : strlen(p);
-                    if(len > 30) len = 30;
-                    char tmp[32];
-                    memcpy(tmp, p, len); tmp[len] = 0;
-                    canvas_draw_str(canvas, 0, y, tmp);
-                    y += 10;
-                    p += len;
-                    if(*p == '\n') p++;
-                }
-            } else {
-                snprintf(buf, sizeof(buf), "Te:%ldus Pulses:%d", sig->min_pulse_us, sig->pulse_count);
-                canvas_draw_str(canvas, 0, 40, buf);
+    if(sig->protocol_decoded) {
+        // Line 2: protocol name (bold)
+        canvas_set_font(canvas, FontPrimary);
+        canvas_draw_str(canvas, 0, 19, sig->protocol_name);
+        canvas_set_font(canvas, FontSecondary);
+
+        // Lines 3-6: decoded string (up to 4 lines)
+        if(sig->decoded_string[0]) {
+            const char* p = sig->decoded_string;
+            uint8_t y = 29;
+            for(uint8_t line = 0; line < 4 && *p && y <= 57; line++) {
+                const char* nl = strchr(p, '\n');
+                uint8_t len = nl ? (uint8_t)(nl - p) : strlen(p);
+                if(len > 32) len = 32;
+                char tmp[33];
+                memcpy(tmp, p, len); tmp[len] = 0;
+                canvas_draw_str(canvas, 0, y, tmp);
+                y += 9;
+                p += len;
+                if(*p == '\n') p++;
             }
         } else {
-            snprintf(buf, sizeof(buf), "Pulses: %d", sig->pulse_count);
-            canvas_draw_str(canvas, 0, 30, buf);
-            snprintf(buf, sizeof(buf), "Duration: %ldms Te:%ldus", sig->total_duration_us / 1000, sig->min_pulse_us < UINT32_MAX ? sig->min_pulse_us : 0);
-            canvas_draw_str(canvas, 0, 40, buf);
-            if(sig->est_rate_hz > 0) {
-                snprintf(buf, sizeof(buf), "Rate: ~%ldHz", sig->est_rate_hz);
-                canvas_draw_str(canvas, 0, 50, buf);
-            }
+            snprintf(buf, sizeof(buf), "Te:%ldus  %d pulses  %ldms",
+                sig->min_pulse_us, sig->pulse_count, sig->total_duration_us / 1000);
+            canvas_draw_str(canvas, 0, 29, buf);
+        }
+    } else if(sig->analyzed) {
+        snprintf(buf, sizeof(buf), "%d pulses  Te:%ldus  %ldms",
+            sig->pulse_count, sig->min_pulse_us < UINT32_MAX ? sig->min_pulse_us : 0,
+            sig->total_duration_us / 1000);
+        canvas_draw_str(canvas, 0, 19, buf);
+        if(sig->est_rate_hz > 0) {
+            snprintf(buf, sizeof(buf), "Rate: ~%ldHz", sig->est_rate_hz);
+            canvas_draw_str(canvas, 0, 29, buf);
         }
     } else {
-        canvas_draw_str(canvas, 0, 30, "Not analyzed");
+        canvas_draw_str(canvas, 0, 19, "Not analyzed");
     }
-    // Bottom hints
-    canvas_draw_str(canvas, 0, 62, "L/R:sig OK:cap Long:save");
+    // Bottom: controls
+    canvas_draw_str(canvas, 0, 63, "\x12\x13:sig OK:cap Long:save");
 }
 
 static void sc_draw_waveform(Canvas* canvas, SpectrumCheckApp* app) {
@@ -546,33 +755,43 @@ static void sc_draw_waveform(Canvas* canvas, SpectrumCheckApp* app) {
         return;
     }
 
-    uint8_t zoom = app->waveform_zoom ? app->waveform_zoom : 1;
-    uint16_t x = 0;
-    uint16_t idx = app->waveform_scroll;
-    while(x < 128 && idx < sig->raw_count) {
-        int32_t val = sig->raw_data[idx];
-        bool level = val > 0;
-        uint32_t dur = level ? (uint32_t)val : (uint32_t)(-val);
-        uint8_t pixels = dur / (100 / zoom);
-        if(pixels == 0) pixels = 1;
-        if(pixels > 128 - x) pixels = 128 - x;
+    // Multi-row waveform: 4 rows, 12px each
+    static const uint32_t scales[] = {50, 100, 200, 500, 1000, 2000};
+    #define SCALE_COUNT 6
+    uint8_t zoom = app->waveform_zoom < SCALE_COUNT ? app->waveform_zoom : 0;
+    uint32_t us_per_pixel = scales[zoom];
 
-        uint8_t y = level ? 15 : 45;
-        canvas_draw_line(canvas, x, y, x + pixels, y);
-        if(idx > app->waveform_scroll) {
-            int32_t prev = sig->raw_data[idx - 1];
-            uint8_t prev_y = prev > 0 ? 15 : 45;
-            if(prev_y != y) canvas_draw_line(canvas, x, 15, x, 45);
+    uint16_t idx = app->waveform_scroll;
+    uint32_t remaining_dur = 0;
+    bool level = false;
+
+    for(uint8_t row = 0; row < 4 && idx < sig->raw_count; row++) {
+        uint8_t y_base = 2 + row * 15;
+        for(uint8_t x = 0; x < 128 && idx < sig->raw_count; x++) {
+            if(remaining_dur < us_per_pixel / 2) {
+                int32_t val = sig->raw_data[idx];
+                level = val > 0;
+                remaining_dur = level ? (uint32_t)val : (uint32_t)(-val);
+                idx++;
+            }
+            uint8_t y = level ? y_base : y_base + 10;
+            canvas_draw_dot(canvas, x, y);
+            if(remaining_dur > us_per_pixel)
+                remaining_dur -= us_per_pixel;
+            else
+                remaining_dur = 0;
         }
-        x += pixels;
-        idx++;
     }
+
+    // Bottom info overlay
     canvas_set_font(canvas, FontSecondary);
-    char buf[40];
-    snprintf(buf, sizeof(buf), "[%d/%d] %d/%d z:%d",
+    char buf[48];
+    snprintf(buf, sizeof(buf), "%d/%d %ld.%03ld %s %ldus/px",
         app->signal_selected + 1, app->signal_count,
-        app->waveform_scroll, sig->raw_count, zoom);
-    canvas_draw_str(canvas, 0, 62, buf);
+        sig->frequency / 1000000, (sig->frequency / 1000) % 1000,
+        sig->protocol_decoded ? sig->protocol_name : sc_mod_names[sig->modulation],
+        us_per_pixel);
+    canvas_draw_str(canvas, 0, 63, buf);
 }
 
 static void sc_draw_callback(Canvas* canvas, void* ctx) {
@@ -582,16 +801,7 @@ static void sc_draw_callback(Canvas* canvas, void* ctx) {
     canvas_set_color(canvas, ColorBlack);
     canvas_set_font(canvas, FontSecondary);
 
-    // Header
-    char buf[32];
-    if(app->current_view != SCViewFreqAnalyzer) {
-        canvas_draw_str(canvas, 0, 7, sc_view_names[app->current_view]);
-    }
-    snprintf(buf, sizeof(buf), "%ld.%02ld %s",
-        app->frequency / 1000000, (app->frequency / 10000) % 100,
-        sc_mod_names[app->modulation]);
-    canvas_draw_str(canvas, 70, 7, buf);
-
+    // No shared header — each view draws its own
     switch(app->current_view) {
     case SCViewSpectrum: sc_draw_spectrum(canvas, app); break;
     case SCViewFreqAnalyzer: sc_draw_freq_analyzer(canvas, app); break;
@@ -623,32 +833,61 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* event) {
 
     case InputKeyLeft:
         if(app->current_view == SCViewFreqAnalyzer) {
-            app->trigger -= SC_TRIGGER_STEP;
-            if(app->trigger < SC_RSSI_MIN) app->trigger = SC_RSSI_MIN;
+            if(event->type == InputTypeLong || event->type == InputTypeRepeat) {
+                app->trigger -= SC_TRIGGER_STEP;
+                if(app->trigger < SC_RSSI_MIN) app->trigger = SC_RSSI_MIN;
+            } else {
+                // Page up in log
+                if(app->log_scroll >= 5) app->log_scroll -= 5;
+                else app->log_scroll = 0;
+            }
         } else if(app->current_view == SCViewDecoder) {
             // Browse signals
             if(app->signal_selected > 0) app->signal_selected--;
         } else if(app->current_view == SCViewWaveform) {
-            if(app->waveform_scroll > 0) app->waveform_scroll--;
+            if(event->type == InputTypeLong || event->type == InputTypeRepeat) {
+                if(app->waveform_scroll >= 10) app->waveform_scroll -= 10;
+                else app->waveform_scroll = 0;
+            } else {
+                // Page back (jump ~50 samples)
+                if(app->waveform_scroll >= 50) app->waveform_scroll -= 50;
+                else app->waveform_scroll = 0;
+            }
         }
         break;
 
     case InputKeyRight:
         if(app->current_view == SCViewFreqAnalyzer) {
-            app->trigger += SC_TRIGGER_STEP;
-            if(app->trigger > SC_RSSI_MAX) app->trigger = SC_RSSI_MAX;
+            if(event->type == InputTypeLong || event->type == InputTypeRepeat) {
+                app->trigger += SC_TRIGGER_STEP;
+                if(app->trigger > SC_RSSI_MAX) app->trigger = SC_RSSI_MAX;
+            } else {
+                // Page down in log
+                if(app->log_scroll + 5 < app->log_size) app->log_scroll += 5;
+            }
         } else if(app->current_view == SCViewDecoder) {
             if(app->signal_selected + 1 < app->signal_count) app->signal_selected++;
         } else if(app->current_view == SCViewWaveform) {
             SCSignal* sig = app->signal_count > 0 ? &app->signals[app->signal_selected] : NULL;
-            if(sig && app->waveform_scroll + 1 < sig->raw_count) app->waveform_scroll++;
+            if(sig) {
+                if(event->type == InputTypeLong || event->type == InputTypeRepeat) {
+                    app->waveform_scroll += 10;
+                } else {
+                    app->waveform_scroll += 50; // Page forward
+                }
+                if(app->waveform_scroll >= sig->raw_count) app->waveform_scroll = sig->raw_count > 1 ? sig->raw_count - 1 : 0;
+            }
         }
         break;
 
     case InputKeyOk:
         if(event->type == InputTypeLong) {
-            // Long OK: save current signal
-            if(app->signal_count > 0 && (app->current_view == SCViewDecoder || app->current_view == SCViewWaveform)) {
+            // Long OK: save current signal, or cycle sort on freq analyzer
+            if(app->current_view == SCViewFreqAnalyzer) {
+                app->log_sort = (app->log_sort + 1) % SCLogSortModes;
+                sc_log_sort(app->log, app->log_size, app->log_sort);
+                app->log_scroll = 0;
+            } else if(app->signal_count > 0 && (app->current_view == SCViewDecoder || app->current_view == SCViewWaveform)) {
                 SCSignal* sig = &app->signals[app->signal_selected];
                 if(sig->raw_count > 0) {
                     furi_mutex_release(app->mutex);
@@ -660,26 +899,33 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* event) {
             // Short OK
             if(app->current_view == SCViewSpectrum) {
                 // Lock peak frequency for decoder/waveform
-                static const uint32_t spec_freqs[] = {
-                    300000000, 307000000, 310000000, 315000000, 318000000, 330000000, 340000000, 348000000,
-                    390000000, 410000000, 418000000, 425000000, 430000000, 433920000, 438000000, 445000000, 450000000, 455000000, 460000000, 464000000,
-                    779000000, 800000000, 820000000, 840000000, 860000000, 868000000, 880000000, 900000000, 915000000, 920000000, 925000000, 928000000,
-                };
                 if(app->max_rssi > -90.0f && app->max_rssi_channel < 32) {
                     app->detected_freq = spec_freqs[app->max_rssi_channel];
                     app->frequency = app->detected_freq;
                 }
             } else if(app->current_view == SCViewFreqAnalyzer) {
-                app->log_sort = (app->log_sort + 1) % SCLogSortModes;
-                sc_log_sort(app->log, app->log_size, app->log_sort);
-                app->log_scroll = 0;
+                if(app->locked) {
+                    // Unlock
+                    app->locked = false;
+                } else if(app->log_size > 0) {
+                    // Lock onto the top entry in current sort
+                    SCLogEntry* e = &app->log[app->log_scroll];
+                    app->locked = true;
+                    app->locked_freq = e->frequency;
+                    app->locked_mod = 0;
+                } else {
+                    // No log entries — cycle sort
+                    app->log_sort = (app->log_sort + 1) % SCLogSortModes;
+                    sc_log_sort(app->log, app->log_size, app->log_sort);
+                    app->log_scroll = 0;
+                }
             } else if(app->current_view == SCViewDecoder) {
                 // Cycle modulation and trigger new capture
                 app->modulation = (app->modulation + 1) % SCModCount;
                 app->capturing = true;
                 app->capture_done = false;
             } else if(app->current_view == SCViewWaveform) {
-                app->waveform_zoom = app->waveform_zoom >= 4 ? 1 : app->waveform_zoom + 1;
+                app->waveform_zoom = (app->waveform_zoom + 1) % 6;
             }
         }
         break;

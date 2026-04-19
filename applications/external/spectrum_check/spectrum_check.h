@@ -61,6 +61,11 @@ typedef enum {
     SCModAM270,
     SCModFM238,
     SCModFM476,
+    SCModTPMS_FSK,   // 20kBaud 2FSK, 28.56kHz dev, 325kHz BW
+    SCModTPMS_OOK,   // 10kBaud OOK, 650kHz BW
+    SCModTPMS_GFSK,  // 20kBaud GFSK, 19kHz dev, 325kHz BW (Toyota)
+    SCModOOK_40k,    // 40kBaud OOK, 650kHz BW (short pulses)
+    SCModFSK_40k,    // 40kBaud 2FSK, 28kHz dev, 270kHz BW
     SCModCount,
 } SCMod;
 
@@ -130,6 +135,11 @@ typedef struct {
     uint8_t log_seq;
     SCLogSort log_sort;
     uint8_t log_scroll;
+
+    // Lock mode: focus on one frequency, cycle presets to decode
+    bool locked;
+    uint32_t locked_freq;
+    uint8_t locked_mod; // current modulation index being tried
 
     // Signal library
     SCSignal signals[SC_MAX_SIGNALS];
