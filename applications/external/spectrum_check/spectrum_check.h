@@ -84,6 +84,10 @@ typedef struct {
     uint32_t min_pulse_us;
     uint32_t est_rate_hz;
     bool analyzed;
+    // Protocol decode result
+    char protocol_name[32];
+    char decoded_string[128];
+    bool protocol_decoded;
 } SCSignal;
 
 // Main app state
@@ -98,6 +102,8 @@ typedef struct {
 
     // Radio
     const SubGhzDevice* radio_device;
+    SubGhzEnvironment* environment;
+    SubGhzReceiver* receiver;
 
     // Current state
     SCView current_view;
