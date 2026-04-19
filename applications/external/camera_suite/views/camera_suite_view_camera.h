@@ -41,8 +41,8 @@
  * 
  * @see https://github.com/RogueMaster/flipperzero-firmware-wPlugins
 */
-#include <momentum/momentum.h>
-#define UART_CH (momentum_settings.uart_esp_channel)
+#include <cfw/cfw.h>
+#define UART_CH (cfw_settings.uart_esp_channel)
 #else
 #define UART_CH (FuriHalSerialIdUsart)
 #endif

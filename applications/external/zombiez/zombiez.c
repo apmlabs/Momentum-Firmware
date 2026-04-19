@@ -237,7 +237,7 @@ static void tick(PluginState* const plugin_state) {
                         free(z);
                         plugin_state->zombies[i] = NULL;
                         plugin_state->score++;
-                        //if(plugin_state->score % 15 == 0) dolphin_deed(DolphinDeedPluginGameWin);
+                        //if(plugin_state->score % 15 == 0) dolphin_deed(getRandomDeed());
                         //}
                     } else if(z->position.x <= WALL_X && z->position.x > 0) { // zombie got to the wall
                         plugin_state->zombies_count -= 1;

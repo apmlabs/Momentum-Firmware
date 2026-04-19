@@ -89,7 +89,7 @@ bool unitemp_I2C_sensor_alloc(Sensor* sensor, char* args) {
         FURI_LOG_E(APP_NAME, "Sensor %s instance allocation error", sensor->name);
         return false;
     }
-    instance->i2c = (FuriHalI2cBusHandle*)&furi_hal_i2c_handle_external;
+    instance->i2c = &furi_hal_i2c_handle_external;
     sensor->instance = instance;
 
     //Specifying the functions of initialization, deinitialization and data update, as well as the address on the I2C bus
