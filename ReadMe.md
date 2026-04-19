@@ -1269,6 +1269,165 @@ This firmware includes **667** external applications across **27** categories. E
 
 </details>
 
+
+<details><summary><h3>Detailed Guides — NFC</h3></summary>
+
+#### AmiTool
+NTAG215 toolkit for gaming console tags. Read, write, emulate, generate, and randomize UIDs for tags used with gaming consoles. Supports reading data from physical NTAG215 tags, displaying character information (name, series, type) sourced from the AmiiboAPI, and emulating loaded data so the Flipper functions as the corresponding tag. Can generate synthetic character data from a selected character, and randomize UIDs so one tag can be used as multiple different tags.
+
+**How to use:** Place `key_retail.bin` in `apps_data/ami_tool/` for full features (Google it — can't be included for legal reasons). Open the app and choose Read to scan a physical tag, or Generate to create a new one from the character database. Once loaded, use Emulate to present it to a console, Write to copy it to a blank NTAG215 tag, or Randomize UID to change its identity. Save files to SD card for later use.
+
+---
+
+#### Cyborg Detector
+Generates a continuous NFC field to make body modification implant LEDs glow. Designed for people with NFC-enabled body implants like the Dangerous Things xSIID — when you hold the Kiisu near the implant, the NFC field powers the tiny LED inside, making it light up through the skin. A fun party trick and a quick way to verify an implant is still functional.
+
+**How to use:** Simply open the app — it immediately starts generating a continuous NFC field. Hold the Kiisu close to where an NFC implant is located (typically in the hand between thumb and index finger). If the implant has an LED, it will glow. No buttons needed — the field stays active until you press Back to exit. Works with any NFC-powered implant that has an LED.
+
+---
+
+#### ISO 15693-3 NFC Writer
+Advanced read/write tool for ISO 15693-3 compliant NFC tags, commonly found as ICODE SLIX tags in library systems, industrial tracking, and access control. Can write data to individual blocks, format entire tags by writing 0xFF to all blocks, manage block-level locks (preventing future writes to specific blocks), and modify special AFI (Application Family Identifier) and DSFID (Data Storage Format Identifier) registers that control how the tag identifies itself to readers.
+
+**How to use:** Hold an ISO 15693 tag against the Kiisu and open the app. The main menu shows: Write Single Block (select block address, enter 4 bytes of data), FF to All Blocks (quick format — writes 0xFF everywhere), Lock Block (permanently lock a specific block), Write AFI (change the tag's application family), and Write DSFID (change the data storage format). Each operation gives visual feedback on success/failure. Be careful with Lock Block — it's permanent and cannot be undone.
+
+---
+
+#### Metroflip
+Transit card reader — a port of the Metrodroid project for Flipper Zero. Reads and parses metro/transit cards from systems worldwide, extracting trip history, balance, card number, and other stored data. Supports dozens of transit systems including Suica (Japan), RENFE (Spain), Bip (Chile), CharlieCard (Boston), and many more. A proof-of-concept for exploring how transit cards store data.
+
+**How to use:** Open the app and hold your transit card flat against the back of the Kiisu. The app will attempt to read and identify the card type automatically. If recognized, you'll see parsed data — card number, balance, recent trips with dates and stations, and other metadata specific to that transit system. Use the d-pad to scroll through the data. Not all cards are supported — check the Metroflip GitHub for the current compatibility list. Works best with cards that don't require authentication keys.
+
+---
+
+#### MFKey
+MIFARE Classic key recovery tool (v4.1) — calculates encryption keys directly on the device using Mfkey32 and Nested algorithms. This is the tool you use after the built-in NFC app's "Extract MF Keys" feature has collected authentication nonces from a MIFARE Classic card. MFKey crunches those nonces to recover the actual sector keys, which you can then use to fully read/write the card. Version 4.1 is 40% faster than v3, and the new Static Encrypted Nested (SEN) dictionary makes recovery of static encrypted cards 10x faster.
+
+**How to use:** First, use the main NFC app: go to NFC → Extra Actions → Extract MF Keys, and hold the target MIFARE Classic card to the Kiisu. This collects encrypted nonces. Then open MFKey — it automatically finds the collected nonce files and starts calculating keys. The process takes 1-5 minutes per key depending on the attack type (Mfkey32 is fastest, Nested takes longer). Recovered keys are saved to the NFC key cache and will be used automatically next time you read that card. The "UnloadAssetPacks" flag frees extra RAM for the heavy crypto calculations.
+
+---
+
+#### MIFARE Classic Editor
+View and edit the raw hex data inside saved MIFARE Classic .nfc files, sector by sector. Browse to any .nfc file on your SD card, and the app displays the hex dump of each sector's data blocks. You can modify individual bytes directly — useful for changing stored values, testing how readers respond to modified data, or understanding the data structure of a particular card type. Works entirely offline with saved files, no card needed.
+
+**How to use:** Open the app and use the file browser to navigate to a saved .nfc file (in the `nfc/` folder on SD card). The app shows the hex data organized by sector. Use Up/Down to scroll between sectors, Left/Right to move between bytes within a sector. Press OK on a byte to edit its value using a hex input. Save your changes when done. The modified file can then be emulated or written to a blank card using the main NFC app.
+
+---
+
+#### Mifare Fuzzer
+Emulate MIFARE Classic cards with various UIDs to test how NFC readers react to different card identities. Automatically cycles through random or sequential UIDs, presenting each one to a nearby reader. Useful for understanding how a reader validates cards — does it check only the UID, or does it also verify sector keys? Helps identify readers that rely solely on UID-based authentication (which is insecure).
+
+**How to use:** Open the app and configure the fuzzing mode: Random (generates random UIDs), Sequential (increments through UIDs in order), or from a loaded file. Place the Kiisu near the target NFC reader and start the fuzzer. The app rapidly cycles through UIDs, emulating a different card for each attempt. Watch the reader's response — if it grants access on a particular UID, the app logs it. Press Back to stop fuzzing and review results.
+
+---
+
+#### NFC APDU Runner
+Run sequences of APDU (Application Protocol Data Unit) commands against NFC cards from pre-written script files. APDU is the standard command language for communicating with smart cards — this app lets you script complex card interactions without writing code. Create .apdu script files containing hex command sequences, and the app sends them to the card one by one, displaying each response.
+
+**How to use:** Create .apdu script files with hex commands (one per line) and place them in `apps_data/nfc_apdu_runner/` on the SD card. Open the app, select your script file, then hold an NFC card against the Kiisu. The app sends each APDU command in sequence and displays the card's response (status words and data). Useful for exploring card applications, reading specific files, or testing custom command sequences. Requires knowledge of the target card's APDU command set.
+
+---
+
+#### NFC-Eink
+Write images to NFC-powered e-ink displays from Waveshare and Goodisplay. These are small e-paper screens that receive their image data wirelessly via NFC — no batteries or wires needed. The app can emulate the NFC tag that the display expects, or write image data directly. Supports Waveshare 2.13", 2.7", 2.9", 4.2", and 7.5" displays, plus several Goodisplay models (GDEY0154D67, GDEY0213B74, GDEY029T94, GDEY037T03). Images saved from one screen type can be loaded onto a different screen type.
+
+**How to use:** Prepare your image (must match the display's resolution and be 1-bit black/white). Open the app and choose Emulate to present the image as an NFC tag (hold the display against the Kiisu), or Write to push the image directly to a display. You can also Save screen data to SD card and Load it later for a different screen type. The app handles the protocol differences between Waveshare and Goodisplay automatically.
+
+---
+
+#### NFC Login
+Scan an NFC card to automatically type a stored password on your computer via USB or Bluetooth keyboard emulation. Store multiple cards, each linked to a different password — tap your card to the Kiisu and it instantly types the password as if you were using a keyboard. Passwords are encrypted using the Flipper's secure enclave. Supports optional passcode protection, auto-matching (tap any registered card), and international keyboard layouts via BadUSB layout files.
+
+**How to use:** Open the app and go to Add Card. Scan an NFC card (any type — it uses the UID as the identifier). Enter the password you want associated with that card. Choose USB or BLE mode. Now connect the Kiisu to your computer via USB (or pair via Bluetooth). When you're at a login screen, tap your registered NFC card to the Kiisu — it instantly types the password. The last selected card persists across restarts. Import cards from existing .nfc files via the menu.
+
+---
+
+#### NFC Magic
+Write to "magic" NFC tags — special tags that have a modifiable Block 0 (UID/manufacturer block), which normal MIFARE Classic tags don't allow. This is used for cloning MIFARE Classic cards to writable tags. Regular MIFARE Classic tags have their UID burned in at the factory and can't be changed, but magic tags (Gen1a, Gen2, etc.) allow writing to sector 0, effectively letting you set any UID you want.
+
+**How to use:** First, read the source card using the main NFC app and save it. Then open NFC Magic, select the saved .nfc file, and hold a magic tag against the Kiisu. The app writes the full card data including the UID from Block 0. The magic tag now has the same UID and data as the original card. Different magic tag generations have different capabilities — Gen1a tags can be detected by some readers, Gen2 tags are more stealthy. The app handles the special write commands automatically.
+
+---
+
+#### NFC Maker
+Create NFC NDEF (NFC Data Exchange Format) files from scratch — no physical tag needed. Generate tags for contacts (vCard format), URLs, WiFi credentials (SSID + password), email addresses, phone numbers, and plain text. The generated .nfc files can be emulated (hold Kiisu near a phone to share) or written to blank NFC tags. Also supports creating empty/blank NDEF payloads.
+
+**How to use:** Open the app and select what type of NDEF record you want to create: URL, Contact, WiFi, Email, Phone, or Text. Enter the data using the on-screen keyboard. The app generates a properly formatted .nfc file and saves it to the SD card. To use it, open the file in the main NFC app and choose Emulate — then tap your phone against the Kiisu. Your phone will receive the URL, contact card, WiFi credentials, etc. automatically. Great for sharing WiFi passwords or contact info at events.
+
+---
+
+#### NFC Playlist
+Bulk-test NFC cards by cycling through a playlist of saved .nfc files automatically. Create a text file listing paths to your .nfc files, and the app emulates them one after another with configurable timing between each. Useful for testing which card works with a particular reader when you have many saved cards, or for automated demonstrations.
+
+**How to use:** Create a playlist file (plain .txt) with one .nfc file path per line, e.g. `/ext/nfc/card1.nfc`. Place it in `apps_data/playlists/nfc_playlist/` on the SD card. Open the app, select your playlist, and hold the Kiisu near a reader. The app cycles through each card in sequence. Use the settings to configure delay between cards, enable looping, and control playback. The built-in playlist editor lets you create and modify playlists without a computer.
+
+---
+
+#### Passport Reader
+Read electronic passports (eMRTD/ePassports) using the NFC chip embedded in modern passports. Extracts and decodes the data stored in the passport's chip, including personal information, photo, and document details. Uses the MRZ (Machine Readable Zone) — the two lines of text at the bottom of the passport's photo page — to derive the encryption keys needed to access the chip's data.
+
+**How to use:** Open the app and enter the MRZ data from your passport: document number, date of birth, and expiry date (these three values form the encryption key). Then hold the passport flat against the back of the Kiisu — the NFC chip is usually in the front cover or center page. The app authenticates with the chip and reads the stored data groups. Tested with US, Chilean, and French passports. Reading takes a few seconds — keep the passport steady against the device.
+
+---
+
+#### PicoPass
+HID iClass (PicoPass) credential reader and emulator. Read iClass access control credentials, save them to SD card, and emulate them later. Supports both Standard Edition (SE) and Standard Reader (SR) card types. Uses the loclass and mbedtls cryptographic libraries for the iClass authentication protocol. Can also open and favorite PicoPass files from the Archive browser.
+
+**How to use:** Open the app and hold an iClass card against the Kiisu. The app reads the credential data and displays it on screen. Save the credential to SD card for later use. To emulate, open a saved credential and select Emulate — the Kiisu will present itself as that iClass card to any compatible reader. Hold the Kiisu against the reader just like you would hold the original card. The emulation continues until you press Back.
+
+---
+
+#### SaFlip
+Saflok hospitality lock tool — read, emulate, create, edit, and write Saflok hotel lock cards. Reads all main Basic Access data and variable keys from Saflok MIFARE Classic cards. Can also read log entries from both cards and locks in real-time, showing who accessed what and when. Currently supports MFC (MIFARE Classic) cards only; MIFARE Ultralight C support is planned.
+
+**How to use:** Open the app and hold a Saflok card against the Kiisu to read it. The app displays the decoded card data including room assignment, access level, and timestamps. Use Edit to modify card data (change room number, access dates, etc.), Create to generate a new card from scratch, or Write to program a blank MIFARE Classic card. To read lock logs, hold the Kiisu against the lock's reader — the app captures the log data transmitted during the communication. Only works with Momentum firmware due to Date/Time screen dependency.
+
+---
+
+#### Seader
+SAM-based credential reader — communicates with a Secure Access Module (SAM) to read access control credentials. SAMs are hardware security modules used in high-security access control systems. The app supports config cards for SAM initialization, Proxmark3-compatible commands for advanced operations, and can distinguish between SIO SE and SR credential types.
+
+**How to use:** You need a SAM module connected to the Kiisu (typically via a smart card reader interface). Open the app and it will detect the SAM. Use config cards to initialize the SAM if needed. Then hold access control credentials against the Kiisu — the SAM handles the cryptographic authentication, and the app displays the decoded credential data. For advanced use, the app supports raw Proxmark3-style commands for direct SAM communication.
+
+---
+
+#### Seos Compatible
+Read and emulate Seos-compatible cards, fobs, and mobile credentials. Seos is HID Global's modern credential technology used in many corporate access control systems. The app supports multiple key sets — you can have different keys for different facilities and switch between them via the app menu. Includes write support for programming Seos credentials to compatible cards.
+
+**How to use:** By default, the app uses all-zero keys. For real credentials, create key files following the format in `keys-example.txt` and place them in `apps_data/seos/` on the SD card. Name them `keys.txt` (auto-loaded at launch) or `work_keys.txt`, `home_keys.txt`, etc. (selectable via Key Switcher in the menu). Hold a Seos card against the Kiisu to read it. Use Emulate to present the credential to a reader. The app handles the Seos protocol authentication automatically.
+
+---
+
+#### UL-C Bruteforce
+Dictionary attack against MIFARE Ultralight C authentication keys. Ultralight C cards use 3DES encryption for authentication — this app tries keys from system and user dictionaries stored in `nfc/assets/` on the SD card. If a key is found, the card can be fully read. Useful for testing the security of Ultralight C deployments.
+
+**How to use:** Hold a MIFARE Ultralight C card against the Kiisu and open the app. It automatically starts trying keys from the dictionary files. Progress is shown on screen. If a matching key is found, the app reports success and the key can be used to read the card's protected data via the main NFC app. You can add custom keys to the user dictionary file to test specific key candidates.
+
+---
+
+#### UL-C Relay
+Relay MIFARE Ultralight C authentication between a real reader and a real card, with the Kiisu acting as a man-in-the-middle. The Kiisu presents itself as a card to the reader, receives the authentication challenge, relays it to the real card, gets the response, and sends it back to the reader. This demonstrates a relay attack vulnerability in contactless authentication systems.
+
+**How to use:** You need the real Ultralight C card and access to the target reader. Open the app and hold the real card against the Kiisu's NFC antenna. Then present the Kiisu to the target reader. The app relays the authentication messages between the reader and the real card in real-time, effectively extending the range of the card. The reader sees a valid authentication even though the real card may be far away.
+
+---
+
+#### ULCFKey
+Crack counterfeit MIFARE Ultralight C cards that use weak or predictable authentication keys. Many cheap clone Ultralight C cards ship with default or easily guessable keys rather than properly randomized ones. This app exploits those weaknesses to recover the keys, allowing full read/write access to the card.
+
+**How to use:** Hold a suspected counterfeit Ultralight C card against the Kiisu and open the app. It runs through known weak key patterns and default manufacturer keys. If the card uses a predictable key, the app recovers it quickly. The recovered key is displayed and can be used with the main NFC app to fully access the card's data.
+
+---
+
+#### Weebo
+NTAG215 power tool — parse, write, emulate, remix, and duplicate tags. The "remix" feature is unique: it modifies the UID of a loaded tag to create a new identity, useful for collecting different loot from games that track tag UIDs. Can create backup duplicates of important tags. Prevents invalid UIDs (won't put 0x88 in UID[3] which would cause issues).
+
+**How to use:** Place `key_retail.bin` in `apps_data/weebo/` for full features (same file as AmiTool — Google it). Open the app and Read a physical NTAG215 tag, or load a saved file. Use Parse to see the decoded character data. Emulate to present it to a console. Write to copy it to a blank NTAG215. Remix to generate a new random UID (the tag data stays the same but the console sees it as a "different" tag). Duplicate to create an exact backup on another blank tag.
+
+---
+
+</details>
+
 <details><summary><h3>📻 Sub-GHz — 33 apps</h3></summary>
 
 #### CaiXianlin Remote
@@ -1369,6 +1528,144 @@ This firmware includes **667** external applications across **27** categories. E
 
 #### Weather Station
 > Receive and decode wireless weather sensor data. Supports Oregon Scientific, Acurite, LaCrosse, Ambient Weather, Solight, and many more. Shows temperature, humidity, wind, rain, and battery status. Sensors appear automatically as they broadcast.
+
+</details>
+
+
+<details><summary><h3>Detailed Guides — Sub-GHz</h3></summary>
+
+#### Chief Cooker
+Restaurant pager Swiss army knife — receive, decode, edit, and resend restaurant pager signals directly from your Flipper. When a pager station transmits, the app automatically detects the station number, pager number, and action (Ring/Mute/etc). You can resend the captured signal to trigger a specific pager, or blast all pagers at once. Save stations by name and organize them into categories (one per food court). Supports Princeton and SMC5326 protocols with Retekess TD157 encoding. Works with the external CC1101 module for extended range across an entire food court.
+
+**How to use:** Open the app and select "Scan for station signals" — it starts listening immediately. When a signal appears, press OK for actions: "Resend to ALL" triggers every pager on that station. To save, press Right → "Save signal as..." → give it a name (e.g. "Street Food") and create a category (e.g. "Mall Downtown"). Next time you visit, go to "Saved stations" → pick your category → see all your named restaurants. Press Right to edit the pager number, then OK to send to that specific pager.
+
+---
+
+#### Enhanced Sub-GHz Chat
+Encrypted text messaging between Flippers over Sub-GHz radio. Supports multiple encryption methods: no encryption (compatible with CLI Sub-GHz chat), random key generation, password-derived key, hex key input, or sharing the key via NFC tap between two Flippers. Uses mbedtls for AES encryption. Messages are sent and received in real-time on a chat-style screen. The keyboard can be locked with a long-press on OK to prevent accidental input while carrying the device.
+
+**How to use:** Open the app on both Flippers. Select encryption method — for quick setup, choose "Generate Key" on one Flipper, then use "NFC" to tap and share the key to the second Flipper. Enter the frequency in Hz (both must match — e.g. 433920000). Type your message using the on-screen keyboard and press Save to send. The chat view shows sent and received messages. Press Back to type a new message. Quick-press Back three times to unlock a locked keyboard. Press Right to view/share the current encryption key.
+
+---
+
+#### Flipper Share
+Direct wireless file transfer between Flippers via Sub-GHz radio — no cables, phones, computers, or internet needed. Works broadcast-style so multiple receivers can download simultaneously. Uses a custom protocol with 60-byte packets, MD5 integrity verification, and automatic retry on packet loss. Transfer speed is ~800 bytes/sec, so a typical .fap app file transfers in under 1 minute. Files up to 1.6 MB have been tested successfully. Features a fun torrent-like progress bar showing which parts of the file have been received.
+
+**How to use:** Open Flipper Share on both the sending and receiving Flippers. On the sender, browse to the file you want to transfer and select it. The sender starts broadcasting immediately. On the receiver(s), the incoming file appears automatically — no pairing or session setup needed. The progress bar fills in as chunks arrive. If packets are lost, the protocol automatically retries. When complete, an MD5 hash is verified to ensure the file wasn't corrupted. The received file is saved to the SD card.
+
+---
+
+#### Music to Sub-GHz Radio
+Converts Flipper music files (.FMF and .TXT format) into .SUB files that can be transmitted over Sub-GHz radio. Another Flipper can receive the transmission and play the music back through its speaker using the Sub-GHz app. Works with the large UberGuidoZ music collection available on GitHub. Essentially turns two Flippers into a wireless music streaming system over radio.
+
+**How to use:** Open the app and select Configure to choose your transmission frequency and modulation (AM650 is recommended). Press Back, then select Convert. Use Left/Right to set the output file number, then press OK to browse and select a music file (.FMF or .TXT). The app converts it and saves a .sub file in the Sub-GHz folder (e.g. "Flip5.sub"). To play it, open the Sub-GHz app on the sending Flipper and transmit the .sub file. On the receiving Flipper, open Sub-GHz → Read on the same frequency to hear the music.
+
+---
+
+#### POCSAG Pager
+Capture and decode POCSAG paging messages in real-time. POCSAG is the protocol used by paging systems (hospitals, restaurants, emergency services). Supports all three speeds: 512, 1200, and 2400 baud. Decodes both alphanumeric and numeric messages. Default frequency is DAPNET (439.9875 MHz) — the amateur radio digital paging network. Built on the Weather Station app architecture, so the interface will feel familiar.
+
+**How to use:** Open the app and it starts listening on the default frequency immediately. Decoded messages appear on screen as they're received, showing the pager address and message content. To change frequency, create a file `pocsag/settings.txt` on the SD card following the format in the firmware's `setting_user.example` file — add your local paging frequencies (uncomment lines and edit the numbers). Custom frequencies appear at the end of the frequency list in the app. Scroll to find them.
+
+---
+
+#### ProtoPirate
+Rolling-code analysis toolkit for automotive key fobs — decode signals from Kia (V0 through V6), Ford, Subaru, Suzuki, VW/VAG, PSA (Peugeot/Citroën), Fiat, StarLine, and Scher-Khan. The app captures and decodes the rolling-code protocol, showing the manufacturer, button pressed, counter value, and encrypted payload. Transmission is disabled by default for safety — you cannot accidentally desync your keyfob. Over 20,000 lines of protocol analysis code. Educational and research tool only.
+
+**How to use:** Open the app and select the protocol family you want to analyze (e.g. "Kia" or "VAG"). The app starts listening on the appropriate frequency. Press a button on the target key fob near the Kiisu. The decoded signal appears showing all protocol fields — UID, counter, button code, and encrypted data. For protocols with encoder support (marked ✅ in the protocol table), you can also view the encoding structure. The app saves captured signals for later analysis. No transmission capability by default.
+
+---
+
+#### ProtoView
+Digital signal Swiss army knife for reverse-engineering unknown RF protocols. Visualize raw RF pulses as a waveform on screen, showing high/low timing patterns. Automatically detects and decodes protocols including TPMS sensors (Renault, Toyota, Schrader, Citroën, Ford), Keeloq rolling codes, Oregon Scientific thermometers, and PT2262/SC5262 remotes. Edit decoded messages field-by-field — change individual data values and retransmit the modified signal. Can resample captured signals and send them on different frequencies/modulations than originally captured.
+
+**How to use:** Open the app and it immediately starts listening on the configured frequency. When a signal is detected, you'll see the raw pulse waveform — use Left/Right to scroll through it. Press OK to switch between raw view and decoded protocol view. If the protocol is recognized, you'll see parsed fields (sensor ID, temperature, button codes, etc.). Press OK on a decoded field to edit its value, then use the send function to transmit the modified signal. Use Up/Down to change frequency, and the menu to switch modulation (AM/FM).
+
+---
+
+#### Radio Scanner
+Scans CC1101 frequencies and plays the received signals through the Flipper's speaker as audio. This is NOT an FM radio — it demodulates Sub-GHz signals and converts them to audible sound. Useful for quickly finding active frequencies in an area by listening for signal activity. Different signal types produce different sounds, helping you identify what's transmitting nearby without needing to decode the protocol.
+
+**How to use:** Open the app and it starts scanning immediately. Use OK to adjust the spectrum width (how wide a frequency range to scan). Up/Down zoom in and out on the frequency display. Left/Right switch between different frequency bands (315 MHz, 433 MHz, 868 MHz, etc.). Listen through the speaker — when you hear activity, you've found an active frequency. Note the frequency and use other apps (Sub-GHz Read, ProtoView) to capture and decode the actual signal.
+
+---
+
+#### Restaurant Pager
+Brute-force trigger restaurant pagers to test if they're still functional. Supports four Retekess pager models: T119, TD157, TD165, and TD174 — each uses a different encoding scheme. Configure a range of station numbers and pager numbers, and the app systematically sends trigger signals for each combination. Useful for testing pager systems or finding which station/pager combination a device responds to.
+
+**How to use:** Open the app and select your pager model (T119, TD157, TD165, or TD174). Set the station range (First Station / Last Station) — keep this under 10 for practical use. Set the pager range similarly. Press OK to start sending. Yellow LED = generating codes, Purple LED = transmitting. The app cycles through all station/pager combinations in the configured range. Watch for pagers that start buzzing to identify their station and pager numbers.
+
+---
+
+#### Rolling Flaws
+Educational rolling code simulator by @CodeAllNight (jamisonderek) — the best way to learn how rolling code security works and where it fails. Simulates a receiver with configurable security flaws so you can practice replay attacks, clone attacks, future attacks, rollback attacks, KGB/Subaru MF attacks, and more in a safe sandbox. Includes 12 step-by-step tutorial scenarios with a companion YouTube video walkthrough. No real devices are affected — everything happens between Flippers.
+
+**How to use:** Open the app and you'll see the simulated receiver with a "locked" icon. Go to Config to enable specific security flaws (replay attack, window-next, etc.). Use a second Flipper's Sub-GHz app to send signals, or use the built-in "Test Transmitter" option. The receiver shows whether each signal was accepted or rejected, and why. Work through the 12 scenarios in order — Scenario 1 starts with basic replay (easiest), building up to KGB/Subaru MF attacks (advanced). Watch the YouTube tutorial at youtu.be/gMnGuDC9EQo alongside.
+
+---
+
+#### Spectrum Analyzer
+Real-time RF spectrogram showing signal amplitude vs frequency across the CC1101's range. The graph spikes when a nearby transmitter is active, letting you visually identify what frequencies are in use around you. Essential first step before trying to capture a signal — find the frequency first, then use Sub-GHz Read or ProtoView to decode it. Shows the relationship between amplitude and frequency in a continuously updating chart.
+
+**How to use:** Open the app and the spectrogram starts immediately. OK adjusts the spectrum width (how wide a frequency range is displayed). Up/Down zoom in and out for more or less detail. Left/Right switch between frequency bands (300 MHz, 400 MHz, 800 MHz ranges). Look for spikes in the graph — each spike indicates RF activity at that frequency. Press a button on a nearby remote or device and watch for the corresponding spike to identify its operating frequency. Note the frequency for use with other Sub-GHz apps.
+
+---
+
+#### Sub Analyzer
+Offline .sub file analyzer — opens saved Sub-GHz capture files and extracts every signal property without needing to retransmit. Shows frequency, modulation type, protocol (if recognized), data rate, bit count, raw pulse timing data, and more. Useful for understanding what you captured, comparing different captures, or documenting signal characteristics for later reference.
+
+**How to use:** Open the app and use the file browser to navigate to any .sub file on the SD card (typically in the `subghz/` folder). The app parses the file and displays all extracted properties on screen. Scroll through the data with Up/Down. No radio hardware is used — this is purely file analysis. Great for reviewing captures when you're away from the target device, or for comparing multiple captures of the same signal to look for differences.
+
+---
+
+#### Sub-GHz Bruteforcer
+Systematically try all possible codes for a given Sub-GHz protocol. Select the protocol (CAME 12bit 433MHz is the most common), frequency, and number of repetitions per code attempt. The app generates and transmits each possible code value in sequence. Supports CAME, Nice, Princeton, Linear, and other static-code protocols. Each code value is sent 3 times by default (adjustable with Left/Right buttons).
+
+**How to use:** Open the app and select the protocol and frequency from the main menu. CAME 12bit 433MHz is selected by default as it's the most common. Adjust repetitions with Left/Right if needed (more repetitions = slower but more reliable). Press OK to start brute-forcing. The app shows progress — current code value and percentage complete. Point the Kiisu's antenna toward the target device. For a 12-bit protocol, there are 4096 possible codes, which takes several minutes to cycle through at 3 repetitions each.
+
+---
+
+#### Sub-GHz Playlist
+Play a sequence of .sub files automatically, one after another. Create a simple text file listing the paths to your .sub files (one per line), and the app transmits them in order with configurable timing between each. Useful for testing multiple signals in sequence, automating multi-step RF operations, or creating demonstrations that cycle through different signals.
+
+**How to use:** Create a playlist file (plain .txt) with one .sub file path per line, e.g. `/ext/subghz/gate_open.sub`. Place the playlist anywhere on the SD card. Open the app, browse to your playlist file, and press OK. The app transmits each .sub file in sequence. Configure the delay between files in the settings. If a file references a disallowed frequency, the app skips it safely (crash bug was fixed in latest Momentum). The playlist loops or stops based on your settings.
+
+---
+
+#### Sub-GHz Playlist Creator
+Visual editor for creating and managing Sub-GHz playlists — much easier than manually editing text files on a computer. Create new playlists, browse the SD card to add .sub files, reorder entries, and edit existing playlists. Saves playlists as .txt files in the `subghz/playlist/` directory, compatible with the Sub-GHz Playlist player app.
+
+**How to use:** Open the app and choose "Create new playlist" or "Edit existing playlist". For new playlists, enter a name, then use the file browser to add .sub files one at a time. Each added file appears in the playlist list. Reorder or remove entries as needed. Press Back when done — the playlist is saved automatically. To use the playlist, open the Sub-GHz Playlist app and select your newly created .txt file.
+
+---
+
+#### Sub-GHz Remote
+Map up to 5 saved .sub files to the d-pad buttons (Up, Down, Left, Right, OK) for instant one-press playback. Create a remote configuration, assign a .sub file to each button, and use it like a universal RF remote control. Supports custom button codes for protocols that have them. Perfect for frequently-used signals — garage doors, gates, lights, or any device you control regularly via Sub-GHz.
+
+**How to use:** Open the app and create a new remote configuration. For each d-pad button, browse to a .sub file and assign it. Once configured, the main screen shows your button assignments. Press any d-pad button to instantly transmit the corresponding .sub file — no menus, no browsing, just one press. The remote configuration is saved and persists between sessions. You can create multiple remote configs for different locations or use cases.
+
+---
+
+#### Sub-GHz Scheduler
+Send a Sub-GHz signal repeatedly at configurable intervals — from every 1 second to every 24 hours. Supports two timing modes: Relative (interval measured from end of one transmission to start of next) and Precise (interval measured from start to start). Can use individual .sub files or playlist .txt files. Configure data TX repeats (1-6x per transmission). Useful for periodic beacon testing, keep-alive signals, or timed automation.
+
+**How to use:** Open the app and select your .sub file or playlist. Configure the interval (seconds: 1/2/5/10/30, minutes: 1/2/5/10/20/30/45, hours: 1/2/4/8/12/24). Choose timing mode (Relative or Precise). Set data TX repeats (how many times the signal is sent per interval). Press OK to start the scheduler. The app runs continuously, transmitting at each interval. The screen shows transmission status and countdown to next send. Press Back to stop.
+
+---
+
+#### TPMS Reader
+Read and activate Tire Pressure Monitoring System sensors using both Sub-GHz radio and RFID. TPMS sensors are embedded in vehicle tire valves and broadcast tire pressure, temperature, and sensor ID data wirelessly. The app captures these transmissions and decodes the data. Can also activate dormant sensors by sending the appropriate wake-up signal. Works with various TPMS protocols used by different vehicle manufacturers.
+
+**How to use:** Open the app and hold the Kiisu near a tire valve stem to activate the TPMS sensor (some sensors need a wake-up signal, others broadcast periodically). The app listens for TPMS transmissions and displays decoded data: tire pressure (PSI or kPa), temperature, and the sensor's unique ID. Different vehicles use different TPMS protocols — the app attempts to auto-detect the protocol. Useful for checking tire pressure without a dedicated gauge, or for identifying which sensor belongs to which tire position.
+
+---
+
+#### Weather Station
+Receive and decode data from wireless weather sensors operating on Sub-GHz frequencies. Supports a huge range of sensor protocols: Oregon Scientific, Acurite, LaCrosse, Ambient Weather, Solight TE44, and many more. Shows temperature, humidity, wind speed, wind direction, rain gauge data, and battery status — depending on what the sensor transmits. Sensors appear automatically as they broadcast.
+
+**How to use:** Open the app and it immediately starts listening for weather sensor transmissions. Nearby sensors will appear on screen as they broadcast (most sensors transmit every 30-60 seconds). Each sensor shows its protocol type, channel, temperature, humidity, and other available data. No configuration needed — just open and wait. If you have your own weather station sensors, they'll likely be detected automatically. The app supports dozens of protocols, so most consumer weather sensors are compatible.
+
+---
 
 </details>
 
@@ -1759,6 +2056,186 @@ This firmware includes **667** external applications across **27** categories. E
 
 #### Clock (DAB Timer)
 > Clock with stopwatch and configurable alarm (default 80 seconds, adjustable in 5-second intervals). Sound options configurable. A utility clock with timer functionality.
+
+</details>
+
+
+<details><summary><h3>Detailed Guides — GPIO</h3></summary>
+
+#### Air Mouse
+Turn Flipper into a wireless air mouse using a BMI160 or LSM6DS3 motion sensor module. Wave the Flipper in the air to move the cursor on your PC — the gyroscope/accelerometer tracks your hand movements and translates them into mouse movement. Supports both USB (wired) and Bluetooth (wireless) connection modes. The motion sensor module connects via I2C on the GPIO header.
+
+**How to use:** Connect a BMI160 or LSM6DS3 gyroscope/accelerometer module to the Flipper's I2C GPIO pins. Open the app and select USB mode (connect via USB cable) or Bluetooth mode (pair with your PC first). Hold the Flipper with the buttons facing the screen. Wave it in the air to move the cursor. Up button = left click, Down = right click, OK = middle click, Left/Right = scroll wheel. The sensitivity adjusts based on how fast you move. Works surprisingly well for presentations or couch browsing.
+
+---
+
+#### CAN Commander
+Full CAN bus reverse engineering toolkit for automotive diagnostics and research. Sniff live CAN frames in real-time, inject custom messages onto the bus, analyze traffic patterns, and track bit-level changes across frames. Import DBC database files for human-readable signal names instead of raw hex. Create injection profiles (.injprof) for repeatable tests. The largest app by stack size (20KB) due to heavy UART/CAN buffering requirements.
+
+**How to use:** Connect a CAN transceiver module (MCP2515 or similar) to the Flipper's GPIO pins. Plug the transceiver into your vehicle's OBD-II port or directly to the CAN bus wires. Open the app and select Sniff to see live CAN frames scrolling on screen — each frame shows the CAN ID and data bytes. Use the Inject tool to send custom frames: enter the CAN ID and data bytes, then transmit. Import a .dbc file for your vehicle to see named signals (e.g., "Engine RPM" instead of "0x0C0 [00 0F A0...]"). The BitTrack view highlights which bits change between frames, helping you identify what each CAN ID controls.
+
+---
+
+#### Flashlight
+The simplest GPIO app — enables 3.3V output on pin 7 (C3) when you press OK, and leaves it on even after you exit the app. Designed to power a small LED connected between pin 7 and GND. Acts as a basic flashlight when you connect an LED with a current-limiting resistor. One-button operation with no configuration needed.
+
+**How to use:** Wire an LED with a 100Ω or higher resistor between pin 7 (C3, positive) and pin 8 or 18 (GND, negative). Open the app and press OK — the LED turns on. Press Back to exit the app. The LED stays on because the GPIO pin remains high after the app closes. To turn it off, you'd need to run the app again or use the GPIO Controller app to manually set pin C3 low. Simple but effective for a quick light source.
+
+---
+
+#### FM Radio
+Listen to FM radio stations using a TEA5767 FM receiver module connected via I2C. The Flipper acts as the tuner interface — you control the frequency, volume, and presets from the screen while the TEA5767 module does the actual radio reception. Requires a headphone cable connected to the TEA5767 as an antenna (the wire acts as the FM antenna).
+
+**How to use:** Wire the TEA5767 module: VCC to 3V3 (pin 9), GND to pin 18, SCL to C0 (pin 16), SDA to C1 (pin 15). Plug a headphone cable into the TEA5767's audio output — this doubles as the antenna. Open the app. Use Up/Down to switch between saved station presets. Use Left/Right to seek — the tuner scans up or down the FM band until it finds a station with a strong signal. Press OK to toggle mute. The current frequency is displayed on screen. Audio comes through the headphones connected to the TEA5767, not the Flipper's speaker.
+
+---
+
+#### FM Transmitter
+Broadcast audio over FM radio using a KT0803 FM transmitter module. Connect an audio source (phone, MP3 player, laptop) to the module's AUX input, and the module broadcasts it on a selected FM frequency. Any FM radio nearby can tune in to hear your audio. The Flipper controls the transmitter's frequency and settings via I2C.
+
+**How to use:** Wire the KT0803 module: GND to pin 8/11/18, VCC (3.3V) to pin 9, SDA to pin 15 (C1), SCL to pin 16 (C0). Open the app, select your region (affects available frequencies), and choose a frequency that's not in use by local stations. Press Init to start the transmitter. Connect an audio source to the module's AUX input jack. Tune any nearby FM radio to the same frequency — you should hear the audio. Warning: FM transmitters may be regulated in your area; keep power low and range short.
+
+---
+
+#### GPIO Badge
+Companion app for the GPIO Diagnostics Board by MakeItHackin — a custom PCB with LEDs that plugs into the Flipper's GPIO header. The app runs various LED light effects on the board: sequential patterns, alternating blinks, and a "stop the light" game. Designed as a fun way to test GPIO pin connectivity and learn about hardware interaction.
+
+**How to use:** Plug the MakeItHackin GPIO Diagnostics Board into the Flipper's GPIO header. Open the app. Use Left/Right to change the speed of the current LED effect. Use Up/Down to cycle through different effect patterns (chase, alternate, random, etc.). When the "left to right" effect is running, press OK to try to stop the light on the center red LED — it's a timing challenge game. Press Back to exit. If you don't have the diagnostics board, you can connect individual LEDs to the GPIO pins to see the effects.
+
+---
+
+#### GPIO Controller
+Visual tool for manually controlling individual GPIO pins from the Flipper's screen. Shows all available GPIO pins with their current state (high/low). Select any pin and toggle it on or off with a button press. No coding required — just point and click to control hardware. Essential for quick testing of circuits, triggering relays, or manually controlling any connected hardware.
+
+**How to use:** Open the app and you'll see a list of all GPIO pins with their current state. Use Up/Down to select a pin. Press OK to toggle it between high (3.3V) and low (0V). The pin state changes immediately — if you have an LED, relay, or other device connected, it will respond instantly. Use this to test wiring before writing code, to manually trigger devices, or to debug circuits. The pin states persist until you change them or the Flipper reboots.
+
+---
+
+#### GPIO Explorer
+The most complete GPIO exploration app — three modes in one for learning and experimenting with GPIO. Mode 1: Digital RGB LED control using WS2812 addressable LEDs (needs WS2812 strip + 100Ω resistors). Mode 2: Regular LED control for standard LEDs (needs LED + 100Ω resistor). Mode 3: GPIO Reader that checks if current is present on any pin. Navigate between modes with the d-pad.
+
+**How to use:** Connect your hardware depending on which mode you want to use. For RGB mode, connect a WS2812 LED strip to a GPIO pin with a 100Ω resistor. For LED mode, connect a standard LED with a 100Ω resistor. For reader mode, no hardware needed — it reads whatever is connected. Open the app and use Left/Right to switch between the three modes. In LED modes, use the d-pad to control colors and brightness. In reader mode, the screen shows the state of each GPIO pin in real-time. Great for beginners learning how GPIO works.
+
+---
+
+#### GPIO Reader
+Read and display the state of all GPIO pins simultaneously in real-time. Shows a visual representation of which pins are high (3.3V) and which are low (0V) on a single screen. Supports configuring pull-up or pull-down resistors on each pin to handle floating inputs. Updates continuously so you can see changes as they happen.
+
+**How to use:** Open the app and all GPIO pins are displayed with their current state. If a pin is connected to a voltage source (3.3V or signal), it shows as high. If connected to ground or nothing, it shows as low. Use the menu to configure pull-up or pull-down resistors on specific pins — this is important for reading switches or sensors that don't actively drive the pin. Useful for debugging wiring ("is this sensor actually outputting a signal?"), verifying connections before running other apps, or monitoring multiple signals at once.
+
+---
+
+#### GPS (NMEA)
+Display real-time GPS data from any serial NMEA GPS module connected via UART. Shows latitude, longitude, altitude, speed, heading, number of satellites tracked, and fix quality — all updating in real-time. Uses the standard NMEA 0183 protocol that virtually all GPS modules speak. The heavy lifting (NMEA sentence parsing) is handled by the minmea library.
+
+**How to use:** Connect your GPS module: GPS TX → Flipper RX (pin 14), GPS RX → Flipper TX (pin 13), VCC → 3V3 (pin 9), GND → GND (pin 8/18). Open the app — it starts reading NMEA sentences immediately. The default baud rate is 9600 (most common for GPS modules). If your module uses a different baud rate, long-press the Up button to cycle through options. Wait for the GPS to get a fix (may take 30-60 seconds outdoors with clear sky view). Once fixed, you'll see coordinates, altitude, speed, and satellite count updating live.
+
+---
+
+#### Longwave Clock
+Receive and decode long-wave time signals broadcast by atomic clocks around the world, or simulate them for testing and learning. Supports four major time signal protocols: DCF77 (Germany, 77.5 kHz — covers all of Europe), MSF (UK, 60 kHz), WWVB (US, 60 kHz), and JJY (Japan, 40/60 kHz). Each protocol encodes the current time and date in a different binary format. Also includes a demo/simulation mode that generates fake signals without any hardware.
+
+**How to use:** For real reception, connect an inexpensive long-wave receiver module (tuned to the appropriate frequency for your region) to a GPIO pin. Open the app and select your protocol (DCF77 for Europe, MSF for UK, WWVB for US, JJY for Japan). The app decodes the incoming signal and displays the time, date, and signal quality. Each bit takes 1 second to receive, so a full time decode takes about 1 minute. For testing without hardware, select the Demo/Simulate mode — it generates a synthetic time signal so you can see how the decoding works.
+
+---
+
+#### MagSpoof
+Wirelessly emulate magnetic stripe card data using an electromagnetic coil module — based on Samy Kamkar's famous MagSpoof project. The coil generates a magnetic field that mimics the data pattern of a physical magnetic stripe, allowing contactless interaction with magnetic stripe readers. Requires a dedicated GPIO module with an H-bridge driver and coil (available from Rabbit-Labs, Electronic Cats, and others). The module does NOT read magnetic stripes — it only emulates/transmits.
+
+**How to use:** Connect your MagSpoof GPIO module to the Flipper. Create .mag files with magnetic stripe track data and place them in `apps_data/magspoof/` on the SD card (sample files are created on first launch as templates). Open the app, browse to a .mag file, and select it. Position the corner of the coil module directly over the card reader's magnetic read head — positioning is finicky, so try different angles and depths. Press OK to transmit. The coil generates the magnetic field pattern that the reader interprets as a card swipe. For authorized testing only.
+
+---
+
+#### Nearby Files
+GPS-enabled file browser that shows your saved .sub (Sub-GHz), .nfc, and .rfid files sorted by distance from your current GPS location. When you capture signals with Subdriving enabled (GPS coordinate logging), each saved file gets tagged with the location where it was captured. This app reads those coordinates and calculates how far each file is from where you are right now, showing the closest ones first.
+
+**How to use:** You need a GPS module connected via UART (same setup as the GPS NMEA app). Open the app and wait for GPS fix. The app scans your saved signal files and displays them sorted by distance — closest first. Each file shows its distance like [45m], [1.3km], [23km]. This is incredibly useful when you're standing near a gate or door and need to find which of your many saved signals belongs to it. Only files that contain GPS coordinates are shown — files captured without Subdriving enabled won't appear. There's also a web version at flipper-map.stichoza.com for viewing files on a map.
+
+---
+
+#### Oscilloscope
+Turn the Flipper into a basic oscilloscope for visualizing electrical signals on the 128×64 pixel screen. Connect a signal to pin 16 (PC0) with a voltage range of 0V to 2.5V — anything higher will damage the Flipper's ADC. The waveform scrolls across the screen in real-time, and the app measures and displays the signal's frequency in Hz. Not a replacement for a real oscilloscope, but surprisingly useful for quick signal checks in the field.
+
+**How to use:** Connect your signal source to pin 16 (PC0) and ground to pin 18 (GND). Make sure the signal voltage stays between 0V and 2.5V — use a voltage divider if needed for higher voltages. Open the app and the waveform appears immediately, scrolling across the screen. Press OK to pause/unpause the display so you can examine a specific part of the waveform. The measured frequency is shown on screen. Useful for verifying clock signals, checking sensor outputs, debugging PWM signals, or any situation where you need a quick look at a waveform without carrying a full oscilloscope.
+
+---
+
+#### Pokemon Trading
+Trade Pokemon between your Flipper and a real Game Boy — supports Generation I (Red, Blue, Yellow) and Generation II (Gold, Silver, Crystal) games in all non-Japanese regions. The Flipper emulates a second Game Boy on the link cable, allowing you to send Pokemon to and receive Pokemon from the actual game. Can also modify traded Pokemon: change EVs/IVs, infect with Pokerus, add held items, and more.
+
+**How to use:** Connect a Game Boy link cable to the Flipper's GPIO pins (see the app's pinout diagram). On the Flipper, open the app and select a Pokemon to offer for trade. On the Game Boy, go to a Pokemon Center and enter the Trade Center (Gen I) or Trade Room (Gen II). Initiate the trade from the Game Boy side. The Flipper appears as a second player. Complete the trade as normal. After receiving a Pokemon on the Flipper, you can modify it — change its stats, infect it with Pokerus, or give it a held item — then trade it back to the Game Boy. A nostalgic and genuinely useful tool for Pokemon fans.
+
+---
+
+#### RC2014 ColecoVision
+Use the Flipper as a game controller for ColecoVision games running on an RC2014 retro computer. The RC2014 is a modular Z80-based retrocomputer, and with J.B. Langston's TMS9918A video card, it can run ColecoVision games. This app turns the Flipper into a ColecoVision controller, mapping the d-pad to directions and OK/Back to the fire buttons. Very niche but a cool intersection of retro computing and modern hacking tools.
+
+**How to use:** You need an RC2014 computer with a TMS9918A video card, SN76489 sound card, and a custom interface module (Eagle schematics are in the app's repository). Connect the Flipper to the RC2014 interface module via GPIO. Load a ColecoVision ROM on the RC2014. Open the app on the Flipper — the d-pad maps to the ColecoVision controller directions, OK is one fire button, Back is the other. Play ColecoVision games using the Flipper as your controller.
+
+---
+
+#### Sentry Safe
+Exploit a known vulnerability in Sentry Safe and Master Lock electronic safes to open them without the PIN code. Based on security researcher H4ckd4ddy's discovery of a mechanical/electronic weakness in these safes' solenoid locking mechanism. The app sends a specific signal sequence through a GPIO connection to the safe's solenoid that triggers the lock to open. Includes a built-in help page with connection diagrams.
+
+**How to use:** Open the app and read the built-in help page first — it explains exactly how to connect the Flipper to the safe's solenoid via GPIO pins. Make the physical connection as described. Press OK to send the exploit signal sequence. If the safe is vulnerable (most Sentry Safe and Master Lock electronic models are), the lock will disengage. For authorized testing of your own safes only — this demonstrates why these consumer safes should not be relied upon for high-security applications.
+
+---
+
+#### Signal Generator
+Generate clean digital signals (square waves) on any GPIO pin at a configurable frequency. Select which pin to output on, set the desired frequency, and the Flipper generates a continuous square wave. Useful for testing circuits that need a clock signal, driving external devices that expect a specific frequency input, or generating reference signals for calibration.
+
+**How to use:** Open the app and select which GPIO pin you want to output the signal on. Set the frequency using the d-pad — Up/Down to change the value, Left/Right to move between digits. Press OK to start generating the signal. The selected pin will output a 3.3V square wave at the configured frequency. Press OK again to stop. Connect an oscilloscope or frequency counter to verify the output, or connect it directly to whatever circuit needs the signal.
+
+---
+
+#### SPI Mem Manager
+Read and write 25-series SPI flash memory chips (W25Q32, W25Q64, W25Q128, AT25SF, MX25L, and similar). These chips are found in routers, IoT devices, embedded systems, and many other electronics. The app can dump the entire chip contents to a file on the SD card (firmware extraction), or write a file back to the chip (firmware restoration). Supports chip identification, read verification, and erase operations.
+
+**How to use:** Connect the SPI flash chip to the Flipper's GPIO SPI pins (see the app's pinout — typically CS, CLK, MOSI, MISO, VCC, GND). Open the app and it will attempt to identify the connected chip by reading its JEDEC ID. Once identified, choose Read to dump the chip's contents to a file on the SD card, Write to flash a file from the SD card to the chip, or Verify to compare the chip contents against a file. Reading a typical 4MB chip takes a few minutes. Useful for backing up router firmware before modifications, extracting firmware for analysis, or restoring bricked devices.
+
+---
+
+#### SPI Terminal
+Interactive terminal for communicating with SPI devices. Send raw SPI data and see responses in real-time — like a serial terminal but for the SPI bus. Configure clock speed, SPI mode (CPOL/CPHA), and chip select pin. Type hex commands and the app sends them over SPI, displaying the response bytes. Essential for debugging SPI peripherals, testing communication with sensors, or reverse-engineering SPI protocols on unknown devices.
+
+**How to use:** Connect your SPI device to the Flipper's GPIO SPI pins (CS, CLK, MOSI, MISO, GND). Open the app and configure the SPI parameters: clock speed, mode (0-3), and which pin to use for chip select. Type hex bytes to send using the on-screen keyboard. Press Send and the app transmits the bytes over SPI, then displays the response. Useful for sending commands to SPI sensors, reading registers, or exploring how an unknown SPI device responds to different commands.
+
+---
+
+#### Timelapse
+Simple intervalometer for cameras that support wired remote shutter release. The Flipper triggers the camera's shutter at regular intervals, creating a time-lapse sequence. Connect the Flipper's GPIO to your camera's remote shutter port (typically a 2.5mm or 3.5mm jack with 3 pins: ground, focus, shutter). Originally built for Sony DSLRs but works with any camera that has a wired remote input.
+
+**How to use:** Wire the Flipper's GPIO to your camera's remote shutter port — connect the shutter pin to a GPIO output and ground to ground (check your camera's remote pinout). Open the app and set the interval between shots using the d-pad (seconds or minutes). Press OK to start the timelapse. The Flipper triggers the shutter at each interval — you'll hear the camera click. The shot count is displayed on screen. Press Back to stop. Leave it running for hours to create stunning time-lapse videos of sunsets, clouds, construction, or anything that changes slowly.
+
+---
+
+#### UART Terminal
+Full-featured serial terminal for talking to any device with a UART interface — ESP modules, GPS units, Bluetooth modules, Arduino boards, modems, or any serial device. Send text commands, AT commands (for modems and WiFi modules), fast commands (saved shortcuts for one-tap sending), or raw hex binary packets. Supports configurable baud rates and two different UART pin options. Can display received data as readable text or raw hex bytes.
+
+**How to use:** Wire your device: device TX → Flipper RX (pin 14), device RX → Flipper TX (pin 13), GND → GND (pin 8 or 18). Don't power devices from the Flipper's 3V3 pin if possible — it doesn't support hot-plugging. Open the app and select your baud rate (9600 is most common, 115200 for ESP modules). Type a command using the on-screen keyboard — quickly press Back for a space character. Press Save/Send to transmit. The response appears on screen. Toggle between text and hex display modes. Save frequently-used commands as "fast commands" for one-tap sending. Long-press Back to exit.
+
+---
+
+#### Unitemp
+Universal sensor reader supporting 20+ different temperature, humidity, pressure, and CO2 sensors through a single app. Works with DHT11, DHT12, DHT21/AM2301, DHT22/AM2302, DHT20, AM2320, DS18B20, BMP280, BME280, HTU21, AHT10, AHT20, SHT30, SHT31, and many more. Connects via GPIO using 1-Wire, DHT protocol, or I2C bus. Auto-detects connected sensors and shows live readings with configurable update intervals. Supports multiple sensors simultaneously.
+
+**How to use:** Connect your sensor to the appropriate GPIO pins — DHT sensors use a single data pin + VCC + GND, I2C sensors (BMP280, SHT30, etc.) use SDA (pin 15) + SCL (pin 16) + VCC + GND, DS18B20 uses 1-Wire on any GPIO pin. Open the app and it scans for connected sensors automatically. If not detected, use "Add sensor" to manually specify the type and pin. The main screen shows live temperature, humidity, and/or pressure readings updating in real-time. Configure update interval and temperature units (°C/°F) in settings. The go-to app for any environmental monitoring project.
+
+---
+
+#### Wire Tester
+Simple continuity tester — beeps and lights up the LED green if a wire is connected between pins 6 and 8. That's it. No menus, no configuration, no complexity. Touch both ends of a wire (or cable, solder joint, PCB trace) to the two test pins and listen for the beep. If it beeps, the connection is good. If it doesn't, the wire is broken.
+
+**How to use:** Open the app. Touch one end of the wire/cable you want to test to pin 6, and the other end to pin 8 (GND). If the wire has continuity (is not broken), the Flipper beeps and the screen shows a green indicator. If there's no continuity, silence. That's the entire app. Useful for checking cables, finding broken wires in a harness, verifying solder joints, or testing fuses. No setup needed — just plug and test.
+
+---
+
+#### Wii EC Analyser
+Protocol analyser for Wii Extension Controllers — Nunchuck, Classic Controller, and other accessories that plug into the Wii Remote's extension port. Connect a Wii controller to the Flipper via I2C GPIO pins and see the controller's state in real-time: joystick X/Y positions, button presses, accelerometer data (for Nunchuck), and trigger values (for Classic Controller). Includes calibration tools for verifying controller accuracy.
+
+**How to use:** Wire the Wii Extension Controller to the Flipper's I2C pins (SDA, SCL, 3V3, GND — you'll need to cut or adapt a Wii extension cable). Open the app and it will attempt to detect the controller. Once connected, the screen shows real-time controller state — move the joystick and watch the values change, press buttons and see them light up on screen. Use the calibration mode to check if the joystick centers properly and reaches full range. Note: only works with controllers that support the encryption-bypass method (most official Nintendo controllers do).
+
+---
 
 </details>
 
