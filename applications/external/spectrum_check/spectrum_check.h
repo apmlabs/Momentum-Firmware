@@ -22,7 +22,8 @@
 
 #define SC_HIT_LOG_SIZE 32
 #define SC_SIGNAL_SLOTS 8
-#define SC_RAW_SAMPLES  256
+#define SC_RAW_SAMPLES  2048
+#define SC_SIG_SAMPLES  512
 #define SC_SPEC_CH      32
 #define SC_RSSI_MIN     (-97.0f)
 #define SC_RSSI_MAX     (-60.0f)
@@ -47,7 +48,7 @@ typedef struct {
 typedef struct {
     uint32_t frequency;
     SCMod    modulation;
-    int32_t  raw_data[SC_RAW_SAMPLES];
+    int32_t  raw_data[SC_SIG_SAMPLES];
     uint16_t raw_count;
     uint16_t pulse_count;
     uint32_t total_duration_us;
@@ -81,6 +82,7 @@ typedef struct {
     uint32_t current_freq;
     SCMod    current_mod;
     float    trigger;
+    float    noise_floor;     // Adaptive noise floor estimate (dBm)
     uint8_t  hopper_idx;
     uint8_t  hopper_timeout;
     uint32_t locked_freq;

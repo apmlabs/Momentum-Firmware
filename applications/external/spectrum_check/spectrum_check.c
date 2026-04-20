@@ -205,6 +205,9 @@ static void sc_set_freq_mod(SpectrumCheckApp* app, uint32_t freq, SCMod mod) {
 }
 
 // ============== Tick Logic (called every 50ms from main loop) ==============
+static void sc_update_noise_floor(SpectrumCheckApp* app, float rssi);
+static bool sc_signal_present(SpectrumCheckApp* app, float rssi);
+
 static void sc_tick_spectrum(SpectrumCheckApp* app) {
     // Stop worker — spectrum just reads RSSI
     sc_rx_end(app);
@@ -212,6 +215,7 @@ static void sc_tick_spectrum(SpectrumCheckApp* app) {
     subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetOok650Async, NULL);
 
     float best = -200.0f;
+    float worst = 0.0f;
     uint8_t best_ch = 0;
     for(uint8_t i = 0; i < SC_SPEC_CH; i++) {
         subghz_devices_set_frequency(app->radio_device, sc_spec_freqs[i]);
@@ -225,7 +229,10 @@ static void sc_tick_spectrum(SpectrumCheckApp* app) {
         uint8_t val = (db < 0) ? 0 : ((db > 80) ? 80 : (uint8_t)db);
         if(val > app->spec_peak[i]) app->spec_peak[i] = val;
         if(rssi > best) { best = rssi; best_ch = i; }
+        if(rssi < worst) worst = rssi;
     }
+    // Update noise floor from the quietest channel in this sweep
+    sc_update_noise_floor(app, worst);
     // Slow decay every 5th tick
     if(++app->spec_decay >= 5) {
         app->spec_decay = 0;
@@ -240,6 +247,79 @@ static void sc_tick_spectrum(SpectrumCheckApp* app) {
     }
 }
 
+// ============== Coherent Signal Detection (ProtoView-inspired) ==============
+// Scans raw_buf for runs of pulses with consistent timing (3 duration classes).
+// Returns the length of the longest coherent run, and sets *te to the shortest pulse.
+static uint16_t sc_detect_coherent(SpectrumCheckApp* app, uint32_t* te) {
+    uint16_t count = app->raw_write > SC_RAW_SAMPLES ? SC_RAW_SAMPLES : app->raw_write;
+    if(count < 20) return 0;
+
+    uint16_t best_len = 0;
+    uint32_t best_te = 0;
+
+    // Duration classes: up to 3 per level (HIGH/LOW)
+    uint32_t cls_dur[3][2]; // [class][level]
+    uint16_t cls_cnt[3][2];
+
+    uint16_t start = (app->raw_write > SC_RAW_SAMPLES) ? (app->raw_write % SC_RAW_SAMPLES) : 0;
+    uint16_t run = 0;
+    uint32_t short_dur = UINT32_MAX;
+
+    memset(cls_dur, 0, sizeof(cls_dur));
+    memset(cls_cnt, 0, sizeof(cls_cnt));
+
+    for(uint16_t n = 0; n < count; n++) {
+        uint16_t idx = (start + n) % SC_RAW_SAMPLES;
+        int32_t v = app->raw_buf[idx];
+        bool level = v > 0;
+        uint32_t dur = level ? (uint32_t)v : (uint32_t)(-v);
+
+        if(dur < 30 || dur > 4000) {
+            // Out of range — end of coherent run
+            if(run > best_len) { best_len = run; best_te = short_dur; }
+            run = 0; short_dur = UINT32_MAX;
+            memset(cls_dur, 0, sizeof(cls_dur));
+            memset(cls_cnt, 0, sizeof(cls_cnt));
+            continue;
+        }
+
+        // Try to match a class
+        uint8_t lv = level ? 1 : 0;
+        bool matched = false;
+        for(uint8_t c = 0; c < 3; c++) {
+            if(cls_cnt[c][lv] == 0) {
+                cls_dur[c][lv] = dur;
+                cls_cnt[c][lv] = 1;
+                matched = true;
+                break;
+            }
+            uint32_t avg = cls_dur[c][lv];
+            uint32_t delta = dur > avg ? dur - avg : avg - dur;
+            if(delta < avg / 5) { // 20% tolerance
+                cls_dur[c][lv] = ((avg * cls_cnt[c][lv]) + dur) / (cls_cnt[c][lv] + 1);
+                cls_cnt[c][lv]++;
+                matched = true;
+                break;
+            }
+        }
+
+        if(!matched) {
+            if(run > best_len) { best_len = run; best_te = short_dur; }
+            run = 0; short_dur = UINT32_MAX;
+            memset(cls_dur, 0, sizeof(cls_dur));
+            memset(cls_cnt, 0, sizeof(cls_cnt));
+            continue;
+        }
+
+        run++;
+        if(dur < short_dur) short_dur = dur;
+    }
+    if(run > best_len) { best_len = run; best_te = short_dur; }
+
+    *te = best_te;
+    return best_len;
+}
+
 static void sc_tick_hopper(SpectrumCheckApp* app) {
     // If worker is running and we're staying on a signal, just count down
     if(app->rx_active && app->hopper_timeout > 0) {
@@ -248,9 +328,9 @@ static void sc_tick_hopper(SpectrumCheckApp* app) {
     }
     // Timeout expired or no signal — stop worker, do a new scan
     if(app->rx_active) {
-        // Signal gone — auto-capture raw if no protocol decoded this signal
+        // Layer 3: Coherent signal detection on raw buffer
+        // Only capture if no protocol already decoded this freq AND signal is coherent
         if(app->was_on_signal && app->raw_write > 20) {
-            // Check if a decode already captured this freq
             bool already_captured = false;
             for(uint8_t i = 0; i < app->signal_count; i++) {
                 uint32_t d = app->signals[i].frequency > app->current_freq ?
@@ -258,15 +338,21 @@ static void sc_tick_hopper(SpectrumCheckApp* app) {
                 if(d < 50000) { already_captured = true; break; }
             }
             if(!already_captured) {
-                uint8_t slot = sc_find_slot(app);
-                SCSignal* sig = &app->signals[slot];
-                memset(sig, 0, sizeof(SCSignal));
-                sig->frequency = app->current_freq;
-                sig->modulation = app->current_mod;
-                sig->raw_count = app->raw_write > SC_RAW_SAMPLES ? SC_RAW_SAMPLES : app->raw_write;
-                memcpy(sig->raw_data, app->raw_buf, sig->raw_count * sizeof(int32_t));
-                sc_analyze(sig);
-                if(slot >= app->signal_count && app->signal_count < SC_SIGNAL_SLOTS) app->signal_count++;
+                uint32_t te = 0;
+                uint16_t coherent_len = sc_detect_coherent(app, &te);
+                if(coherent_len >= 18) { // ProtoView's minimum for a real signal
+                    uint8_t slot = sc_find_slot(app);
+                    SCSignal* sig = &app->signals[slot];
+                    memset(sig, 0, sizeof(SCSignal));
+                    sig->frequency = app->current_freq;
+                    sig->modulation = app->current_mod;
+                    sig->raw_count = app->raw_write > SC_SIG_SAMPLES ? SC_SIG_SAMPLES : app->raw_write;
+                    memcpy(sig->raw_data, app->raw_buf, sig->raw_count * sizeof(int32_t));
+                    sig->min_pulse_us = te;
+                    sig->pulse_count = coherent_len;
+                    sig->analyzed = true;
+                    if(slot >= app->signal_count && app->signal_count < SC_SIGNAL_SLOTS) app->signal_count++;
+                }
             }
         }
         sc_rx_end(app);
@@ -292,8 +378,12 @@ static void sc_tick_hopper(SpectrumCheckApp* app) {
         }
     }
 
-    // Nothing above trigger — just idle until next tick
-    if(best_rssi <= app->trigger) {
+    // Update noise floor from the coarse scan (use median-ish: not the best, not the worst)
+    // The best_rssi might be a signal, so use a lower percentile for noise estimation
+    sc_update_noise_floor(app, best_rssi - 15.0f); // Conservative: assume best is 15dB above floor
+
+    // Nothing clearly above noise floor — just idle until next tick
+    if(!sc_signal_present(app, best_rssi)) {
         app->current_freq = best_freq;
         return;
     }
@@ -353,45 +443,80 @@ static void sc_tick_hopper(SpectrumCheckApp* app) {
         memset(sig, 0, sizeof(SCSignal));
         sig->frequency = fine_freq;
         sig->modulation = SCModAM650;
-        sig->raw_count = app->raw_write > SC_RAW_SAMPLES ? SC_RAW_SAMPLES : app->raw_write;
+        sig->raw_count = app->raw_write > SC_SIG_SAMPLES ? SC_SIG_SAMPLES : app->raw_write;
         memcpy(sig->raw_data, app->raw_buf, sig->raw_count * sizeof(int32_t));
         sc_analyze(sig);
         if(slot >= app->signal_count && app->signal_count < SC_SIGNAL_SLOTS) app->signal_count++;
     }
 }
 
+// Adaptive noise floor estimation (asymmetric: tracks down fast, up slow)
+static void sc_update_noise_floor(SpectrumCheckApp* app, float rssi) {
+    if(app->noise_floor < -120.0f) {
+        app->noise_floor = rssi; // Initialize
+    } else {
+        // Only track downward or stay — signals don't inflate the estimate
+        float sample = rssi < app->noise_floor ? rssi : app->noise_floor;
+        app->noise_floor = app->noise_floor * 0.97f + sample * 0.03f;
+    }
+}
+
+// Is signal clearly present? (10dB above noise floor)
+static bool sc_signal_present(SpectrumCheckApp* app, float rssi) {
+    return rssi > app->noise_floor + 10.0f;
+}
+
 static void sc_tick_locked(SpectrumCheckApp* app) {
     if(!app->rx_active || app->current_freq != app->locked_freq) {
         sc_set_freq_mod(app, app->locked_freq, app->locked_mod_idx);
-        app->hopper_timeout = 20; // 1s per preset
+        app->hopper_timeout = 40; // 2s initial dwell
         return;
     }
+    float rssi = subghz_devices_get_rssi(app->radio_device);
+    sc_update_noise_floor(app, rssi);
+
+    if(sc_signal_present(app, rssi)) {
+        // Signal clearly above noise — stay on this modulation, let decoders work
+        app->hopper_timeout = 40; // Reset: 2s from last signal presence
+        return;
+    }
+    // No signal (or just noise)
     if(app->hopper_timeout > 0) {
         app->hopper_timeout--;
         return;
     }
-    // Timeout expired — cycle to next preset
+    // 2s of silence on this modulation — try next
     app->locked_mod_idx = (app->locked_mod_idx + 1) % SCModCount;
     sc_set_freq_mod(app, app->locked_freq, app->locked_mod_idx);
-    app->hopper_timeout = 20;
+    app->hopper_timeout = 40; // Give next modulation 2s too
 }
 
 // Process pending decode from worker thread
 static void sc_process_decode(SpectrumCheckApp* app) {
     if(!app->pending_decode) return;
-    sc_hit_add(app, app->pending_freq, app->trigger + 10.0f, app->pending_name);
-    // Dedup: find existing or new slot
+    sc_hit_add(app, app->pending_freq, app->noise_floor + 10.0f, app->pending_name);
+    // Dedup: find existing slot for same freq+protocol, OR upgrade BinRAW/Unknown on same freq
     uint8_t slot = 0xFF;
     for(uint8_t i = 0; i < app->signal_count; i++) {
-        if(app->signals[i].frequency == app->pending_freq &&
-           strcmp(app->signals[i].protocol_name, app->pending_name) == 0) { slot = i; break; }
+        uint32_t d = app->signals[i].frequency > app->pending_freq ?
+            app->signals[i].frequency - app->pending_freq : app->pending_freq - app->signals[i].frequency;
+        if(d < 50000) {
+            if(strcmp(app->signals[i].protocol_name, app->pending_name) == 0) {
+                slot = i; break; // Exact match — update in place
+            }
+            // Upgrade: specific protocol replaces BinRAW or unidentified
+            if(!app->signals[i].protocol_decoded ||
+               strcmp(app->signals[i].protocol_name, "BinRAW") == 0) {
+                slot = i; break;
+            }
+        }
     }
     if(slot == 0xFF) slot = sc_find_slot(app);
     SCSignal* sig = &app->signals[slot];
     memset(sig, 0, sizeof(SCSignal));
     sig->frequency = app->pending_freq;
     sig->modulation = app->pending_mod;
-    sig->raw_count = app->raw_write > SC_RAW_SAMPLES ? SC_RAW_SAMPLES : app->raw_write;
+    sig->raw_count = app->raw_write > SC_SIG_SAMPLES ? SC_SIG_SAMPLES : app->raw_write;
     memcpy(sig->raw_data, app->raw_buf, sig->raw_count * sizeof(int32_t));
     strncpy(sig->protocol_name, app->pending_name, 31);
     strncpy(sig->decoded_string, app->pending_str, 127);
@@ -404,16 +529,16 @@ static void sc_process_decode(SpectrumCheckApp* app) {
 
 // ============== Drawing ==============
 static void sc_draw_status(Canvas* canvas, SpectrumCheckApp* app) {
-    char buf[44];
+    char buf[48];
     if(app->radio_state == SCRadioLocked) {
-        snprintf(buf, sizeof(buf), "\xE2\x96\xBA %ld.%03ld LOCK %s %d/%d",
+        snprintf(buf, sizeof(buf), "LOCK %ld.%03ld %s %d/%d NF:%.0f",
             app->locked_freq / 1000000 % 1000, app->locked_freq / 1000 % 1000,
             sc_mod_names[app->locked_mod_idx],
-            app->locked_mod_idx + 1, SCModCount);
+            app->locked_mod_idx + 1, SCModCount, (double)app->noise_floor);
     } else {
-        snprintf(buf, sizeof(buf), "%ld.%02ld %s[%s] %dsig",
+        snprintf(buf, sizeof(buf), "%ld.%02ld %s %dsig NF:%.0f",
             app->current_freq / 1000000, (app->current_freq / 10000) % 100,
-            sc_state_names[app->radio_state], sc_mod_names[app->current_mod], app->signal_count);
+            sc_state_names[app->radio_state], app->signal_count, (double)app->noise_floor);
     }
     canvas_set_font(canvas, FontSecondary);
     canvas_draw_str(canvas, 0, 63, buf);
@@ -671,6 +796,7 @@ int32_t spectrum_check_app(void* p) {
     SpectrumCheckApp* app = malloc(sizeof(SpectrumCheckApp));
     memset(app, 0, sizeof(SpectrumCheckApp));
     app->trigger = -90.0f;
+    app->noise_floor = -95.0f; // Will adapt quickly on first scan
     app->current_freq = 433920000;
     app->current_mod = SCModAM650;
     app->radio_state = SCRadioHopping;
