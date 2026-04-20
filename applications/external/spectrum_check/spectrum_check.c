@@ -169,8 +169,17 @@ static void sc_realtime_decode_cb(SubGhzReceiver* rx, SubGhzProtocolDecoderBase*
     // Update hit log with protocol name
     sc_hit_add(app, app->current_freq, subghz_devices_get_rssi(app->radio_device), name);
 
-    // Auto-promote to Tier 2: copy raw buffer into a signal slot
-    uint8_t slot = sc_find_slot(app);
+    // Dedup: check if we already have this freq+protocol
+    uint8_t slot = 0xFF;
+    for(uint8_t i = 0; i < app->signal_count; i++) {
+        if(app->signals[i].frequency == app->current_freq &&
+           strcmp(app->signals[i].protocol_name, name) == 0) {
+            slot = i; // update existing
+            break;
+        }
+    }
+    if(slot == 0xFF) slot = sc_find_slot(app); // new slot
+
     SCSignal* sig = &app->signals[slot];
     memset(sig, 0, sizeof(SCSignal));
     sig->frequency = app->current_freq;
@@ -182,7 +191,7 @@ static void sc_realtime_decode_cb(SubGhzReceiver* rx, SubGhzProtocolDecoderBase*
     strncpy(sig->decoded_string, furi_string_get_cstr(text), 127);
     sig->protocol_decoded = true;
     sc_analyze(sig);
-    if(app->signal_count < SC_SIGNAL_SLOTS) app->signal_count++;
+    if(slot >= app->signal_count && app->signal_count < SC_SIGNAL_SLOTS) app->signal_count++;
     app->signal_selected = slot;
 
     furi_mutex_release(app->mutex);

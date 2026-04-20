@@ -19,9 +19,9 @@
 
 #define TAG "SpectrumCheck"
 
-#define SC_HIT_LOG_SIZE 64
-#define SC_SIGNAL_SLOTS 16
-#define SC_RAW_SAMPLES  512
+#define SC_HIT_LOG_SIZE 32
+#define SC_SIGNAL_SLOTS 8
+#define SC_RAW_SAMPLES  256
 #define SC_SPEC_CH      32
 #define SC_RSSI_MIN     (-97.0f)
 #define SC_RSSI_MAX     (-60.0f)
