@@ -38,9 +38,9 @@ static void sc_load_preset(const SubGhzDevice* dev, uint8_t mod) {
 }
 
 static const uint32_t sc_hopper_freqs[] = {
-    300000000,303875000,310000000,315000000,318000000,330000000,345000000,
-    390000000,418000000,430000000,433075000,433420000,433920000,434420000,434775000,438900000,
-    779000000,868350000,868950000,906400000,915000000,925000000};
+    300000000,307000000,310000000,315000000,318000000,330000000,340000000,348000000,
+    390000000,410000000,418000000,425000000,430000000,433920000,438000000,445000000,450000000,455000000,460000000,464000000,
+    779000000,800000000,820000000,840000000,860000000,868000000,880000000,900000000,915000000,920000000,925000000,928000000};
 #define SC_HOPPER_COUNT (sizeof(sc_hopper_freqs)/sizeof(sc_hopper_freqs[0]))
 
 static const uint32_t sc_spec_freqs[] = {
@@ -234,56 +234,113 @@ static void sc_tick_spectrum(SpectrumCheckApp* app) {
 }
 
 static void sc_tick_hopper(SpectrumCheckApp* app) {
-    // Ensure RX is running
-    if(!app->rx_active) {
-        sc_set_freq_mod(app, sc_hopper_freqs[app->hopper_idx], SCModAM650);
-        return;
-    }
-    float rssi = subghz_devices_get_rssi(app->radio_device);
-
-    if(app->hopper_timeout > 0) {
+    // If worker is running and we're staying on a signal, just count down
+    if(app->rx_active && app->hopper_timeout > 0) {
         app->hopper_timeout--;
         return;
     }
-    if(rssi > app->trigger) {
-        app->hopper_timeout = 10; // stay 500ms
-        if(!app->was_on_signal) {
-            sc_hit_add(app, app->current_freq, rssi, NULL);
-            app->was_on_signal = true;
+    // If worker is running and timeout expired, check if signal still there
+    if(app->rx_active) {
+        float rssi = subghz_devices_get_rssi(app->radio_device);
+        if(rssi > app->trigger) {
+            app->hopper_timeout = 10; // stay another 500ms
+            return;
         }
+        // Signal gone — stop worker, do a new scan
+        sc_rx_end(app);
+        app->was_on_signal = false;
+    }
+
+    // === STAGE 1: Coarse scan all frequencies (650kHz BW) ===
+    subghz_devices_idle(app->radio_device);
+    subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetOok650Async, NULL);
+
+    float best_rssi = -200.0f;
+    uint32_t best_freq = 0;
+    for(uint8_t i = 0; i < SC_HOPPER_COUNT; i++) {
+        subghz_devices_set_frequency(app->radio_device, sc_hopper_freqs[i]);
+        subghz_devices_flush_rx(app->radio_device);
+        subghz_devices_set_rx(app->radio_device);
+        furi_delay_ms(2);
+        float rssi = subghz_devices_get_rssi(app->radio_device);
+        subghz_devices_idle(app->radio_device);
+        if(rssi > best_rssi) {
+            best_rssi = rssi;
+            best_freq = sc_hopper_freqs[i];
+        }
+    }
+
+    // Nothing above trigger — just idle until next tick
+    if(best_rssi <= app->trigger) {
+        app->current_freq = best_freq;
         return;
     }
-    // Hop to next frequency
-    app->was_on_signal = false;
-    app->hopper_idx = (app->hopper_idx + 1) % SC_HOPPER_COUNT;
-    sc_rx_end(app);
-    subghz_receiver_reset(app->receiver);
-    if(app->extra_receiver) subghz_receiver_reset(app->extra_receiver);
-    subghz_devices_idle(app->radio_device);
-    sc_load_preset(app->radio_device, SCModAM650);
-    subghz_devices_set_frequency(app->radio_device, sc_hopper_freqs[app->hopper_idx]);
-    subghz_devices_flush_rx(app->radio_device);
-    subghz_devices_set_rx(app->radio_device);
-    app->current_freq = sc_hopper_freqs[app->hopper_idx];
-    app->current_mod = SCModAM650;
-    app->raw_write = 0;
-    sc_rx_start(app);
+
+    // === STAGE 2: Fine scan ±300kHz around peak (270kHz BW, 20kHz steps) ===
+    subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetOok270Async, NULL);
+    float fine_rssi = -200.0f;
+    uint32_t fine_freq = best_freq;
+    for(uint32_t f = best_freq - 300000; f <= best_freq + 300000; f += 20000) {
+        if(!subghz_devices_is_frequency_valid(app->radio_device, f)) continue;
+        subghz_devices_set_frequency(app->radio_device, f);
+        subghz_devices_flush_rx(app->radio_device);
+        subghz_devices_set_rx(app->radio_device);
+        furi_delay_ms(2);
+        float rssi = subghz_devices_get_rssi(app->radio_device);
+        subghz_devices_idle(app->radio_device);
+        if(rssi > fine_rssi) {
+            fine_rssi = rssi;
+            fine_freq = f;
+        }
+    }
+
+    // === STAGE 3: Lock worker on exact frequency for decode ===
+    if(!app->was_on_signal) {
+        sc_hit_add(app, fine_freq, fine_rssi, NULL);
+        app->was_on_signal = true;
+    }
+    app->hopper_timeout = 10; // stay 500ms for decode
+    sc_set_freq_mod(app, fine_freq, SCModAM650);
+
+    // Auto-capture: after worker runs briefly, snapshot raw into signal slot
+    // (will be updated with protocol info if decode succeeds)
+    furi_delay_ms(100); // let worker collect some samples
+    if(app->raw_write > 20) {
+        // Find existing slot for this freq or get new one
+        uint8_t slot = 0xFF;
+        for(uint8_t i = 0; i < app->signal_count; i++) {
+            uint32_t d = app->signals[i].frequency > fine_freq ?
+                app->signals[i].frequency - fine_freq : fine_freq - app->signals[i].frequency;
+            if(d < 50000 && !app->signals[i].protocol_decoded) { slot = i; break; }
+        }
+        if(slot == 0xFF) slot = sc_find_slot(app);
+        SCSignal* sig = &app->signals[slot];
+        memset(sig, 0, sizeof(SCSignal));
+        sig->frequency = fine_freq;
+        sig->modulation = SCModAM650;
+        sig->raw_count = app->raw_write > SC_RAW_SAMPLES ? SC_RAW_SAMPLES : app->raw_write;
+        memcpy(sig->raw_data, app->raw_buf, sig->raw_count * sizeof(int32_t));
+        sc_analyze(sig);
+        if(slot >= app->signal_count && app->signal_count < SC_SIGNAL_SLOTS) app->signal_count++;
+    }
 }
 
 static void sc_tick_locked(SpectrumCheckApp* app) {
     if(!app->rx_active || app->current_freq != app->locked_freq) {
         sc_set_freq_mod(app, app->locked_freq, app->locked_mod_idx);
+        app->hopper_timeout = 20; // Give 1s for initial decode attempt
         return;
     }
     float rssi = subghz_devices_get_rssi(app->radio_device);
     if(rssi > app->trigger) {
-        app->hopper_timeout = 10;
+        app->hopper_timeout = 20; // Signal present — stay 1s
     } else if(app->hopper_timeout > 0) {
         app->hopper_timeout--;
     } else {
-        // Cycle preset
+        // Cycle preset after 1s of silence
         app->locked_mod_idx = (app->locked_mod_idx + 1) % SCModCount;
         sc_set_freq_mod(app, app->locked_freq, app->locked_mod_idx);
+        app->hopper_timeout = 20; // Give next preset 1s too
     }
 }
 
@@ -315,10 +372,17 @@ static void sc_process_decode(SpectrumCheckApp* app) {
 
 // ============== Drawing ==============
 static void sc_draw_status(Canvas* canvas, SpectrumCheckApp* app) {
-    char buf[42];
-    snprintf(buf, sizeof(buf), "%ld.%02ld %s[%s] %dsig",
-        app->current_freq / 1000000, (app->current_freq / 10000) % 100,
-        sc_state_names[app->radio_state], sc_mod_names[app->current_mod], app->signal_count);
+    char buf[44];
+    if(app->radio_state == SCRadioLocked) {
+        snprintf(buf, sizeof(buf), "\xE2\x96\xBA %ld.%03ld LOCK %s %d/%d",
+            app->locked_freq / 1000000 % 1000, app->locked_freq / 1000 % 1000,
+            sc_mod_names[app->locked_mod_idx],
+            app->locked_mod_idx + 1, SCModCount);
+    } else {
+        snprintf(buf, sizeof(buf), "%ld.%02ld %s[%s] %dsig",
+            app->current_freq / 1000000, (app->current_freq / 10000) % 100,
+            sc_state_names[app->radio_state], sc_mod_names[app->current_mod], app->signal_count);
+    }
     canvas_set_font(canvas, FontSecondary);
     canvas_draw_str(canvas, 0, 63, buf);
 }
@@ -484,10 +548,20 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
     if(ev->type != InputTypeShort && ev->type != InputTypeLong && ev->type != InputTypeRepeat) return;
     switch(ev->key) {
     case InputKeyUp:
+        if(app->current_view == SCViewFreqAnalyzer && app->radio_state == SCRadioHopping) {
+            // Switching TO spectrum — will stop worker on next tick
+        }
         app->current_view = app->current_view == 0 ? SCViewCount - 1 : app->current_view - 1;
         app->waveform_scroll = 0;
         break;
     case InputKeyDown:
+        if(app->current_view == SCViewSpectrum && app->spec_held_rssi > -95.0f) {
+            // Leaving spectrum — start hopper near the strongest signal
+            uint32_t best_freq = sc_spec_freqs[app->spec_held_ch];
+            for(uint8_t i = 0; i < SC_HOPPER_COUNT; i++) {
+                if(sc_hopper_freqs[i] == best_freq) { app->hopper_idx = i; break; }
+            }
+        }
         app->current_view = (app->current_view + 1) % SCViewCount;
         app->waveform_scroll = 0;
         break;
@@ -526,6 +600,7 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
     case InputKeyOk:
         if(ev->type == InputTypeLong) {
             if(app->current_view == SCViewFreqAnalyzer) {
+                // Long OK: cycle sort mode
                 app->hit_sort = (app->hit_sort + 1) % SCSortModes;
                 sc_hit_sort(app->hits, app->hit_count, app->hit_sort);
             } else if(app->signal_count > 0 && (app->current_view == SCViewDecoder || app->current_view == SCViewWaveform)) {
@@ -546,7 +621,7 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
                         app->locked_freq = freq;
                         app->locked_mod_idx = 0;
                         app->radio_state = SCRadioLocked;
-                        app->hopper_timeout = 0;
+                        app->hopper_timeout = 20; // 1s before first preset cycle
                     }
                 }
             } else if(app->current_view == SCViewWaveform) {
@@ -563,7 +638,7 @@ int32_t spectrum_check_app(void* p) {
     UNUSED(p);
     SpectrumCheckApp* app = malloc(sizeof(SpectrumCheckApp));
     memset(app, 0, sizeof(SpectrumCheckApp));
-    app->trigger = -80.0f;
+    app->trigger = -90.0f;
     app->current_freq = 433920000;
     app->current_mod = SCModAM650;
     app->radio_state = SCRadioHopping;
@@ -581,8 +656,12 @@ int32_t spectrum_check_app(void* p) {
     app->environment = subghz_environment_alloc();
     subghz_environment_set_protocol_registry(app->environment, (void*)&subghz_protocol_registry);
     app->receiver = subghz_receiver_alloc_init(app->environment);
-    subghz_receiver_set_filter(app->receiver, SubGhzProtocolFlag_Decodable);
+    subghz_receiver_set_filter(app->receiver, SubGhzProtocolFlag_Decodable | SubGhzProtocolFlag_BinRAW);
     subghz_receiver_set_rx_callback(app->receiver, sc_decode_cb, app);
+    // Get BinRAW decoder for RSSI feeding
+    SubGhzProtocolDecoderBase* bin_raw_base =
+        subghz_receiver_search_decoder_base_by_name(app->receiver, SUBGHZ_PROTOCOL_BIN_RAW_NAME);
+    app->bin_raw_decoder = (SubGhzProtocolDecoderBinRAW*)bin_raw_base;
 
     // Extra protocol registry (weather/tpms/pocsag)
     app->extra_environment = subghz_environment_alloc();
@@ -615,15 +694,20 @@ int32_t spectrum_check_app(void* p) {
             }
         }
         // Tick: radio management based on current view and state
-        if(app->current_view == SCViewSpectrum) {
-            sc_tick_spectrum(app);
-        } else if(app->radio_state == SCRadioLocked) {
+        if(app->radio_state == SCRadioLocked) {
             sc_tick_locked(app);
+        } else if(app->current_view == SCViewSpectrum) {
+            sc_tick_spectrum(app);
         } else {
             sc_tick_hopper(app);
         }
         // Process any pending decode from worker
         sc_process_decode(app);
+        // Feed RSSI to BinRAW decoder (needed for signal boundary detection)
+        if(app->rx_active && app->bin_raw_decoder) {
+            float rssi = subghz_devices_get_rssi(app->radio_device);
+            subghz_protocol_decoder_bin_raw_data_input_rssi(app->bin_raw_decoder, rssi);
+        }
         view_port_update(app->view_port);
     }
 

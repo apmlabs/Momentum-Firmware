@@ -13,6 +13,7 @@
 #include <lib/subghz/receiver.h>
 #include <lib/subghz/registry.h>
 #include <lib/subghz/protocols/base.h>
+#include <lib/subghz/protocols/bin_raw.h>
 #include <lib/subghz/environment.h>
 #include <lib/drivers/cc1101_regs.h>
 #include "helpers/radio_device_loader.h"
@@ -72,6 +73,7 @@ typedef struct {
     SubGhzReceiver* receiver;
     SubGhzEnvironment* extra_environment;
     SubGhzReceiver* extra_receiver;
+    SubGhzProtocolDecoderBinRAW* bin_raw_decoder;
     bool rx_active;
 
     // Radio state
