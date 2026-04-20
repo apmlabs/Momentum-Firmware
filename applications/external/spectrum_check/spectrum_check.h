@@ -9,6 +9,7 @@
 #include <lib/flipper_format/flipper_format.h>
 #include <lib/subghz/devices/devices.h>
 #include <lib/subghz/subghz_setting.h>
+#include <lib/subghz/subghz_worker.h>
 #include <lib/subghz/receiver.h>
 #include <lib/subghz/registry.h>
 #include <lib/subghz/protocols/base.h>
@@ -18,149 +19,106 @@
 
 #define TAG "SpectrumCheck"
 
-// Spectrum
-#define SC_NUM_CHANNELS 102
-#define SC_FREQ_BOTTOM_Y 50
-#define SC_FREQ_START_X 14
-
-// Signal library
-#define SC_MAX_SIGNALS 16
-#define SC_RAW_PER_SIGNAL 512
-
-// Thresholds
-#define SC_RSSI_MIN (-97.0f)
-#define SC_RSSI_MAX (-60.0f)
+#define SC_HIT_LOG_SIZE 32
+#define SC_SIGNAL_SLOTS 8
+#define SC_RAW_SAMPLES  256
+#define SC_SPEC_CH      32
+#define SC_RSSI_MIN     (-97.0f)
+#define SC_RSSI_MAX     (-60.0f)
 #define SC_TRIGGER_STEP 1
 
-// Views
+typedef enum { SCViewSpectrum, SCViewFreqAnalyzer, SCViewDecoder, SCViewWaveform, SCViewCount } SCView;
+typedef enum { SCRadioHopping, SCRadioLocked, SCRadioPaused } SCRadioState;
 typedef enum {
-    SCViewSpectrum,
-    SCViewFreqAnalyzer,
-    SCViewDecoder,
-    SCViewWaveform,
-    SCViewCount,
-} SCView;
-
-typedef enum {
-    SCWidthWide,
-    SCWidthNarrow,
-    SCWidthUltraWide,
-} SCWidth;
-
-typedef enum {
-    SCLogSortCount,
-    SCLogSortRSSI,
-    SCLogSortFreq,
-    SCLogSortRecent,
-    SCLogSortModes,
-} SCLogSort;
-
-// Modulation presets
-typedef enum {
-    SCModAM650,
-    SCModAM270,
-    SCModFM238,
-    SCModFM476,
-    SCModTPMS_FSK,   // 20kBaud 2FSK, 28.56kHz dev, 325kHz BW
-    SCModTPMS_OOK,   // 10kBaud OOK, 650kHz BW
-    SCModTPMS_GFSK,  // 20kBaud GFSK, 19kHz dev, 325kHz BW (Toyota)
-    SCModOOK_40k,    // 40kBaud OOK, 650kHz BW (short pulses)
-    SCModFSK_40k,    // 40kBaud 2FSK, 28kHz dev, 270kHz BW
-    SCModCount,
+    SCModAM650, SCModAM270, SCModFM238, SCModFM476,
+    SCModTPMS_FSK, SCModTPMS_OOK, SCModTPMS_GFSK, SCModOOK_40k, SCModFSK_40k, SCModCount
 } SCMod;
+typedef enum { SCSortCount, SCSortRSSI, SCSortFreq, SCSortRecent, SCSortModes } SCSort;
 
-// Frequency hit log entry
 typedef struct {
     uint32_t frequency;
-    uint8_t count;
-    uint8_t rssi_max;
-    uint8_t seq;
-} SCLogEntry;
+    uint8_t  count;
+    int8_t   rssi_max;
+    uint8_t  seq;
+    char     protocol[20];
+} SCHit;
 
-// One captured signal with its raw data
 typedef struct {
     uint32_t frequency;
-    SCMod modulation;
-    int32_t raw_data[SC_RAW_PER_SIGNAL]; // +duration=high, -duration=low
+    SCMod    modulation;
+    int32_t  raw_data[SC_RAW_SAMPLES];
     uint16_t raw_count;
-    // Decoded info
     uint16_t pulse_count;
     uint32_t total_duration_us;
     uint32_t min_pulse_us;
-    uint32_t est_rate_hz;
-    bool analyzed;
-    // Protocol decode result
-    char protocol_name[32];
-    char decoded_string[128];
-    bool protocol_decoded;
+    bool     analyzed;
+    char     protocol_name[32];
+    char     decoded_string[128];
+    bool     protocol_decoded;
 } SCSignal;
 
-// Main app state
 typedef struct {
     // System
     ViewPort* view_port;
     Gui* gui;
     FuriMessageQueue* event_queue;
-    FuriMutex* mutex;
     NotificationApp* notifications;
     bool running;
 
     // Radio
     const SubGhzDevice* radio_device;
+    SubGhzWorker* worker;
     SubGhzEnvironment* environment;
     SubGhzReceiver* receiver;
-    // Layer 3: extra protocols (weather, tpms, pocsag)
     SubGhzEnvironment* extra_environment;
     SubGhzReceiver* extra_receiver;
+    bool rx_active;
 
-    // Current state
-    SCView current_view;
-    uint32_t frequency;
-    SCMod modulation;
-    SCWidth width;
-
-    // Spectrum data
-    uint8_t channel_ss[SC_NUM_CHANNELS];
-    uint8_t channel_peak[32]; // peak-hold values (decay slowly)
-    float max_rssi;
-    uint8_t max_rssi_channel;
-    float held_rssi;          // held peak for display (3s hold)
-    uint8_t held_channel;
-    uint32_t held_tick;       // when the held value was set
-
-    // Frequency analyzer
-    float trigger;
-    bool signal_found;
-    uint32_t detected_freq;
-    float detected_rssi;
-    #define SC_MAX_LOG 16
-    SCLogEntry log[SC_MAX_LOG];
-    uint8_t log_size;
-    uint8_t log_seq;
-    SCLogSort log_sort;
-    uint8_t log_scroll;
-
-    // Lock mode: focus on one frequency, cycle presets to decode
-    bool locked;
+    // Radio state
+    SCRadioState radio_state;
+    uint32_t current_freq;
+    SCMod    current_mod;
+    float    trigger;
+    uint8_t  hopper_idx;
+    uint8_t  hopper_timeout;
     uint32_t locked_freq;
-    uint8_t locked_mod; // current modulation index being tried
+    uint8_t  locked_mod_idx;
+    bool     was_on_signal; // prevents duplicate hit logging per hop
 
-    // Signal library
-    SCSignal signals[SC_MAX_SIGNALS];
-    uint8_t signal_count;
-    uint8_t signal_selected; // which signal we're viewing in decoder/waveform
+    // Spectrum
+    uint8_t  spec_peak[SC_SPEC_CH];
+    float    spec_held_rssi;
+    uint8_t  spec_held_ch;
+    uint32_t spec_held_tick;
+    uint8_t  spec_decay;
 
-    // Waveform
+    // Hit Log
+    SCHit    hits[SC_HIT_LOG_SIZE];
+    uint8_t  hit_count;
+    uint8_t  hit_seq;
+    SCSort   hit_sort;
+    uint8_t  hit_cursor;
+
+    // Signal Library
+    SCSignal signals[SC_SIGNAL_SLOTS];
+    uint8_t  signal_count;
+    uint8_t  signal_selected;
+
+    // Raw circular buffer (filled by worker pair callback)
+    int32_t  raw_buf[SC_RAW_SAMPLES];
+    volatile uint16_t raw_write;
+
+    // Pending decode (lock-free: worker writes, main loop reads)
+    volatile bool pending_decode;
+    char     pending_name[32];
+    char     pending_str[128];
+    uint32_t pending_freq;
+    uint8_t  pending_mod;
+
+    // UI
+    SCView   current_view;
     uint16_t waveform_scroll;
-    uint8_t waveform_zoom;
-
-    // Capture state
-    bool capturing;       // currently capturing raw data
-    bool capture_done;    // capture finished, data held
-
-    // Worker
-    FuriThread* worker_thread;
-    bool worker_running;
+    uint8_t  waveform_zoom;
 } SpectrumCheckApp;
 
 int32_t spectrum_check_app(void* p);
