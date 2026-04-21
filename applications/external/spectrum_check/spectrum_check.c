@@ -152,13 +152,11 @@ static void sc_raw_pair_cb(void* ctx, bool level, uint32_t duration) {
     app->raw_buf[app->raw_write % SC_RAW_SAMPLES] = level ? (int32_t)duration : -(int32_t)duration;
     app->raw_write++;
     subghz_receiver_decode(app->receiver, level, duration);
-    if(app->extra_receiver) subghz_receiver_decode(app->extra_receiver, level, duration);
 }
 
 static void sc_overrun_cb(void* ctx) {
     SpectrumCheckApp* app = ctx;
     subghz_receiver_reset(app->receiver);
-    if(app->extra_receiver) subghz_receiver_reset(app->extra_receiver);
 }
 
 // Decode callback: fires from worker thread when protocol matched. Lock-free.
@@ -201,7 +199,6 @@ static void sc_set_freq_mod(SpectrumCheckApp* app, uint32_t freq, SCMod mod) {
     app->current_freq = freq;
     app->current_mod = mod;
     subghz_receiver_reset(app->receiver);
-    if(app->extra_receiver) subghz_receiver_reset(app->extra_receiver);
     app->raw_write = 0;
     sc_rx_start(app);
 }
@@ -979,23 +976,25 @@ int32_t spectrum_check_app(void* p) {
     subghz_devices_init();
     app->radio_device = radio_device_loader_set(NULL, SubGhzRadioDeviceTypeInternal);
 
-    // Main protocol registry (50+ protocols)
+    // Build combined protocol registry (firmware + weather/tpms/pocsag)
+    const SubGhzProtocolRegistry* fw_reg = (const SubGhzProtocolRegistry*)&subghz_protocol_registry;
+    size_t fw_count = fw_reg->size;
+    size_t extra_count = sc_extra_protocol_registry.size;
+    size_t total = fw_count + extra_count;
+    app->combined_protocols = malloc(total * sizeof(const SubGhzProtocol*));
+    memcpy(app->combined_protocols, fw_reg->items, fw_count * sizeof(const SubGhzProtocol*));
+    memcpy(app->combined_protocols + fw_count, sc_extra_protocol_registry.items, extra_count * sizeof(const SubGhzProtocol*));
+    app->combined_registry = malloc(sizeof(SubGhzProtocolRegistry));
+    memcpy(app->combined_registry, &(SubGhzProtocolRegistry){ .items = app->combined_protocols, .size = total }, sizeof(SubGhzProtocolRegistry));
+
     app->environment = subghz_environment_alloc();
-    subghz_environment_set_protocol_registry(app->environment, (void*)&subghz_protocol_registry);
+    subghz_environment_set_protocol_registry(app->environment, (void*)app->combined_registry);
     app->receiver = subghz_receiver_alloc_init(app->environment);
     subghz_receiver_set_filter(app->receiver, SubGhzProtocolFlag_Decodable | SubGhzProtocolFlag_BinRAW);
     subghz_receiver_set_rx_callback(app->receiver, sc_decode_cb, app);
-    // Get BinRAW decoder for RSSI feeding
     SubGhzProtocolDecoderBase* bin_raw_base =
         subghz_receiver_search_decoder_base_by_name(app->receiver, SUBGHZ_PROTOCOL_BIN_RAW_NAME);
     app->bin_raw_decoder = (SubGhzProtocolDecoderBinRAW*)bin_raw_base;
-
-    // Extra protocol registry (weather/tpms/pocsag)
-    app->extra_environment = subghz_environment_alloc();
-    subghz_environment_set_protocol_registry(app->extra_environment, (void*)&sc_extra_protocol_registry);
-    app->extra_receiver = subghz_receiver_alloc_init(app->extra_environment);
-    subghz_receiver_set_filter(app->extra_receiver, SubGhzProtocolFlag_Decodable);
-    subghz_receiver_set_rx_callback(app->extra_receiver, sc_decode_cb, app);
 
     // Worker: custom pair callback for raw capture + decode
     app->worker = subghz_worker_alloc();
@@ -1054,8 +1053,8 @@ int32_t spectrum_check_app(void* p) {
     subghz_worker_free(app->worker);
     subghz_receiver_free(app->receiver);
     subghz_environment_free(app->environment);
-    subghz_receiver_free(app->extra_receiver);
-    subghz_environment_free(app->extra_environment);
+    free(app->combined_protocols);
+    free(app->combined_registry);
     radio_device_loader_end(app->radio_device);
     subghz_devices_deinit();
     furi_record_close(RECORD_NOTIFICATION);

@@ -74,9 +74,9 @@ typedef struct {
     SubGhzWorker* worker;
     SubGhzEnvironment* environment;
     SubGhzReceiver* receiver;
-    SubGhzEnvironment* extra_environment;
-    SubGhzReceiver* extra_receiver;
     SubGhzProtocolDecoderBinRAW* bin_raw_decoder;
+    const SubGhzProtocol** combined_protocols; // merged firmware + extra
+    SubGhzProtocolRegistry* combined_registry;
     bool rx_active;
 
     // Radio state
