@@ -82,7 +82,10 @@ static void sc_hit_add(SpectrumCheckApp* app, uint32_t freq, float rssi, const c
             if(app->hits[i].count < 255) app->hits[i].count++;
             if(dbm > app->hits[i].rssi_max) app->hits[i].rssi_max = dbm;
             app->hits[i].seq = app->hit_seq++;
-            if(proto && proto[0] && !app->hits[i].protocol[0]) strncpy(app->hits[i].protocol, proto, 19);
+            if(proto && proto[0]) {
+                if(!app->hits[i].protocol[0] || strcmp(app->hits[i].protocol, "BinRAW") == 0)
+                    strncpy(app->hits[i].protocol, proto, 19);
+            }
             return;
         }
     }
@@ -116,12 +119,11 @@ static void sc_analyze(SCSignal* s) {
 }
 
 // ============== Save ==============
-static void sc_save(SpectrumCheckApp* app, SCSignal* sig) {
+static void sc_save(SpectrumCheckApp* app, SCSignal* sig, const char* filename) {
     Storage* st = furi_record_open(RECORD_STORAGE);
     storage_simply_mkdir(st, "/ext/subghz");
-    storage_simply_mkdir(st, "/ext/subghz/spectrum_check");
     FuriString* p = furi_string_alloc();
-    furi_string_printf(p, "/ext/subghz/spectrum_check/%ld_%s.sub", sig->frequency / 1000, sc_mod_names[sig->modulation]);
+    furi_string_printf(p, "/ext/subghz/%s.sub", filename);
     FlipperFormat* ff = flipper_format_file_alloc(st);
     do {
         if(!flipper_format_file_open_always(ff, furi_string_get_cstr(p))) break;
@@ -167,7 +169,7 @@ static void sc_decode_cb(SubGhzReceiver* rx, SubGhzProtocolDecoderBase* db, void
     strncpy(app->pending_name, db->protocol->name, 31);
     FuriString* text = furi_string_alloc();
     subghz_protocol_decoder_base_get_string(db, text);
-    strncpy(app->pending_str, furi_string_get_cstr(text), 127);
+    strncpy(app->pending_str, furi_string_get_cstr(text), 255);
     furi_string_free(text);
     app->pending_freq = app->current_freq;
     app->pending_mod = app->current_mod;
@@ -208,11 +210,35 @@ static void sc_set_freq_mod(SpectrumCheckApp* app, uint32_t freq, SCMod mod) {
 static void sc_update_noise_floor(SpectrumCheckApp* app, float rssi);
 static bool sc_signal_present(SpectrumCheckApp* app, float rssi);
 
+// Spectrum bandwidth presets (from external Spectrum Analyzer app)
+static const char* sc_bw_names[] = {"Wide", "Med", "Narrow"};
+static const uint8_t sc_bw_preset_wide[] = {
+    CC1101_FSCTRL0, 0x00, CC1101_FSCTRL1, 0x12,
+    CC1101_MDMCFG4, 0x17, // 650kHz BW
+    CC1101_AGCCTRL2, 0xC0,
+    CC1101_TEST2, 0x88, CC1101_TEST1, 0x31, CC1101_TEST0, 0x09,
+    0, 0,
+    0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+static const uint8_t sc_bw_preset_med[] = {
+    CC1101_FSCTRL0, 0x00, CC1101_FSCTRL1, 0x12,
+    CC1101_MDMCFG4, 0x6C, // 270kHz BW
+    CC1101_AGCCTRL2, 0xC0,
+    CC1101_TEST2, 0x88, CC1101_TEST1, 0x31, CC1101_TEST0, 0x09,
+    0, 0,
+    0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+static const uint8_t sc_bw_preset_narrow[] = {
+    CC1101_FSCTRL0, 0x00, CC1101_FSCTRL1, 0x00,
+    CC1101_MDMCFG4, 0xFC, // 58kHz BW
+    CC1101_AGCCTRL0, 0x30, CC1101_AGCCTRL1, 0x00, CC1101_AGCCTRL2, 0x84,
+    CC1101_TEST2, 0x88, CC1101_TEST1, 0x31, CC1101_TEST0, 0x09,
+    0, 0,
+    0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+static const uint8_t* sc_bw_presets[] = {sc_bw_preset_wide, sc_bw_preset_med, sc_bw_preset_narrow};
+
 static void sc_tick_spectrum(SpectrumCheckApp* app) {
-    // Stop worker — spectrum just reads RSSI
     sc_rx_end(app);
     subghz_devices_idle(app->radio_device);
-    subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetOok650Async, NULL);
+    subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetCustom, (uint8_t*)sc_bw_presets[app->spec_bw]);
 
     float best = -200.0f;
     float worst = 0.0f;
@@ -221,7 +247,7 @@ static void sc_tick_spectrum(SpectrumCheckApp* app) {
         subghz_devices_set_frequency(app->radio_device, sc_spec_freqs[i]);
         subghz_devices_flush_rx(app->radio_device);
         subghz_devices_set_rx(app->radio_device);
-        furi_delay_ms(2);
+        furi_delay_ms(app->spec_bw == 2 ? 4 : 2); // Narrow needs longer AGC settle
         float rssi = subghz_devices_get_rssi(app->radio_device);
         subghz_devices_idle(app->radio_device);
 
@@ -231,15 +257,12 @@ static void sc_tick_spectrum(SpectrumCheckApp* app) {
         if(rssi > best) { best = rssi; best_ch = i; }
         if(rssi < worst) worst = rssi;
     }
-    // Update noise floor from the quietest channel in this sweep
     sc_update_noise_floor(app, worst);
-    // Slow decay every 5th tick
     if(++app->spec_decay >= 5) {
         app->spec_decay = 0;
         for(uint8_t i = 0; i < SC_SPEC_CH; i++)
             if(app->spec_peak[i] > 0) app->spec_peak[i]--;
     }
-    // Hold peak info for 3 seconds
     if(best > app->spec_held_rssi || furi_get_tick() - app->spec_held_tick > 3000) {
         app->spec_held_rssi = best;
         app->spec_held_ch = best_ch;
@@ -475,6 +498,17 @@ static void sc_tick_locked(SpectrumCheckApp* app) {
     app->hopper_timeout = 40;
 }
 
+static void sc_tick_camp(SpectrumCheckApp* app) {
+    // Camp uses locked mode but doesn't auto-cycle modulation
+    if(!app->rx_active || app->current_freq != app->locked_freq ||
+       app->current_mod != sc_try_mods[app->camp_mod_idx % SC_TRY_MOD_COUNT]) {
+        sc_set_freq_mod(app, app->locked_freq, sc_try_mods[app->camp_mod_idx % SC_TRY_MOD_COUNT]);
+        if(!app->camp_start_tick) app->camp_start_tick = furi_get_tick();
+    }
+    float rssi = subghz_devices_get_rssi(app->radio_device);
+    sc_update_noise_floor(app, rssi);
+}
+
 // Process pending decode from worker thread
 static void sc_process_decode(SpectrumCheckApp* app) {
     if(!app->pending_decode) return;
@@ -503,25 +537,31 @@ static void sc_process_decode(SpectrumCheckApp* app) {
     sig->raw_count = app->raw_write > SC_SIG_SAMPLES ? SC_SIG_SAMPLES : app->raw_write;
     memcpy(sig->raw_data, app->raw_buf, sig->raw_count * sizeof(int32_t));
     strncpy(sig->protocol_name, app->pending_name, 31);
-    strncpy(sig->decoded_string, app->pending_str, 127);
+    strncpy(sig->decoded_string, app->pending_str, 255);
     sig->protocol_decoded = true;
     sc_analyze(sig);
     if(slot >= app->signal_count && app->signal_count < SC_SIGNAL_SLOTS) app->signal_count++;
     app->signal_selected = slot;
     app->pending_decode = false;
+    // Update camp display
+    if(app->current_view == SCViewCamp)
+        strncpy(app->camp_last_proto, app->pending_name, 31);
 }
 
 // ============== Drawing ==============
 static void sc_draw_status(Canvas* canvas, SpectrumCheckApp* app) {
     char buf[48];
+    static const char* view_names[] = {"SPEC","FREQ","CAMP","DEC","WAVE"};
     if(app->radio_state == SCRadioLocked) {
         SCMod cur_mod = sc_try_mods[app->locked_mod_idx % SC_TRY_MOD_COUNT];
-        snprintf(buf, sizeof(buf), "LOCK %ld.%03ld %s %d/%d NF:%.0f",
+        snprintf(buf, sizeof(buf), "%s LOCK %ld.%03ld %s %d/%d NF:%.0f",
+            view_names[app->current_view],
             app->locked_freq / 1000000 % 1000, app->locked_freq / 1000 % 1000,
             sc_mod_names[cur_mod],
             (app->locked_mod_idx % SC_TRY_MOD_COUNT) + 1, SC_TRY_MOD_COUNT, (double)app->noise_floor);
     } else {
-        snprintf(buf, sizeof(buf), "%ld.%02ld %s %dsig NF:%.0f",
+        snprintf(buf, sizeof(buf), "%s %ld.%02ld %s %dsig NF:%.0f",
+            view_names[app->current_view],
             app->current_freq / 1000000, (app->current_freq / 10000) % 100,
             sc_state_names[app->radio_state], app->signal_count, (double)app->noise_floor);
     }
@@ -564,9 +604,11 @@ static void sc_draw_spectrum(Canvas* canvas, SpectrumCheckApp* app) {
     // Top info
     if(app->spec_held_rssi > -90.0f) {
         uint32_t pf = sc_spec_freqs[app->spec_held_ch];
-        snprintf(buf, sizeof(buf), "%.0fdBm %ld.%02ld", (double)app->spec_held_rssi, pf / 1000000, (pf / 10000) % 100);
-        canvas_draw_str(canvas, 0, 7, buf);
+        snprintf(buf, sizeof(buf), "%.0fdBm %ld.%02ld [%s]", (double)app->spec_held_rssi, pf / 1000000, (pf / 10000) % 100, sc_bw_names[app->spec_bw]);
+    } else {
+        snprintf(buf, sizeof(buf), "BW: %s  L/R:change", sc_bw_names[app->spec_bw]);
     }
+    canvas_draw_str(canvas, 0, 7, buf);
 }
 
 static void sc_draw_freq(Canvas* canvas, SpectrumCheckApp* app) {
@@ -617,29 +659,87 @@ static void sc_draw_decoder(Canvas* canvas, SpectrumCheckApp* app) {
     canvas_set_font(canvas, FontSecondary);
     if(app->signal_count == 0) {
         canvas_draw_str(canvas, 4, 20, "No decoded signals yet.");
-        canvas_draw_str(canvas, 4, 32, "Signals auto-appear when");
-        canvas_draw_str(canvas, 4, 44, "protocols are identified.");
+        canvas_draw_str(canvas, 4, 32, "Hopper auto-captures signals.");
+        canvas_draw_str(canvas, 4, 44, "L/R: browse  LongOK: save");
         return;
     }
     SCSignal* sig = &app->signals[app->signal_selected];
-    snprintf(buf, sizeof(buf), "%d/%d  %ld.%03ld %s",
-        app->signal_selected + 1, app->signal_count,
-        sig->frequency / 1000000, (sig->frequency / 1000) % 1000, sc_mod_names[sig->modulation]);
+    // Header: slot, freq, mod, quality indicator
+    const char* type_icon = sig->protocol_decoded ? (strcmp(sig->protocol_name, "BinRAW") == 0 ? "BIN" : "DEC") : "RAW";
+    snprintf(buf, sizeof(buf), "%d/%d %s %ld.%03ld %s %dp",
+        app->signal_selected + 1, app->signal_count, type_icon,
+        sig->frequency / 1000000, (sig->frequency / 1000) % 1000,
+        sc_mod_names[sig->modulation], sig->pulse_count);
     canvas_draw_str(canvas, 0, 7, buf);
     if(sig->protocol_decoded) {
         canvas_set_font(canvas, FontPrimary);
         canvas_draw_str(canvas, 0, 19, sig->protocol_name);
         canvas_set_font(canvas, FontSecondary);
+        // Scrollable decoded text
         const char* p = sig->decoded_string;
+        // Skip lines based on decoder_scroll
+        for(uint8_t skip = 0; skip < app->decoder_scroll && *p; skip++) {
+            const char* nl = strchr(p, '\n');
+            if(nl) p = nl + 1; else { p += strlen(p); break; }
+        }
         uint8_t y = 29;
         for(uint8_t l = 0; l < 4 && *p && y <= 54; l++) {
             const char* nl = strchr(p, '\n');
             uint8_t len = nl ? (uint8_t)(nl - p) : strlen(p);
-            if(len > 32) len = 32;
-            char tmp[33]; memcpy(tmp, p, len); tmp[len] = 0;
+            if(len > 42) len = 42;
+            char tmp[43]; memcpy(tmp, p, len); tmp[len] = 0;
             canvas_draw_str(canvas, 0, y, tmp);
             y += 8; p += len; if(*p == '\n') p++;
         }
+        // Scroll indicator
+        if(app->decoder_scroll > 0) canvas_draw_str(canvas, 122, 22, "^");
+        if(*p) canvas_draw_str(canvas, 122, 54, "v");
+    } else if(sig->analyzed) {
+        snprintf(buf, sizeof(buf), "Coherent: %d pulses", sig->pulse_count);
+        canvas_draw_str(canvas, 0, 22, buf);
+        snprintf(buf, sizeof(buf), "Min pulse: %ldus", sig->min_pulse_us);
+        canvas_draw_str(canvas, 0, 32, buf);
+        snprintf(buf, sizeof(buf), "Samples: %d", sig->raw_count);
+        canvas_draw_str(canvas, 0, 42, buf);
+    }
+}
+
+static void sc_draw_camp(Canvas* canvas, SpectrumCheckApp* app) {
+    char buf[64];
+    SCMod mod = sc_try_mods[app->camp_mod_idx % SC_TRY_MOD_COUNT];
+    canvas_set_font(canvas, FontPrimary);
+    if(app->radio_state != SCRadioLocked) {
+        canvas_draw_str(canvas, 0, 12, "CAMP MODE");
+        canvas_set_font(canvas, FontSecondary);
+        canvas_draw_str(canvas, 0, 26, "No frequency locked.");
+        canvas_draw_str(canvas, 0, 38, "Go to Spectrum or Freq Analyzer,");
+        canvas_draw_str(canvas, 0, 50, "press OK to lock a frequency.");
+    } else {
+        uint32_t elapsed = (furi_get_tick() - app->camp_start_tick) / 1000;
+        uint32_t mins = elapsed / 60, secs = elapsed % 60;
+        snprintf(buf, sizeof(buf), "CAMP %ld.%03ld [%s]",
+            app->locked_freq / 1000000, (app->locked_freq / 1000) % 1000, sc_mod_names[mod]);
+        canvas_draw_str(canvas, 0, 12, buf);
+        canvas_set_font(canvas, FontSecondary);
+        snprintf(buf, sizeof(buf), "Time: %ld:%02ld  Sig:%d", mins, secs, app->signal_count);
+        canvas_draw_str(canvas, 0, 24, buf);
+        // RSSI bar
+        float rssi = app->rx_active ? subghz_devices_get_rssi(app->radio_device) : -127.0f;
+        int8_t bar = (int8_t)(rssi + 100);
+        if(bar < 0) bar = 0;
+        if(bar > 60) bar = 60;
+        canvas_draw_frame(canvas, 0, 28, 62, 8);
+        if(bar > 0) canvas_draw_box(canvas, 1, 29, bar, 6);
+        snprintf(buf, sizeof(buf), "%.0fdBm", (double)rssi);
+        canvas_draw_str(canvas, 66, 35, buf);
+        // Last decode
+        if(app->camp_last_proto[0]) {
+            snprintf(buf, sizeof(buf), "Decoded: %s", app->camp_last_proto);
+            canvas_draw_str(canvas, 0, 46, buf);
+        } else {
+            canvas_draw_str(canvas, 0, 46, "Waiting for signal...");
+        }
+        canvas_draw_str(canvas, 0, 56, "L/R:mod  LongOK:save");
     }
 }
 
@@ -649,6 +749,7 @@ static void sc_draw_waveform(Canvas* canvas, SpectrumCheckApp* app) {
     SCSignal* sig = &app->signals[app->signal_selected];
     if(sig->raw_count == 0) { canvas_set_font(canvas, FontSecondary); canvas_draw_str(canvas, 10, 32, "Empty"); return; }
     static const uint32_t scales[] = {50, 100, 200, 500, 1000, 2000};
+    static const char* scale_labels[] = {"50us", "100us", "200us", "500us", "1ms", "2ms"};
     uint8_t z = app->waveform_zoom < 6 ? app->waveform_zoom : 0;
     uint32_t us_px = scales[z];
     uint16_t idx = app->waveform_scroll; uint32_t rem = 0; bool lv = false;
@@ -661,9 +762,12 @@ static void sc_draw_waveform(Canvas* canvas, SpectrumCheckApp* app) {
         }
     }
     canvas_set_font(canvas, FontSecondary);
-    snprintf(buf, sizeof(buf), "%d/%d %s %ldus/px",
+    // Bottom: slot, name, zoom, position
+    uint8_t pct = sig->raw_count > 0 ? (app->waveform_scroll * 100 / sig->raw_count) : 0;
+    snprintf(buf, sizeof(buf), "%d/%d %s [%s] %d%%",
         app->signal_selected + 1, app->signal_count,
-        sig->protocol_decoded ? sig->protocol_name : sc_mod_names[sig->modulation], us_px);
+        sig->protocol_decoded ? sig->protocol_name : sc_mod_names[sig->modulation],
+        scale_labels[z], pct);
     canvas_draw_str(canvas, 0, 63, buf);
 }
 
@@ -675,11 +779,12 @@ static void sc_draw_cb(Canvas* canvas, void* ctx) {
     switch(app->current_view) {
     case SCViewSpectrum: sc_draw_spectrum(canvas, app); break;
     case SCViewFreqAnalyzer: sc_draw_freq(canvas, app); break;
+    case SCViewCamp: sc_draw_camp(canvas, app); break;
     case SCViewDecoder: sc_draw_decoder(canvas, app); break;
     case SCViewWaveform: sc_draw_waveform(canvas, app); break;
     default: break;
     }
-    if(app->current_view != SCViewWaveform) sc_draw_status(canvas, app);
+    if(app->current_view != SCViewWaveform && app->current_view != SCViewCamp) sc_draw_status(canvas, app);
 }
 
 // ============== Input ==============
@@ -691,30 +796,40 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
     if(ev->type != InputTypeShort && ev->type != InputTypeLong && ev->type != InputTypeRepeat) return;
     switch(ev->key) {
     case InputKeyUp:
-        if(app->current_view == SCViewFreqAnalyzer && app->radio_state == SCRadioHopping) {
-            // Switching TO spectrum — will stop worker on next tick
-        }
+        if(app->current_view == SCViewCamp) { app->camp_start_tick = 0; app->camp_last_proto[0] = 0; }
         app->current_view = app->current_view == 0 ? SCViewCount - 1 : app->current_view - 1;
         app->waveform_scroll = 0;
+        app->decoder_scroll = 0;
         break;
     case InputKeyDown:
         if(app->current_view == SCViewSpectrum && app->spec_held_rssi > -95.0f) {
-            // Leaving spectrum — start hopper near the strongest signal
             uint32_t best_freq = sc_spec_freqs[app->spec_held_ch];
             for(uint8_t i = 0; i < SC_HOPPER_COUNT; i++) {
                 if(sc_hopper_freqs[i] == best_freq) { app->hopper_idx = i; break; }
             }
         }
+        if(app->current_view == SCViewCamp) { app->camp_start_tick = 0; app->camp_last_proto[0] = 0; }
         app->current_view = (app->current_view + 1) % SCViewCount;
         app->waveform_scroll = 0;
+        app->decoder_scroll = 0;
         break;
     case InputKeyLeft:
-        if(app->current_view == SCViewFreqAnalyzer) {
+        if(app->current_view == SCViewSpectrum) {
+            if(app->spec_bw > 0) app->spec_bw--;
+            memset(app->spec_peak, 0, sizeof(app->spec_peak));
+        } else if(app->current_view == SCViewFreqAnalyzer) {
             if(ev->type == InputTypeLong || ev->type == InputTypeRepeat) {
                 app->trigger -= SC_TRIGGER_STEP; if(app->trigger < SC_RSSI_MIN) app->trigger = SC_RSSI_MIN;
             } else { if(app->hit_cursor > 0) app->hit_cursor--; }
+        } else if(app->current_view == SCViewCamp) {
+            if(app->camp_mod_idx > 0) app->camp_mod_idx--; else app->camp_mod_idx = SC_TRY_MOD_COUNT - 1;
+            if(app->radio_state == SCRadioLocked) {
+                sc_set_freq_mod(app, app->locked_freq, sc_try_mods[app->camp_mod_idx % SC_TRY_MOD_COUNT]);
+                app->camp_start_tick = furi_get_tick();
+                app->camp_last_proto[0] = 0;
+            }
         } else if(app->current_view == SCViewDecoder) {
-            if(app->signal_selected > 0) app->signal_selected--;
+            if(app->signal_selected > 0) { app->signal_selected--; app->decoder_scroll = 0; }
         } else if(app->current_view == SCViewWaveform) {
             if(ev->type == InputTypeLong || ev->type == InputTypeRepeat) {
                 if(app->signal_selected > 0) { app->signal_selected--; app->waveform_scroll = 0; }
@@ -722,12 +837,22 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
         }
         break;
     case InputKeyRight:
-        if(app->current_view == SCViewFreqAnalyzer) {
+        if(app->current_view == SCViewSpectrum) {
+            if(app->spec_bw < 2) app->spec_bw++;
+            memset(app->spec_peak, 0, sizeof(app->spec_peak));
+        } else if(app->current_view == SCViewFreqAnalyzer) {
             if(ev->type == InputTypeLong || ev->type == InputTypeRepeat) {
                 app->trigger += SC_TRIGGER_STEP; if(app->trigger > SC_RSSI_MAX) app->trigger = SC_RSSI_MAX;
             } else { if(app->hit_cursor + 1 < app->hit_count) app->hit_cursor++; }
+        } else if(app->current_view == SCViewCamp) {
+            app->camp_mod_idx = (app->camp_mod_idx + 1) % SC_TRY_MOD_COUNT;
+            if(app->radio_state == SCRadioLocked) {
+                sc_set_freq_mod(app, app->locked_freq, sc_try_mods[app->camp_mod_idx % SC_TRY_MOD_COUNT]);
+                app->camp_start_tick = furi_get_tick();
+                app->camp_last_proto[0] = 0;
+            }
         } else if(app->current_view == SCViewDecoder) {
-            if(app->signal_selected + 1 < app->signal_count) app->signal_selected++;
+            if(app->signal_selected + 1 < app->signal_count) { app->signal_selected++; app->decoder_scroll = 0; }
         } else if(app->current_view == SCViewWaveform) {
             if(ev->type == InputTypeLong || ev->type == InputTypeRepeat) {
                 if(app->signal_selected + 1 < app->signal_count) { app->signal_selected++; app->waveform_scroll = 0; }
@@ -743,15 +868,26 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
     case InputKeyOk:
         if(ev->type == InputTypeLong) {
             if(app->current_view == SCViewFreqAnalyzer) {
-                // Long OK: cycle sort mode
                 app->hit_sort = (app->hit_sort + 1) % SCSortModes;
                 sc_hit_sort(app->hits, app->hit_count, app->hit_sort);
-            } else if(app->signal_count > 0 && (app->current_view == SCViewDecoder || app->current_view == SCViewWaveform)) {
+            } else if(app->signal_count > 0 && (app->current_view == SCViewDecoder || app->current_view == SCViewWaveform || app->current_view == SCViewCamp)) {
+                // Long OK: save with keyboard
                 SCSignal* s = &app->signals[app->signal_selected];
-                if(s->raw_count > 0) sc_save(app, s);
+                if(s->raw_count > 0) {
+                    app->save_slot = app->signal_selected;
+                    // Auto-generate default filename
+                    if(s->protocol_decoded && strcmp(s->protocol_name, "BinRAW") != 0)
+                        snprintf(app->save_filename, sizeof(app->save_filename), "%s_%ld", s->protocol_name, s->frequency / 1000);
+                    else
+                        snprintf(app->save_filename, sizeof(app->save_filename), "SC_%ld_%s", s->frequency / 1000, sc_mod_names[s->modulation]);
+                    app->show_keyboard = true;
+                }
             }
         } else if(ev->type == InputTypeShort) {
-            if(app->current_view == SCViewSpectrum || app->current_view == SCViewFreqAnalyzer) {
+            if(app->current_view == SCViewDecoder) {
+                // OK short: scroll decoded text
+                if(app->signal_count > 0) app->decoder_scroll++;
+            } else if(app->current_view == SCViewSpectrum || app->current_view == SCViewFreqAnalyzer) {
                 if(app->radio_state == SCRadioLocked) {
                     app->radio_state = SCRadioHopping;
                 } else {
@@ -762,9 +898,9 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
                         freq = app->hits[app->hit_cursor].frequency;
                     if(freq) {
                         app->locked_freq = freq;
-                        app->locked_mod_idx = 0; // Start from first try_mod (AM650)
+                        app->locked_mod_idx = 0;
                         app->radio_state = SCRadioLocked;
-                        app->hopper_timeout = 40; // 2s before first preset cycle
+                        app->hopper_timeout = 40;
                     }
                 }
             } else if(app->current_view == SCViewWaveform) {
@@ -774,6 +910,53 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
         break;
     default: break;
     }
+}
+
+// ============== Keyboard Save (ProtoView pattern) ==============
+static void sc_keyboard_done_cb(void* ctx) {
+    SpectrumCheckApp* app = ctx;
+    // Save the signal with the user-chosen filename
+    if(app->save_slot < app->signal_count && app->save_filename[0]) {
+        sc_save(app, &app->signals[app->save_slot], app->save_filename);
+    }
+    // Stop the view dispatcher to return to our main loop
+    view_dispatcher_stop(app->view_dispatcher);
+}
+
+static bool sc_keyboard_nav_cb(void* ctx) {
+    UNUSED(ctx);
+    return false; // Returning false stops the view dispatcher (user pressed Back)
+}
+
+static void sc_show_keyboard(SpectrumCheckApp* app) {
+    // Stop radio while in keyboard
+    sc_rx_end(app);
+
+    // Swap ViewPort for ViewDispatcher+TextInput
+    gui_remove_view_port(app->gui, app->view_port);
+
+    ViewDispatcher* vd = view_dispatcher_alloc();
+    TextInput* ti = text_input_alloc();
+    view_dispatcher_set_navigation_event_callback(vd, sc_keyboard_nav_cb);
+    view_dispatcher_set_event_callback_context(vd, app);
+    view_dispatcher_add_view(vd, 0, text_input_get_view(ti));
+    view_dispatcher_switch_to_view(vd, 0);
+
+    text_input_set_header_text(ti, "Name signal");
+    text_input_set_result_callback(ti, sc_keyboard_done_cb, app, app->save_filename, sizeof(app->save_filename), false);
+
+    app->view_dispatcher = vd;
+    view_dispatcher_attach_to_gui(vd, app->gui, ViewDispatcherTypeFullscreen);
+    view_dispatcher_run(vd); // Blocks until done or back
+
+    // Cleanup and restore
+    view_dispatcher_remove_view(vd, 0);
+    text_input_free(ti);
+    view_dispatcher_free(vd);
+    app->view_dispatcher = NULL;
+
+    gui_add_view_port(app->gui, app->view_port, GuiLayerFullscreen);
+    app->show_keyboard = false;
 }
 
 // ============== App Entry ==============
@@ -838,7 +1021,9 @@ int32_t spectrum_check_app(void* p) {
             }
         }
         // Tick: radio management based on current view and state
-        if(app->radio_state == SCRadioLocked) {
+        if(app->current_view == SCViewCamp && app->radio_state == SCRadioLocked) {
+            sc_tick_camp(app);
+        } else if(app->radio_state == SCRadioLocked) {
             sc_tick_locked(app);
         } else if(app->current_view == SCViewSpectrum) {
             sc_tick_spectrum(app);
@@ -853,6 +1038,11 @@ int32_t spectrum_check_app(void* p) {
             subghz_protocol_decoder_bin_raw_data_input_rssi(app->bin_raw_decoder, rssi);
         }
         view_port_update(app->view_port);
+
+        // Keyboard save flow (blocks main loop while keyboard is shown)
+        if(app->show_keyboard) {
+            sc_show_keyboard(app);
+        }
     }
 
     // Cleanup

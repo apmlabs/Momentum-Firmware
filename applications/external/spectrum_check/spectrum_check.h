@@ -3,6 +3,8 @@
 #include <furi.h>
 #include <furi_hal.h>
 #include <gui/gui.h>
+#include <gui/modules/text_input.h>
+#include <gui/view_dispatcher.h>
 #include <input/input.h>
 #include <notification/notification_messages.h>
 #include <storage/storage.h>
@@ -23,13 +25,13 @@
 #define SC_HIT_LOG_SIZE 32
 #define SC_SIGNAL_SLOTS 8
 #define SC_RAW_SAMPLES  2048
-#define SC_SIG_SAMPLES  512
+#define SC_SIG_SAMPLES  1024
 #define SC_SPEC_CH      32
 #define SC_RSSI_MIN     (-97.0f)
 #define SC_RSSI_MAX     (-60.0f)
 #define SC_TRIGGER_STEP 1
 
-typedef enum { SCViewSpectrum, SCViewFreqAnalyzer, SCViewDecoder, SCViewWaveform, SCViewCount } SCView;
+typedef enum { SCViewSpectrum, SCViewFreqAnalyzer, SCViewCamp, SCViewDecoder, SCViewWaveform, SCViewCount } SCView;
 typedef enum { SCRadioHopping, SCRadioLocked, SCRadioPaused } SCRadioState;
 typedef enum {
     SCModAM650, SCModAM270, SCModFM238, SCModFM476,
@@ -55,7 +57,7 @@ typedef struct {
     uint32_t min_pulse_us;
     bool     analyzed;
     char     protocol_name[32];
-    char     decoded_string[128];
+    char     decoded_string[256];
     bool     protocol_decoded;
 } SCSignal;
 
@@ -95,6 +97,7 @@ typedef struct {
     uint8_t  spec_held_ch;
     uint32_t spec_held_tick;
     uint8_t  spec_decay;
+    uint8_t  spec_bw; // 0=Wide(650kHz), 1=Medium(270kHz), 2=Narrow(58kHz)
 
     // Hit Log
     SCHit    hits[SC_HIT_LOG_SIZE];
@@ -115,7 +118,7 @@ typedef struct {
     // Pending decode (lock-free: worker writes, main loop reads)
     volatile bool pending_decode;
     char     pending_name[32];
-    char     pending_str[128];
+    char     pending_str[256];
     uint32_t pending_freq;
     uint8_t  pending_mod;
 
@@ -123,6 +126,18 @@ typedef struct {
     SCView   current_view;
     uint16_t waveform_scroll;
     uint8_t  waveform_zoom;
+
+    // Save (keyboard)
+    ViewDispatcher* view_dispatcher;
+    bool     show_keyboard;
+    char     save_filename[32];
+    uint8_t  save_slot;
+    uint8_t  decoder_scroll;
+
+    // Camp mode
+    uint8_t  camp_mod_idx; // index into sc_try_mods[]
+    uint32_t camp_start_tick;
+    char     camp_last_proto[32];
 } SpectrumCheckApp;
 
 int32_t spectrum_check_app(void* p);
