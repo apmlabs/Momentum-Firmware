@@ -25,7 +25,7 @@
 #define SC_HIT_LOG_SIZE 32
 #define SC_SIGNAL_SLOTS 8
 #define SC_RAW_SAMPLES  2048
-#define SC_SIG_SAMPLES  1024
+#define SC_SIG_SAMPLES  512
 #define SC_SPEC_CH      32
 #define SC_RSSI_MIN     (-97.0f)
 #define SC_RSSI_MAX     (-60.0f)
