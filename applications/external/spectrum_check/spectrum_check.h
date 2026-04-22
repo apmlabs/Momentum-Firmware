@@ -98,6 +98,7 @@ typedef struct {
     uint32_t spec_held_tick;
     uint8_t  spec_decay;
     uint8_t  spec_bw; // 0=Wide(650kHz), 1=Medium(270kHz), 2=Narrow(58kHz)
+    uint8_t  spec_band; // 0=All, 1=300MHz, 2=433MHz, 3=800MHz
 
     // Hit Log
     SCHit    hits[SC_HIT_LOG_SIZE];

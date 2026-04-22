@@ -234,19 +234,27 @@ static const uint8_t sc_bw_preset_narrow[] = {
     0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static const uint8_t* sc_bw_presets[] = {sc_bw_preset_wide, sc_bw_preset_med, sc_bw_preset_narrow};
 
+// Band boundaries: 0-7=300MHz, 8-19=433MHz, 20-31=800MHz
+static const uint8_t sc_band_start[] = {0, 0, 8, 20};
+static const uint8_t sc_band_end[]   = {32, 8, 20, 32};
+static const char* sc_band_names[]   = {"ALL", "300M", "433M", "800M"};
+
 static void sc_tick_spectrum(SpectrumCheckApp* app) {
     sc_rx_end(app);
     subghz_devices_idle(app->radio_device);
     subghz_devices_load_preset(app->radio_device, FuriHalSubGhzPresetCustom, (uint8_t*)sc_bw_presets[app->spec_bw]);
 
+    uint8_t ch_start = sc_band_start[app->spec_band];
+    uint8_t ch_end = sc_band_end[app->spec_band];
+
     float best = -200.0f;
     float worst = 0.0f;
-    uint8_t best_ch = 0;
-    for(uint8_t i = 0; i < SC_SPEC_CH; i++) {
+    uint8_t best_ch = ch_start;
+    for(uint8_t i = ch_start; i < ch_end; i++) {
         subghz_devices_set_frequency(app->radio_device, sc_spec_freqs[i]);
         subghz_devices_flush_rx(app->radio_device);
         subghz_devices_set_rx(app->radio_device);
-        furi_delay_ms(app->spec_bw == 2 ? 4 : 2); // Narrow needs longer AGC settle
+        furi_delay_ms(app->spec_bw == 2 ? 4 : 2);
         float rssi = subghz_devices_get_rssi(app->radio_device);
         subghz_devices_idle(app->radio_device);
 
@@ -259,7 +267,7 @@ static void sc_tick_spectrum(SpectrumCheckApp* app) {
     sc_update_noise_floor(app, worst);
     if(++app->spec_decay >= 5) {
         app->spec_decay = 0;
-        for(uint8_t i = 0; i < SC_SPEC_CH; i++)
+        for(uint8_t i = ch_start; i < ch_end; i++)
             if(app->spec_peak[i] > 0) app->spec_peak[i]--;
     }
     if(best > app->spec_held_rssi || furi_get_tick() - app->spec_held_tick > 3000) {
@@ -581,42 +589,50 @@ static void sc_draw_status(Canvas* canvas, SpectrumCheckApp* app) {
 
 static void sc_draw_spectrum(Canvas* canvas, SpectrumCheckApp* app) {
     char buf[48];
+    uint8_t ch_start = sc_band_start[app->spec_band];
+    uint8_t ch_end = sc_band_end[app->spec_band];
+    uint8_t ch_count = ch_end - ch_start;
+    uint8_t bar_w = 128 / ch_count; // wider bars when focused
+    if(bar_w < 3) bar_w = 3;
+
     uint8_t noise = 80;
-    for(uint8_t i = 0; i < SC_SPEC_CH; i++)
+    for(uint8_t i = ch_start; i < ch_end; i++)
         if(app->spec_peak[i] < noise) noise = app->spec_peak[i];
 
-    for(uint8_t i = 0; i < SC_SPEC_CH; i++) {
-        uint8_t x = i * 4;
+    for(uint8_t i = ch_start; i < ch_end; i++) {
+        uint8_t x = (i - ch_start) * bar_w;
         int8_t val = (int8_t)app->spec_peak[i] - (int8_t)noise;
         if(val < 0) val = 0;
         uint8_t h = val * 42 / 50;
         if(h > 42) h = 42;
-        if(h > 0) canvas_draw_box(canvas, x, 52 - h, 3, h);
+        if(h > 0) canvas_draw_box(canvas, x, 52 - h, bar_w - 1, h);
         if(i == app->spec_held_ch && app->spec_held_rssi > -90.0f)
-            canvas_draw_frame(canvas, x - 1, 52 - h - 2, 5, h + 3);
+            canvas_draw_frame(canvas, x > 0 ? x - 1 : 0, 52 - h - 2, bar_w + 1, h + 3);
     }
-    // Band separators (8 freqs in band1, 12 in band2, 12 in band3)
-    for(uint8_t y = 10; y < 52; y += 2) {
-        canvas_draw_dot(canvas, 32, y);
-        canvas_draw_dot(canvas, 80, y);
+    // Band separators (only in ALL mode)
+    if(app->spec_band == 0) {
+        for(uint8_t y = 10; y < 52; y += 2) {
+            canvas_draw_dot(canvas, 8 * bar_w, y);
+            canvas_draw_dot(canvas, 20 * bar_w, y);
+        }
     }
     // Decoded signal markers
     for(uint8_t s = 0; s < app->signal_count; s++) {
         if(!app->signals[s].protocol_decoded) continue;
         uint32_t f = app->signals[s].frequency;
-        uint8_t cl = 0; uint32_t md = UINT32_MAX;
-        for(uint8_t i = 0; i < SC_SPEC_CH; i++) {
+        uint8_t cl = ch_start; uint32_t md = UINT32_MAX;
+        for(uint8_t i = ch_start; i < ch_end; i++) {
             uint32_t d = f > sc_spec_freqs[i] ? f - sc_spec_freqs[i] : sc_spec_freqs[i] - f;
             if(d < md) { md = d; cl = i; }
         }
-        canvas_draw_dot(canvas, cl * 4 + 1, 54);
+        canvas_draw_dot(canvas, (cl - ch_start) * bar_w + bar_w / 2, 54);
     }
     // Top info
     if(app->spec_held_rssi > -90.0f) {
         uint32_t pf = sc_spec_freqs[app->spec_held_ch];
-        snprintf(buf, sizeof(buf), "%.0fdBm %ld.%02ld [%s]", (double)app->spec_held_rssi, pf / 1000000, (pf / 10000) % 100, sc_bw_names[app->spec_bw]);
+        snprintf(buf, sizeof(buf), "%.0fdBm %ld.%02ld [%s %s]", (double)app->spec_held_rssi, pf / 1000000, (pf / 10000) % 100, sc_band_names[app->spec_band], sc_bw_names[app->spec_bw]);
     } else {
-        snprintf(buf, sizeof(buf), "BW: %s  L/R:change", sc_bw_names[app->spec_bw]);
+        snprintf(buf, sizeof(buf), "%s BW:%s  L/R:bw LongL/R:band", sc_band_names[app->spec_band], sc_bw_names[app->spec_bw]);
     }
     canvas_draw_str(canvas, 0, 7, buf);
 }
@@ -825,8 +841,14 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
         break;
     case InputKeyLeft:
         if(app->current_view == SCViewSpectrum) {
-            if(app->spec_bw > 0) app->spec_bw--;
-            memset(app->spec_peak, 0, sizeof(app->spec_peak));
+            if(ev->type == InputTypeLong) {
+                app->spec_band = app->spec_band == 0 ? 3 : app->spec_band - 1;
+                memset(app->spec_peak, 0, sizeof(app->spec_peak));
+                app->spec_held_rssi = -127.0f;
+            } else {
+                if(app->spec_bw > 0) app->spec_bw--;
+                memset(app->spec_peak, 0, sizeof(app->spec_peak));
+            }
         } else if(app->current_view == SCViewFreqAnalyzer) {
             if(ev->type == InputTypeLong || ev->type == InputTypeRepeat) {
                 app->trigger -= SC_TRIGGER_STEP; if(app->trigger < SC_RSSI_MIN) app->trigger = SC_RSSI_MIN;
@@ -848,8 +870,14 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
         break;
     case InputKeyRight:
         if(app->current_view == SCViewSpectrum) {
-            if(app->spec_bw < 2) app->spec_bw++;
-            memset(app->spec_peak, 0, sizeof(app->spec_peak));
+            if(ev->type == InputTypeLong) {
+                app->spec_band = (app->spec_band + 1) % 4;
+                memset(app->spec_peak, 0, sizeof(app->spec_peak));
+                app->spec_held_rssi = -127.0f;
+            } else {
+                if(app->spec_bw < 2) app->spec_bw++;
+                memset(app->spec_peak, 0, sizeof(app->spec_peak));
+            }
         } else if(app->current_view == SCViewFreqAnalyzer) {
             if(ev->type == InputTypeLong || ev->type == InputTypeRepeat) {
                 app->trigger += SC_TRIGGER_STEP; if(app->trigger > SC_RSSI_MAX) app->trigger = SC_RSSI_MAX;
