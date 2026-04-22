@@ -562,13 +562,6 @@ static void sc_process_decode(SpectrumCheckApp* app) {
 static void sc_draw_status(Canvas* canvas, SpectrumCheckApp* app) {
     char buf[48];
     canvas_set_font(canvas, FontSecondary);
-    if(app->current_view == SCViewSpectrum) {
-        // Spectrum: peak info + counts
-        snprintf(buf, sizeof(buf), "%.0fdBm %dsig NF:%.0f",
-            (double)app->spec_held_rssi, app->signal_count, (double)app->noise_floor);
-        canvas_draw_str(canvas, 0, 63, buf);
-        return;
-    }
     if(app->radio_state == SCRadioLocked) {
         SCMod cur_mod = sc_try_mods[app->locked_mod_idx % SC_TRY_MOD_COUNT];
         snprintf(buf, sizeof(buf), "LOCK %ld.%03ld %s %d/%d NF:%.0f",
@@ -578,9 +571,9 @@ static void sc_draw_status(Canvas* canvas, SpectrumCheckApp* app) {
         canvas_draw_str(canvas, 0, 63, buf);
     } else {
         // Hopping: progress bar + hit count
-        uint8_t pct = (app->hopper_idx * 128) / SC_HOPPER_COUNT;
+        uint8_t bar_fill = (app->hopper_idx * 58) / SC_HOPPER_COUNT;
         canvas_draw_frame(canvas, 0, 56, 60, 7);
-        if(pct > 0) canvas_draw_box(canvas, 1, 57, (pct * 58) / 128, 5);
+        if(bar_fill > 0) canvas_draw_box(canvas, 1, 57, bar_fill, 5);
         snprintf(buf, sizeof(buf), "%dh %ds NF:%.0f",
             app->hit_count, app->signal_count, (double)app->noise_floor);
         canvas_draw_str(canvas, 63, 63, buf);
@@ -627,14 +620,16 @@ static void sc_draw_spectrum(Canvas* canvas, SpectrumCheckApp* app) {
         }
         canvas_draw_dot(canvas, (cl - ch_start) * bar_w + bar_w / 2, 54);
     }
-    // Top info
+    // Top: band + bandwidth always visible
+    snprintf(buf, sizeof(buf), "[%s] BW:%s", sc_band_names[app->spec_band], sc_bw_names[app->spec_bw]);
+    canvas_draw_str(canvas, 0, 7, buf);
+    // Peak freq on right side of top bar
     if(app->spec_held_rssi > -90.0f) {
         uint32_t pf = sc_spec_freqs[app->spec_held_ch];
-        snprintf(buf, sizeof(buf), "%.0fdBm %ld.%02ld [%s %s]", (double)app->spec_held_rssi, pf / 1000000, (pf / 10000) % 100, sc_band_names[app->spec_band], sc_bw_names[app->spec_bw]);
-    } else {
-        snprintf(buf, sizeof(buf), "%s BW:%s  L/R:bw LongL/R:band", sc_band_names[app->spec_band], sc_bw_names[app->spec_bw]);
+        snprintf(buf, sizeof(buf), "%.0fdBm %ld.%02ld", (double)app->spec_held_rssi, pf / 1000000, (pf / 10000) % 100);
+        uint8_t tw = strlen(buf) * 5;
+        canvas_draw_str(canvas, 128 - tw, 7, buf);
     }
-    canvas_draw_str(canvas, 0, 7, buf);
 }
 
 static void sc_draw_freq(Canvas* canvas, SpectrumCheckApp* app) {
@@ -841,11 +836,11 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
         break;
     case InputKeyLeft:
         if(app->current_view == SCViewSpectrum) {
-            if(ev->type == InputTypeLong) {
+            if(ev->type == InputTypeLong) { // no repeat — single switch per long press
                 app->spec_band = app->spec_band == 0 ? 3 : app->spec_band - 1;
                 memset(app->spec_peak, 0, sizeof(app->spec_peak));
                 app->spec_held_rssi = -127.0f;
-            } else {
+            } else if(ev->type == InputTypeShort) {
                 if(app->spec_bw > 0) app->spec_bw--;
                 memset(app->spec_peak, 0, sizeof(app->spec_peak));
             }
@@ -870,11 +865,11 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
         break;
     case InputKeyRight:
         if(app->current_view == SCViewSpectrum) {
-            if(ev->type == InputTypeLong) {
+            if(ev->type == InputTypeLong) { // no repeat — single switch per long press
                 app->spec_band = (app->spec_band + 1) % 4;
                 memset(app->spec_peak, 0, sizeof(app->spec_peak));
                 app->spec_held_rssi = -127.0f;
-            } else {
+            } else if(ev->type == InputTypeShort) {
                 if(app->spec_bw < 2) app->spec_bw++;
                 memset(app->spec_peak, 0, sizeof(app->spec_peak));
             }
