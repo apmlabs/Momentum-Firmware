@@ -620,16 +620,17 @@ static void sc_draw_spectrum(Canvas* canvas, SpectrumCheckApp* app) {
         }
         canvas_draw_dot(canvas, (cl - ch_start) * bar_w + bar_w / 2, 54);
     }
-    // Top: band + bandwidth always visible
-    snprintf(buf, sizeof(buf), "[%s] BW:%s", sc_band_names[app->spec_band], sc_bw_names[app->spec_bw]);
-    canvas_draw_str(canvas, 0, 7, buf);
-    // Peak freq on right side of top bar
-    if(app->spec_held_rssi > -90.0f) {
+    // Top bar: single line with all info
+    if(app->spec_held_rssi > -110.0f) {
         uint32_t pf = sc_spec_freqs[app->spec_held_ch];
-        snprintf(buf, sizeof(buf), "%.0fdBm %ld.%02ld", (double)app->spec_held_rssi, pf / 1000000, (pf / 10000) % 100);
-        uint8_t tw = strlen(buf) * 5;
-        canvas_draw_str(canvas, 128 - tw, 7, buf);
+        snprintf(buf, sizeof(buf), "%s %s %.0f %ld.%02ld",
+            sc_band_names[app->spec_band], sc_bw_names[app->spec_bw],
+            (double)app->spec_held_rssi, pf / 1000000, (pf / 10000) % 100);
+    } else {
+        snprintf(buf, sizeof(buf), "%s %s  --",
+            sc_band_names[app->spec_band], sc_bw_names[app->spec_bw]);
     }
+    canvas_draw_str(canvas, 0, 7, buf);
 }
 
 static void sc_draw_freq(Canvas* canvas, SpectrumCheckApp* app) {
