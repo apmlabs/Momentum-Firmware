@@ -1,0 +1,12 @@
+App(
+    appid="dooya_remote",
+    name="Dooya Remote",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="dooya_remote_app",
+    requires=["gui", "notification"],
+    stack_size=2 * 1024,
+    fap_icon="A_Sub1ghz_14.png",
+    fap_icon_assets="",
+    fap_category="Sub-GHz",
+    fap_description="Dooya/Zemismart motorized blind remote control",
+)
