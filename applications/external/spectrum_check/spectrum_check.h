@@ -22,7 +22,7 @@
 
 #define TAG "SpectrumCheck"
 
-#define SC_HIT_LOG_SIZE 32
+#define SC_HIT_LOG_SIZE 16
 #define SC_SIGNAL_SLOTS 8
 #define SC_RAW_SAMPLES  2048
 #define SC_SIG_SAMPLES  512
@@ -57,7 +57,7 @@ typedef struct {
     uint32_t min_pulse_us;
     bool     analyzed;
     char     protocol_name[32];
-    char     decoded_string[256];
+    char     decoded_string[128];
     bool     protocol_decoded;
 } SCSignal;
 
@@ -74,9 +74,9 @@ typedef struct {
     SubGhzWorker* worker;
     SubGhzEnvironment* environment;
     SubGhzReceiver* receiver;
+    SubGhzEnvironment* extra_environment;
+    SubGhzReceiver* extra_receiver;
     SubGhzProtocolDecoderBinRAW* bin_raw_decoder;
-    const SubGhzProtocol** combined_protocols; // merged firmware + extra
-    SubGhzProtocolRegistry* combined_registry;
     bool rx_active;
 
     // Radio state
@@ -118,7 +118,7 @@ typedef struct {
     // Pending decode (lock-free: worker writes, main loop reads)
     volatile bool pending_decode;
     char     pending_name[32];
-    char     pending_str[256];
+    char     pending_str[128];
     uint32_t pending_freq;
     uint8_t  pending_mod;
 

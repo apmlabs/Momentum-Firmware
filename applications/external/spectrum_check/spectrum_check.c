@@ -8,7 +8,6 @@ extern const SubGhzProtocolRegistry subghz_protocol_registry;
 
 static const char* sc_mod_names[] = {"AM650","AM270","FM2.4","FM47.6","TPMS-F","TPMS-O","TPMS-G","OOK40k","FSK40k"};
 static const char* sc_sort_names[] = {"Count","RSSI","Freq","Recent"};
-static const char* sc_state_names[] = {"HOP","LOCK","---"};
 static const char* sc_preset_fnames[] = {
     "FuriHalSubGhzPresetOok650Async","FuriHalSubGhzPresetOok270Async",
     "FuriHalSubGhzPreset2FSKDev238Async","FuriHalSubGhzPreset2FSKDev476Async",
@@ -152,11 +151,13 @@ static void sc_raw_pair_cb(void* ctx, bool level, uint32_t duration) {
     app->raw_buf[app->raw_write % SC_RAW_SAMPLES] = level ? (int32_t)duration : -(int32_t)duration;
     app->raw_write++;
     subghz_receiver_decode(app->receiver, level, duration);
+    if(app->extra_receiver) subghz_receiver_decode(app->extra_receiver, level, duration);
 }
 
 static void sc_overrun_cb(void* ctx) {
     SpectrumCheckApp* app = ctx;
     subghz_receiver_reset(app->receiver);
+    if(app->extra_receiver) subghz_receiver_reset(app->extra_receiver);
 }
 
 // Decode callback: fires from worker thread when protocol matched. Lock-free.
@@ -167,7 +168,7 @@ static void sc_decode_cb(SubGhzReceiver* rx, SubGhzProtocolDecoderBase* db, void
     strncpy(app->pending_name, db->protocol->name, 31);
     FuriString* text = furi_string_alloc();
     subghz_protocol_decoder_base_get_string(db, text);
-    strncpy(app->pending_str, furi_string_get_cstr(text), 255);
+    strncpy(app->pending_str, furi_string_get_cstr(text), 127);
     furi_string_free(text);
     app->pending_freq = app->current_freq;
     app->pending_mod = app->current_mod;
@@ -199,6 +200,7 @@ static void sc_set_freq_mod(SpectrumCheckApp* app, uint32_t freq, SCMod mod) {
     app->current_freq = freq;
     app->current_mod = mod;
     subghz_receiver_reset(app->receiver);
+    if(app->extra_receiver) subghz_receiver_reset(app->extra_receiver);
     app->raw_write = 0;
     sc_rx_start(app);
 }
@@ -458,13 +460,16 @@ static void sc_tick_hopper(SpectrumCheckApp* app) {
 
 // Adaptive noise floor estimation (asymmetric: tracks down fast, up slow)
 static void sc_update_noise_floor(SpectrumCheckApp* app, float rssi) {
-    if(app->noise_floor < -120.0f) {
-        app->noise_floor = rssi; // Initialize
-    } else {
-        // Only track downward or stay — signals don't inflate the estimate
-        float sample = rssi < app->noise_floor ? rssi : app->noise_floor;
-        app->noise_floor = app->noise_floor * 0.97f + sample * 0.03f;
+    if(app->noise_floor <= -120.0f) {
+        app->noise_floor = rssi; // First real reading replaces init value
+    } else if(rssi < app->noise_floor) {
+        // Below floor: track down quickly
+        app->noise_floor = app->noise_floor * 0.9f + rssi * 0.1f;
+    } else if(rssi < app->noise_floor + 6.0f) {
+        // Near floor (not a signal): allow slow upward drift
+        app->noise_floor = app->noise_floor * 0.995f + rssi * 0.005f;
     }
+    // Readings well above floor (signals) are ignored
 }
 
 // Is signal clearly present? (10dB above noise floor)
@@ -534,7 +539,7 @@ static void sc_process_decode(SpectrumCheckApp* app) {
     sig->raw_count = app->raw_write > SC_SIG_SAMPLES ? SC_SIG_SAMPLES : app->raw_write;
     memcpy(sig->raw_data, app->raw_buf, sig->raw_count * sizeof(int32_t));
     strncpy(sig->protocol_name, app->pending_name, 31);
-    strncpy(sig->decoded_string, app->pending_str, 255);
+    strncpy(sig->decoded_string, app->pending_str, 127);
     sig->protocol_decoded = true;
     sc_analyze(sig);
     if(slot >= app->signal_count && app->signal_count < SC_SIGNAL_SLOTS) app->signal_count++;
@@ -548,22 +553,30 @@ static void sc_process_decode(SpectrumCheckApp* app) {
 // ============== Drawing ==============
 static void sc_draw_status(Canvas* canvas, SpectrumCheckApp* app) {
     char buf[48];
-    static const char* view_names[] = {"SPEC","FREQ","CAMP","DEC","WAVE"};
+    canvas_set_font(canvas, FontSecondary);
+    if(app->current_view == SCViewSpectrum) {
+        // Spectrum: peak info + counts
+        snprintf(buf, sizeof(buf), "%.0fdBm %dsig NF:%.0f",
+            (double)app->spec_held_rssi, app->signal_count, (double)app->noise_floor);
+        canvas_draw_str(canvas, 0, 63, buf);
+        return;
+    }
     if(app->radio_state == SCRadioLocked) {
         SCMod cur_mod = sc_try_mods[app->locked_mod_idx % SC_TRY_MOD_COUNT];
-        snprintf(buf, sizeof(buf), "%s LOCK %ld.%03ld %s %d/%d NF:%.0f",
-            view_names[app->current_view],
+        snprintf(buf, sizeof(buf), "LOCK %ld.%03ld %s %d/%d NF:%.0f",
             app->locked_freq / 1000000 % 1000, app->locked_freq / 1000 % 1000,
             sc_mod_names[cur_mod],
             (app->locked_mod_idx % SC_TRY_MOD_COUNT) + 1, SC_TRY_MOD_COUNT, (double)app->noise_floor);
+        canvas_draw_str(canvas, 0, 63, buf);
     } else {
-        snprintf(buf, sizeof(buf), "%s %ld.%02ld %s %dsig NF:%.0f",
-            view_names[app->current_view],
-            app->current_freq / 1000000, (app->current_freq / 10000) % 100,
-            sc_state_names[app->radio_state], app->signal_count, (double)app->noise_floor);
+        // Hopping: progress bar + hit count
+        uint8_t pct = (app->hopper_idx * 128) / SC_HOPPER_COUNT;
+        canvas_draw_frame(canvas, 0, 56, 60, 7);
+        if(pct > 0) canvas_draw_box(canvas, 1, 57, (pct * 58) / 128, 5);
+        snprintf(buf, sizeof(buf), "%dh %ds NF:%.0f",
+            app->hit_count, app->signal_count, (double)app->noise_floor);
+        canvas_draw_str(canvas, 63, 63, buf);
     }
-    canvas_set_font(canvas, FontSecondary);
-    canvas_draw_str(canvas, 0, 63, buf);
 }
 
 static void sc_draw_spectrum(Canvas* canvas, SpectrumCheckApp* app) {
@@ -962,7 +975,7 @@ int32_t spectrum_check_app(void* p) {
     SpectrumCheckApp* app = malloc(sizeof(SpectrumCheckApp));
     memset(app, 0, sizeof(SpectrumCheckApp));
     app->trigger = -90.0f;
-    app->noise_floor = -95.0f; // Will adapt quickly on first scan
+    app->noise_floor = -120.0f; // Will adapt quickly on first scan
     app->current_freq = 433920000;
     app->current_mod = SCModAM650;
     app->radio_state = SCRadioHopping;
@@ -976,25 +989,23 @@ int32_t spectrum_check_app(void* p) {
     subghz_devices_init();
     app->radio_device = radio_device_loader_set(NULL, SubGhzRadioDeviceTypeInternal);
 
-    // Build combined protocol registry (firmware + weather/tpms/pocsag)
-    const SubGhzProtocolRegistry* fw_reg = (const SubGhzProtocolRegistry*)&subghz_protocol_registry;
-    size_t fw_count = fw_reg->size;
-    size_t extra_count = sc_extra_protocol_registry.size;
-    size_t total = fw_count + extra_count;
-    app->combined_protocols = malloc(total * sizeof(const SubGhzProtocol*));
-    memcpy(app->combined_protocols, fw_reg->items, fw_count * sizeof(const SubGhzProtocol*));
-    memcpy(app->combined_protocols + fw_count, sc_extra_protocol_registry.items, extra_count * sizeof(const SubGhzProtocol*));
-    app->combined_registry = malloc(sizeof(SubGhzProtocolRegistry));
-    memcpy(app->combined_registry, &(SubGhzProtocolRegistry){ .items = app->combined_protocols, .size = total }, sizeof(SubGhzProtocolRegistry));
-
+    // Main protocol registry (50+ protocols)
     app->environment = subghz_environment_alloc();
-    subghz_environment_set_protocol_registry(app->environment, (void*)app->combined_registry);
+    subghz_environment_set_protocol_registry(app->environment, (void*)&subghz_protocol_registry);
     app->receiver = subghz_receiver_alloc_init(app->environment);
     subghz_receiver_set_filter(app->receiver, SubGhzProtocolFlag_Decodable | SubGhzProtocolFlag_BinRAW);
     subghz_receiver_set_rx_callback(app->receiver, sc_decode_cb, app);
+    // Get BinRAW decoder for RSSI feeding
     SubGhzProtocolDecoderBase* bin_raw_base =
         subghz_receiver_search_decoder_base_by_name(app->receiver, SUBGHZ_PROTOCOL_BIN_RAW_NAME);
     app->bin_raw_decoder = (SubGhzProtocolDecoderBinRAW*)bin_raw_base;
+
+    // Extra protocol registry (weather/tpms/pocsag)
+    app->extra_environment = subghz_environment_alloc();
+    subghz_environment_set_protocol_registry(app->extra_environment, (void*)&sc_extra_protocol_registry);
+    app->extra_receiver = subghz_receiver_alloc_init(app->extra_environment);
+    subghz_receiver_set_filter(app->extra_receiver, SubGhzProtocolFlag_Decodable);
+    subghz_receiver_set_rx_callback(app->extra_receiver, sc_decode_cb, app);
 
     // Worker: custom pair callback for raw capture + decode
     app->worker = subghz_worker_alloc();
@@ -1053,8 +1064,8 @@ int32_t spectrum_check_app(void* p) {
     subghz_worker_free(app->worker);
     subghz_receiver_free(app->receiver);
     subghz_environment_free(app->environment);
-    free(app->combined_protocols);
-    free(app->combined_registry);
+    subghz_receiver_free(app->extra_receiver);
+    subghz_environment_free(app->extra_environment);
     radio_device_loader_end(app->radio_device);
     subghz_devices_deinit();
     furi_record_close(RECORD_NOTIFICATION);
