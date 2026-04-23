@@ -321,11 +321,11 @@ static void dooya_draw_remote(Canvas* canvas, DooyaApp* app) {
     DooyaRemoteData* r = &app->remotes[app->remote_sel];
     char buf[32];
 
-    // Title
+    // Row 1: name
     canvas_set_font(canvas, FontPrimary);
     canvas_draw_str_aligned(canvas, 64, 0, AlignCenter, AlignTop, r->name);
 
-    // Status
+    // Row 2: status
     canvas_set_font(canvas, FontSecondary);
     if(app->transmitting) {
         canvas_draw_str_aligned(canvas, 64, 12, AlignCenter, AlignTop, ">>> Transmitting <<<");
@@ -335,25 +335,27 @@ static void dooya_draw_remote(Canvas* canvas, DooyaApp* app) {
         canvas_draw_str_aligned(canvas, 64, 12, AlignCenter, AlignTop, buf);
     }
 
-    // 3 buttons: y=22,34,46 — 11px tall each, 1px gap, all FontSecondary
-    static const uint8_t by[] = {22, 34, 46};
+    // 3 buttons: y=21,32,43 — 10px tall, 1px gap
+    static const uint8_t by[] = {21, 32, 43};
     static const char* labels[] = {"\x18 OPEN", "STOP", "\x19 CLOSE"};
     for(uint8_t i = 0; i < 3; i++) {
-        canvas_draw_rframe(canvas, 30, by[i], 68, 11, 3);
+        canvas_draw_rframe(canvas, 30, by[i], 68, 10, 3);
         if(app->last_cmd == (i + 1) && app->transmitting) {
-            canvas_draw_rbox(canvas, 30, by[i], 68, 11, 3);
+            canvas_draw_rbox(canvas, 30, by[i], 68, 10, 3);
             canvas_set_color(canvas, ColorWhite);
         }
-        canvas_draw_str_aligned(canvas, 64, by[i] + 2, AlignCenter, AlignTop, labels[i]);
+        canvas_draw_str_aligned(canvas, 64, by[i] + 1, AlignCenter, AlignTop, labels[i]);
         canvas_set_color(canvas, ColorBlack);
     }
 
-    // L/R arrows outside button area
-    canvas_draw_str_aligned(canvas, 14, 36, AlignCenter, AlignCenter, "<");
-    canvas_draw_str_aligned(canvas, 114, 36, AlignCenter, AlignCenter, ">");
+    // L/R arrows centered vertically with middle button
+    canvas_draw_str_aligned(canvas, 15, 37, AlignCenter, AlignCenter, "<");
+    canvas_draw_str_aligned(canvas, 113, 37, AlignCenter, AlignCenter, ">");
 
-    // Bottom hint — below buttons, no overlap
-    canvas_draw_str_aligned(canvas, 64, 59, AlignCenter, AlignTop, "Hold OK: menu");
+    // Bottom hint line — y=55 gives 8px clearance from buttons ending at y=53
+    canvas_draw_str(canvas, 0, 63, "<Prev");
+    canvas_draw_str_aligned(canvas, 64, 55, AlignCenter, AlignTop, "Hold OK:Menu");
+    canvas_draw_str_aligned(canvas, 127, 63, AlignRight, AlignBottom, "Next>");
 }
 
 static const char* learn_btn_names[] = {"UP", "STOP", "DOWN"};
@@ -502,13 +504,19 @@ int32_t dooya_remote_app(void* p) {
             if(event.key == InputKeyBack && event.type == InputTypeShort) {
                 app->running = false;
             } else if(event.key == InputKeyOk && event.type == InputTypeLong) {
-                // Enter learn mode
+                // Menu — no transmit on long press
                 if(app->remote_count < DOOYA_MAX_REMOTES) {
                     app->mode = DooyaModeLearn;
                     app->learn_btn = 0;
                     dooya_rx_start(app);
                     view_port_update(app->view_port);
                 }
+            } else if(event.key == InputKeyOk && event.type == InputTypeShort) {
+                // STOP — fires on release, so long-press OK won't trigger this
+                DooyaRemoteData* r = &app->remotes[app->remote_sel];
+                app->last_cmd = 2;
+                dooya_transmit(app, r->cmd_stop, false);
+                notification_message(app->notifications, &sequence_blink_cyan_100);
             } else if(event.key == InputKeyLeft && event.type == InputTypeShort) {
                 if(app->remote_sel > 0) app->remote_sel--;
                 else app->remote_sel = app->remote_count - 1;
@@ -523,7 +531,6 @@ int32_t dooya_remote_app(void* p) {
                 uint8_t cmd_id = 0;
                 switch(event.key) {
                 case InputKeyUp:   cmd = r->cmd_up;   confirm = true;  cmd_id = 1; break;
-                case InputKeyOk:   cmd = r->cmd_stop; confirm = false; cmd_id = 2; break;
                 case InputKeyDown: cmd = r->cmd_down;  confirm = true;  cmd_id = 3; break;
                 default: break;
                 }
