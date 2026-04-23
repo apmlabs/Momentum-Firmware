@@ -321,55 +321,39 @@ static void dooya_draw_remote(Canvas* canvas, DooyaApp* app) {
     DooyaRemoteData* r = &app->remotes[app->remote_sel];
     char buf[32];
 
-    // Title with remote name
+    // Title
     canvas_set_font(canvas, FontPrimary);
-    snprintf(buf, sizeof(buf), "%s", r->name);
-    canvas_draw_str_aligned(canvas, 64, 2, AlignCenter, AlignTop, buf);
+    canvas_draw_str_aligned(canvas, 64, 0, AlignCenter, AlignTop, r->name);
 
-    // Status line
+    // Status
     canvas_set_font(canvas, FontSecondary);
     if(app->transmitting) {
-        canvas_draw_str_aligned(canvas, 64, 14, AlignCenter, AlignTop, ">>> Transmitting <<<");
+        canvas_draw_str_aligned(canvas, 64, 12, AlignCenter, AlignTop, ">>> Transmitting <<<");
     } else {
         snprintf(buf, sizeof(buf), "%06lX:%06lX  %d/%d",
             r->id, r->addr, app->remote_sel + 1, app->remote_count);
-        canvas_draw_str_aligned(canvas, 64, 14, AlignCenter, AlignTop, buf);
+        canvas_draw_str_aligned(canvas, 64, 12, AlignCenter, AlignTop, buf);
     }
 
-    // Buttons
-    canvas_set_font(canvas, FontPrimary);
-    // UP
-    canvas_draw_rframe(canvas, 34, 24, 60, 14, 3);
-    if(app->last_cmd == 1 && app->transmitting) {
-        canvas_draw_rbox(canvas, 34, 24, 60, 14, 3);
-        canvas_set_color(canvas, ColorWhite);
+    // 3 buttons: y=22,34,46 — 11px tall each, 1px gap, all FontSecondary
+    static const uint8_t by[] = {22, 34, 46};
+    static const char* labels[] = {"\x18 OPEN", "STOP", "\x19 CLOSE"};
+    for(uint8_t i = 0; i < 3; i++) {
+        canvas_draw_rframe(canvas, 30, by[i], 68, 11, 3);
+        if(app->last_cmd == (i + 1) && app->transmitting) {
+            canvas_draw_rbox(canvas, 30, by[i], 68, 11, 3);
+            canvas_set_color(canvas, ColorWhite);
+        }
+        canvas_draw_str_aligned(canvas, 64, by[i] + 2, AlignCenter, AlignTop, labels[i]);
+        canvas_set_color(canvas, ColorBlack);
     }
-    canvas_draw_str_aligned(canvas, 64, 28, AlignCenter, AlignTop, "\x18 OPEN");
-    canvas_set_color(canvas, ColorBlack);
 
-    // STOP
-    canvas_draw_rframe(canvas, 34, 39, 60, 14, 3);
-    if(app->last_cmd == 2 && app->transmitting) {
-        canvas_draw_rbox(canvas, 34, 39, 60, 14, 3);
-        canvas_set_color(canvas, ColorWhite);
-    }
-    canvas_draw_str_aligned(canvas, 64, 43, AlignCenter, AlignTop, "OK STOP");
-    canvas_set_color(canvas, ColorBlack);
+    // L/R arrows outside button area
+    canvas_draw_str_aligned(canvas, 14, 36, AlignCenter, AlignCenter, "<");
+    canvas_draw_str_aligned(canvas, 114, 36, AlignCenter, AlignCenter, ">");
 
-    // DOWN
-    canvas_draw_rframe(canvas, 34, 54, 60, 10, 3);
-    if(app->last_cmd == 3 && app->transmitting) {
-        canvas_draw_rbox(canvas, 34, 54, 60, 10, 3);
-        canvas_set_color(canvas, ColorWhite);
-    }
-    canvas_draw_str_aligned(canvas, 64, 55, AlignCenter, AlignTop, "\x19 CLOSE");
-    canvas_set_color(canvas, ColorBlack);
-
-    // Hints
-    canvas_set_font(canvas, FontSecondary);
-    canvas_draw_str(canvas, 0, 28, "<");
-    canvas_draw_str(canvas, 122, 28, ">");
-    canvas_draw_str(canvas, 0, 63, "LongOK:Learn");
+    // Bottom hint — below buttons, no overlap
+    canvas_draw_str_aligned(canvas, 64, 59, AlignCenter, AlignTop, "Hold OK: menu");
 }
 
 static const char* learn_btn_names[] = {"UP", "STOP", "DOWN"};
