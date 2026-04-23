@@ -358,40 +358,46 @@ static void dooya_draw_remote(Canvas* canvas, DooyaApp* app) {
     canvas_draw_str_aligned(canvas, 127, 63, AlignRight, AlignBottom, "Next>");
 }
 
-static const char* learn_btn_names[] = {"UP", "STOP", "DOWN"};
-
 static void dooya_draw_learn(Canvas* canvas, DooyaApp* app) {
     canvas_set_font(canvas, FontPrimary);
     canvas_draw_str_aligned(canvas, 64, 2, AlignCenter, AlignTop, "Learn Remote");
 
     canvas_set_font(canvas, FontSecondary);
-    if(app->learn_btn < 3) {
-        char buf[40];
-        snprintf(buf, sizeof(buf), "Press %s on the remote...", learn_btn_names[app->learn_btn]);
-        canvas_draw_str_aligned(canvas, 64, 24, AlignCenter, AlignTop, buf);
-        canvas_draw_str_aligned(canvas, 64, 36, AlignCenter, AlignTop, "Listening on 433.92 MHz");
+    if(app->learn_btn < 5) {
+        // States 0-4: still learning
+        // 0=press UP, 1=hold UP (catching confirm), 2=press STOP, 3=press DOWN, 4=hold DOWN
+        static const char* prompts[] = {
+            "Press UP on remote...",
+            "Keep holding UP...",
+            "Press STOP on remote...",
+            "Press DOWN on remote...",
+            "Keep holding DOWN..."};
+        canvas_draw_str_aligned(canvas, 64, 24, AlignCenter, AlignTop, prompts[app->learn_btn]);
+        canvas_draw_str_aligned(canvas, 64, 36, AlignCenter, AlignTop, "Listening 433.92 MHz");
 
-        // Show what we've captured so far
         if(app->learn_btn > 0) {
             uint8_t idx = app->remote_count < DOOYA_MAX_REMOTES ? app->remote_count : DOOYA_MAX_REMOTES - 1;
             DooyaRemoteData* r = &app->remotes[idx];
+            char buf[40];
             snprintf(buf, sizeof(buf), "ID:%06lX Addr:%06lX", r->id, r->addr);
             canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignTop, buf);
         }
     } else {
-        canvas_draw_str_aligned(canvas, 64, 24, AlignCenter, AlignTop, "All buttons learned!");
+        // State 5: all done
         uint8_t idx = app->remote_count < DOOYA_MAX_REMOTES ? app->remote_count : DOOYA_MAX_REMOTES - 1;
         DooyaRemoteData* r = &app->remotes[idx];
         char buf[40];
+        canvas_draw_str_aligned(canvas, 64, 18, AlignCenter, AlignTop, "All buttons captured!");
         snprintf(buf, sizeof(buf), "ID:%06lX Addr:%06lX", r->id, r->addr);
-        canvas_draw_str_aligned(canvas, 64, 36, AlignCenter, AlignTop, buf);
-        snprintf(buf, sizeof(buf), "UP:%04X STOP:%04X DN:%04X",
-            r->cmd_up, r->cmd_stop, r->cmd_down);
-        canvas_draw_str_aligned(canvas, 64, 48, AlignCenter, AlignTop, buf);
+        canvas_draw_str_aligned(canvas, 64, 30, AlignCenter, AlignTop, buf);
+        snprintf(buf, sizeof(buf), "UP:%04X ST:%04X DN:%04X", r->cmd_up, r->cmd_stop, r->cmd_down);
+        canvas_draw_str_aligned(canvas, 64, 42, AlignCenter, AlignTop, buf);
+        snprintf(buf, sizeof(buf), "Confirm:%04X", r->cmd_confirm);
+        canvas_draw_str_aligned(canvas, 64, 52, AlignCenter, AlignTop, buf);
     }
 
     canvas_draw_str(canvas, 0, 63, "Back:Cancel");
-    if(app->learn_btn >= 3) {
+    if(app->learn_btn >= 5) {
         canvas_draw_str_aligned(canvas, 127, 63, AlignRight, AlignBottom, "OK:Save");
     }
 }
@@ -417,34 +423,55 @@ static void dooya_handle_learn_frame(DooyaApp* app, uint64_t frame) {
     uint32_t addr = (frame >> 16) & 0xFFFFFF;
     uint16_t cmd = frame & 0xFFFF;
 
-    // Skip confirm frames (same ID+addr, different cmd after main cmd)
     uint8_t slot = app->remote_count < DOOYA_MAX_REMOTES ? app->remote_count : DOOYA_MAX_REMOTES - 1;
     DooyaRemoteData* r = &app->remotes[slot];
 
+    // learn_btn: 0=wait UP, 1=wait UP confirm, 2=wait STOP, 3=wait DOWN, 4=wait DOWN confirm, 5=done
     if(app->learn_btn == 0) {
-        // First button — store ID and addr
+        // First frame — store ID, addr, UP command
         r->id = id;
         r->addr = addr;
         r->cmd_up = cmd;
-        r->cmd_confirm = DOOYA_CMD_CONFIRM; // default, may update
+        r->cmd_confirm = 0; // will be captured
         snprintf(r->name, sizeof(r->name), "Learned %d", slot + 1);
-        app->learn_btn = 1;
+        app->learn_btn = 1; // now wait for confirm
         notification_message(app->notifications, &sequence_success);
     } else if(id == r->id && addr == r->addr) {
-        // Same remote — assign to next button
-        if(app->learn_btn == 1 && cmd != r->cmd_up) {
-            r->cmd_stop = cmd;
-            app->learn_btn = 2;
-            notification_message(app->notifications, &sequence_success);
-        } else if(app->learn_btn == 2 && cmd != r->cmd_up && cmd != r->cmd_stop) {
-            r->cmd_down = cmd;
-            // Check if next frame is confirm
-            r->cmd_confirm = DOOYA_CMD_CONFIRM;
-            app->learn_btn = 3;
-            notification_message(app->notifications, &sequence_success);
+        switch(app->learn_btn) {
+        case 1: // waiting for UP confirm
+            if(cmd != r->cmd_up) {
+                r->cmd_confirm = cmd; // got the confirm code!
+                app->learn_btn = 2; // move to STOP
+                notification_message(app->notifications, &sequence_success);
+            }
+            // else: duplicate UP frame, ignore
+            break;
+        case 2: // waiting for STOP
+            if(cmd != r->cmd_up && cmd != r->cmd_confirm) {
+                r->cmd_stop = cmd;
+                app->learn_btn = 3; // move to DOWN
+                notification_message(app->notifications, &sequence_success);
+            }
+            break;
+        case 3: // waiting for DOWN
+            if(cmd != r->cmd_up && cmd != r->cmd_stop && cmd != r->cmd_confirm) {
+                r->cmd_down = cmd;
+                app->learn_btn = 4; // wait for DOWN confirm
+                notification_message(app->notifications, &sequence_success);
+            }
+            break;
+        case 4: // waiting for DOWN confirm (should match UP confirm)
+            if(cmd == r->cmd_confirm || cmd != r->cmd_down) {
+                // Confirmed — or got a different trailer. Either way, done.
+                app->learn_btn = 5;
+                notification_message(app->notifications, &sequence_success);
+            }
+            // else: duplicate DOWN frame, ignore
+            break;
+        default:
+            break;
         }
     }
-    // Ignore frames from different remotes or duplicate commands
     view_port_update(app->view_port);
 }
 
@@ -488,7 +515,7 @@ int32_t dooya_remote_app(void* p) {
                 dooya_rx_stop(app);
                 app->mode = DooyaModeRemote;
                 view_port_update(app->view_port);
-            } else if(event.key == InputKeyOk && event.type == InputTypeShort && app->learn_btn >= 3) {
+            } else if(event.key == InputKeyOk && event.type == InputTypeShort && app->learn_btn >= 5) {
                 // Save the learned remote
                 dooya_rx_stop(app);
                 uint8_t slot = app->remote_count < DOOYA_MAX_REMOTES ? app->remote_count : DOOYA_MAX_REMOTES - 1;
