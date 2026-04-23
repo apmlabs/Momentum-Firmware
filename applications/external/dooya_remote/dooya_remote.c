@@ -29,11 +29,11 @@
 #define DOOYA_GAP     5000
 #define DOOYA_PRE     8
 #define DOOYA_BITS    64
-#define DOOYA_REPEATS 6
+#define DOOYA_REPEATS 3
 
 // Frame: preamble(8*2) + sync(2) + data(64*2) + gap(2) = 148 LevelDurations
-// Max 12 frames (6 cmd + 6 confirm) = 1776
-#define DOOYA_UPLOAD_MAX 1800
+// Max 6 frames (3 cmd + 3 confirm) = 888
+#define DOOYA_UPLOAD_MAX 900
 
 #define DOOYA_ADDR_HI  0xA3C0A1ULL
 #define DOOYA_ADDR_LO  0x6C0100ULL
@@ -51,6 +51,8 @@ typedef struct {
     bool running;
     uint8_t last_cmd; // 0=none 1=up 2=stop 3=down
     bool transmitting;
+    uint16_t pending_cmd; // queued command during TX
+    bool pending_confirm;
     // TX state (accessed from ISR)
     LevelDuration* upload;
     volatile uint16_t upload_size;
@@ -132,38 +134,45 @@ static void dooya_draw_cb(Canvas* canvas, void* ctx) {
     canvas_clear(canvas);
     canvas_set_color(canvas, ColorBlack);
 
+    // Title
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str(canvas, 28, 12, "Dooya Remote");
+    canvas_draw_str_aligned(canvas, 64, 2, AlignCenter, AlignTop, "Dooya Remote");
 
+    // Status line
     canvas_set_font(canvas, FontSecondary);
-    canvas_draw_str(canvas, 6, 24, "ID:A3C0A1 Addr:6C0100");
-
-    // UP button (top center)
-    canvas_set_font(canvas, FontPrimary);
-    canvas_draw_rframe(canvas, 40, 28, 48, 14, 2);
-    if(app->last_cmd == 1) canvas_draw_rbox(canvas, 40, 28, 48, 14, 2);
-    if(app->last_cmd == 1) canvas_set_color(canvas, ColorWhite);
-    canvas_draw_str(canvas, 52, 39, "UP ^");
-    canvas_set_color(canvas, ColorBlack);
-
-    // STOP button (bottom left)
-    canvas_draw_rframe(canvas, 2, 46, 42, 14, 2);
-    if(app->last_cmd == 2) canvas_draw_rbox(canvas, 2, 46, 42, 14, 2);
-    if(app->last_cmd == 2) canvas_set_color(canvas, ColorWhite);
-    canvas_draw_str(canvas, 7, 57, "STOP");
-    canvas_set_color(canvas, ColorBlack);
-
-    // DOWN button (bottom right)
-    canvas_draw_rframe(canvas, 84, 46, 42, 14, 2);
-    if(app->last_cmd == 3) canvas_draw_rbox(canvas, 84, 46, 42, 14, 2);
-    if(app->last_cmd == 3) canvas_set_color(canvas, ColorWhite);
-    canvas_draw_str(canvas, 89, 57, "DN v");
-    canvas_set_color(canvas, ColorBlack);
-
     if(app->transmitting) {
-        canvas_set_font(canvas, FontSecondary);
-        canvas_draw_str(canvas, 48, 57, "TX...");
+        canvas_draw_str_aligned(canvas, 64, 14, AlignCenter, AlignTop, ">>> Transmitting <<<");
+    } else {
+        canvas_draw_str_aligned(canvas, 64, 14, AlignCenter, AlignTop, "A3C0A1:6C0100 Ready");
     }
+
+    // UP button
+    canvas_set_font(canvas, FontPrimary);
+    canvas_draw_rframe(canvas, 34, 24, 60, 14, 3);
+    if(app->last_cmd == 1 && app->transmitting) {
+        canvas_draw_rbox(canvas, 34, 24, 60, 14, 3);
+        canvas_set_color(canvas, ColorWhite);
+    }
+    canvas_draw_str_aligned(canvas, 64, 28, AlignCenter, AlignTop, "\x18 OPEN");
+    canvas_set_color(canvas, ColorBlack);
+
+    // STOP button
+    canvas_draw_rframe(canvas, 34, 39, 60, 14, 3);
+    if(app->last_cmd == 2 && app->transmitting) {
+        canvas_draw_rbox(canvas, 34, 39, 60, 14, 3);
+        canvas_set_color(canvas, ColorWhite);
+    }
+    canvas_draw_str_aligned(canvas, 64, 43, AlignCenter, AlignTop, "OK STOP");
+    canvas_set_color(canvas, ColorBlack);
+
+    // DOWN button
+    canvas_draw_rframe(canvas, 34, 54, 60, 10, 3);
+    if(app->last_cmd == 3 && app->transmitting) {
+        canvas_draw_rbox(canvas, 34, 54, 60, 10, 3);
+        canvas_set_color(canvas, ColorWhite);
+    }
+    canvas_draw_str_aligned(canvas, 64, 55, AlignCenter, AlignTop, "\x19 CLOSE");
+    canvas_set_color(canvas, ColorBlack);
 }
 
 static void dooya_input_cb(InputEvent* ev, void* ctx) {
@@ -194,18 +203,34 @@ int32_t dooya_remote_app(void* p) {
         if(furi_message_queue_get(app->event_queue, &event, FuriWaitForever) == FuriStatusOk) {
             if(event.key == InputKeyBack && event.type == InputTypeShort) {
                 app->running = false;
-            } else if(event.type == InputTypeShort && !app->transmitting) {
+            } else if(event.type == InputTypePress) {
                 uint16_t cmd = 0;
                 bool confirm = false;
+                uint8_t cmd_id = 0;
                 switch(event.key) {
-                case InputKeyUp:    cmd = DOOYA_CMD_UP;   confirm = true; app->last_cmd = 1; break;
-                case InputKeyOk:    cmd = DOOYA_CMD_STOP; confirm = false; app->last_cmd = 2; break;
-                case InputKeyDown:  cmd = DOOYA_CMD_DOWN; confirm = true; app->last_cmd = 3; break;
+                case InputKeyUp:   cmd = DOOYA_CMD_UP;   confirm = true;  cmd_id = 1; break;
+                case InputKeyOk:   cmd = DOOYA_CMD_STOP; confirm = false; cmd_id = 2; break;
+                case InputKeyDown: cmd = DOOYA_CMD_DOWN;  confirm = true;  cmd_id = 3; break;
                 default: break;
                 }
                 if(cmd) {
-                    dooya_transmit(app, cmd, confirm);
-                    notification_message(app->notifications, &sequence_blink_cyan_100);
+                    if(app->transmitting) {
+                        app->pending_cmd = cmd;
+                        app->pending_confirm = confirm;
+                        app->last_cmd = cmd_id;
+                    } else {
+                        app->last_cmd = cmd_id;
+                        dooya_transmit(app, cmd, confirm);
+                        notification_message(app->notifications, &sequence_blink_cyan_100);
+                        // Check for queued command
+                        if(app->pending_cmd) {
+                            uint16_t pc = app->pending_cmd;
+                            bool pcf = app->pending_confirm;
+                            app->pending_cmd = 0;
+                            dooya_transmit(app, pc, pcf);
+                            notification_message(app->notifications, &sequence_blink_cyan_100);
+                        }
+                    }
                 }
             }
         }

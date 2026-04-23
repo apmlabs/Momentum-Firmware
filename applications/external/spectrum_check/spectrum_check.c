@@ -765,34 +765,6 @@ static void sc_draw_camp(Canvas* canvas, SpectrumCheckApp* app) {
     }
 }
 
-static void sc_draw_waveform(Canvas* canvas, SpectrumCheckApp* app) {
-    char buf[48];
-    if(app->signal_count == 0) { canvas_set_font(canvas, FontSecondary); canvas_draw_str(canvas, 10, 32, "No signal data"); return; }
-    SCSignal* sig = &app->signals[app->signal_selected];
-    if(sig->raw_count == 0) { canvas_set_font(canvas, FontSecondary); canvas_draw_str(canvas, 10, 32, "Empty"); return; }
-    static const uint32_t scales[] = {50, 100, 200, 500, 1000, 2000};
-    static const char* scale_labels[] = {"50us", "100us", "200us", "500us", "1ms", "2ms"};
-    uint8_t z = app->waveform_zoom < 6 ? app->waveform_zoom : 0;
-    uint32_t us_px = scales[z];
-    uint16_t idx = app->waveform_scroll; uint32_t rem = 0; bool lv = false;
-    for(uint8_t row = 0; row < 3 && idx < sig->raw_count; row++) {
-        uint8_t yb = 2 + row * 16;
-        for(uint8_t x = 0; x < 128 && idx < sig->raw_count; x++) {
-            if(rem < us_px / 2) { int32_t v = sig->raw_data[idx]; lv = v > 0; rem = lv ? (uint32_t)v : (uint32_t)(-v); idx++; }
-            canvas_draw_dot(canvas, x, lv ? yb : yb + 11);
-            if(rem > us_px) rem -= us_px; else rem = 0;
-        }
-    }
-    canvas_set_font(canvas, FontSecondary);
-    // Bottom: slot, name, zoom, position
-    uint8_t pct = sig->raw_count > 0 ? (app->waveform_scroll * 100 / sig->raw_count) : 0;
-    snprintf(buf, sizeof(buf), "%d/%d %s [%s] %d%%",
-        app->signal_selected + 1, app->signal_count,
-        sig->protocol_decoded ? sig->protocol_name : sc_mod_names[sig->modulation],
-        scale_labels[z], pct);
-    canvas_draw_str(canvas, 0, 63, buf);
-}
-
 static void sc_draw_cb(Canvas* canvas, void* ctx) {
     SpectrumCheckApp* app = ctx;
     canvas_clear(canvas);
@@ -803,10 +775,9 @@ static void sc_draw_cb(Canvas* canvas, void* ctx) {
     case SCViewFreqAnalyzer: sc_draw_freq(canvas, app); break;
     case SCViewCamp: sc_draw_camp(canvas, app); break;
     case SCViewDecoder: sc_draw_decoder(canvas, app); break;
-    case SCViewWaveform: sc_draw_waveform(canvas, app); break;
     default: break;
     }
-    if(app->current_view != SCViewWaveform && app->current_view != SCViewCamp) sc_draw_status(canvas, app);
+    if(app->current_view != SCViewCamp) sc_draw_status(canvas, app);
 }
 
 // ============== Input ==============
@@ -820,7 +791,6 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
     case InputKeyUp:
         if(app->current_view == SCViewCamp) { app->camp_start_tick = 0; app->camp_last_proto[0] = 0; }
         app->current_view = app->current_view == 0 ? SCViewCount - 1 : app->current_view - 1;
-        app->waveform_scroll = 0;
         app->decoder_scroll = 0;
         break;
     case InputKeyDown:
@@ -832,7 +802,6 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
         }
         if(app->current_view == SCViewCamp) { app->camp_start_tick = 0; app->camp_last_proto[0] = 0; }
         app->current_view = (app->current_view + 1) % SCViewCount;
-        app->waveform_scroll = 0;
         app->decoder_scroll = 0;
         break;
     case InputKeyLeft:
@@ -858,10 +827,6 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
             }
         } else if(app->current_view == SCViewDecoder) {
             if(app->signal_selected > 0) { app->signal_selected--; app->decoder_scroll = 0; }
-        } else if(app->current_view == SCViewWaveform) {
-            if(ev->type == InputTypeLong || ev->type == InputTypeRepeat) {
-                if(app->signal_selected > 0) { app->signal_selected--; app->waveform_scroll = 0; }
-            } else { if(app->waveform_scroll >= 50) app->waveform_scroll -= 50; else app->waveform_scroll = 0; }
         }
         break;
     case InputKeyRight:
@@ -887,16 +852,6 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
             }
         } else if(app->current_view == SCViewDecoder) {
             if(app->signal_selected + 1 < app->signal_count) { app->signal_selected++; app->decoder_scroll = 0; }
-        } else if(app->current_view == SCViewWaveform) {
-            if(ev->type == InputTypeLong || ev->type == InputTypeRepeat) {
-                if(app->signal_selected + 1 < app->signal_count) { app->signal_selected++; app->waveform_scroll = 0; }
-            } else {
-                app->waveform_scroll += 50;
-                if(app->signal_count > 0) {
-                    SCSignal* s = &app->signals[app->signal_selected];
-                    if(app->waveform_scroll >= s->raw_count) app->waveform_scroll = s->raw_count > 1 ? s->raw_count - 1 : 0;
-                }
-            }
         }
         break;
     case InputKeyOk:
@@ -904,7 +859,7 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
             if(app->current_view == SCViewFreqAnalyzer) {
                 app->hit_sort = (app->hit_sort + 1) % SCSortModes;
                 sc_hit_sort(app->hits, app->hit_count, app->hit_sort);
-            } else if(app->signal_count > 0 && (app->current_view == SCViewDecoder || app->current_view == SCViewWaveform || app->current_view == SCViewCamp)) {
+            } else if(app->signal_count > 0 && (app->current_view == SCViewDecoder || app->current_view == SCViewCamp)) {
                 // Long OK: save with keyboard
                 SCSignal* s = &app->signals[app->signal_selected];
                 if(s->raw_count > 0) {
@@ -937,8 +892,6 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
                         app->hopper_timeout = 40;
                     }
                 }
-            } else if(app->current_view == SCViewWaveform) {
-                app->waveform_zoom = (app->waveform_zoom + 1) % 6;
             }
         }
         break;

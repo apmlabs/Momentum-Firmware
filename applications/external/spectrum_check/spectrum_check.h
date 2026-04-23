@@ -24,14 +24,14 @@
 
 #define SC_HIT_LOG_SIZE 16
 #define SC_SIGNAL_SLOTS 8
-#define SC_RAW_SAMPLES  2048
+#define SC_RAW_SAMPLES  1024
 #define SC_SIG_SAMPLES  512
 #define SC_SPEC_CH      32
 #define SC_RSSI_MIN     (-97.0f)
 #define SC_RSSI_MAX     (-60.0f)
 #define SC_TRIGGER_STEP 1
 
-typedef enum { SCViewSpectrum, SCViewFreqAnalyzer, SCViewCamp, SCViewDecoder, SCViewWaveform, SCViewCount } SCView;
+typedef enum { SCViewSpectrum, SCViewFreqAnalyzer, SCViewCamp, SCViewDecoder, SCViewCount } SCView;
 typedef enum { SCRadioHopping, SCRadioLocked, SCRadioPaused } SCRadioState;
 typedef enum {
     SCModAM650, SCModAM270, SCModFM238, SCModFM476,
@@ -125,8 +125,6 @@ typedef struct {
 
     // UI
     SCView   current_view;
-    uint16_t waveform_scroll;
-    uint8_t  waveform_zoom;
 
     // Save (keyboard)
     ViewDispatcher* view_dispatcher;
