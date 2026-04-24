@@ -8,12 +8,10 @@
 #include <input/input.h>
 #include <notification/notification_messages.h>
 #include <storage/storage.h>
-#include <dialogs/dialogs.h>
 #include <lib/flipper_format/flipper_format.h>
 #include <lib/subghz/devices/devices.h>
 #include <lib/subghz/subghz_worker.h>
 #include <lib/toolbox/level_duration.h>
-#include <toolbox/path.h>
 #include "helpers/radio_device_loader.h"
 
 #define DOOYA_SHORT      290
@@ -26,22 +24,28 @@
 #define DOOYA_REPEATS    3
 #define DOOYA_UPLOAD_MAX 900
 
-#define DOOYA_DIR       EXT_PATH("apps_data/dooya_remote")
-#define DOOYA_EXT       ".dooya"
-#define DOOYA_NAME_MAX  32
+#define DOOYA_DIR        "/ext/apps_data/dooya_remote"
+#define DOOYA_SAVE_FILE  DOOYA_DIR "/remotes.txt"
+#define DOOYA_NAME_LEN   16
+#define DOOYA_MAX_BTNS   8
+#define DOOYA_MAX_REMOTES 4
 
-// Loaded remote data
+// A single learned button
+typedef struct {
+    char name[DOOYA_NAME_LEN];
+    uint16_t cmd;
+} DooyaButton;
+
+// A remote: ID + addr + list of buttons
 typedef struct {
     uint32_t id;
     uint32_t addr;
-    uint16_t cmd_up;
-    uint16_t cmd_stop;
-    uint16_t cmd_down;
-    uint16_t cmd_confirm;
-    char name[DOOYA_NAME_MAX];
-    FuriString* file_path;
+    DooyaButton buttons[DOOYA_MAX_BTNS];
+    uint8_t btn_count;
+    char name[DOOYA_NAME_LEN];
 } DooyaRemoteData;
 
+typedef enum { DooyaModeRemote, DooyaModeLearn } DooyaMode;
 typedef enum { RxIdle, RxPreamble, RxSync, RxData } DooyaRxState;
 
 typedef struct {
@@ -53,19 +57,14 @@ typedef struct {
     SubGhzWorker* worker;
     bool running;
 
-    // Current remote
-    DooyaRemoteData remote;
-    bool has_remote; // false = no file loaded
+    DooyaMode mode;
+    DooyaRemoteData remotes[DOOYA_MAX_REMOTES];
+    uint8_t remote_count;
+    uint8_t remote_sel;
+    uint8_t btn_sel;       // selected button index in current remote
 
-    // UI state
     bool transmitting;
-    uint8_t last_cmd; // 1=up 2=stop 3=down
     uint16_t pending_cmd;
-    bool pending_confirm;
-    bool in_learn;
-    uint8_t learn_btn; // 0=UP 1=STOP 2=DOWN 3=done
-
-    // TX
     LevelDuration* upload;
     volatile uint16_t upload_size;
     volatile uint16_t upload_idx;
@@ -78,8 +77,8 @@ typedef struct {
     volatile bool rx_frame_ready;
     volatile uint64_t rx_frame;
 
-    // Temp for blocking UI
+    // Blocking UI
     ViewDispatcher* vd;
     uint32_t menu_result;
-    char name_buf[DOOYA_NAME_MAX];
+    char name_buf[DOOYA_NAME_LEN];
 } DooyaApp;

@@ -1,123 +1,30 @@
 /*
- * Dooya Remote — Motorized blind/curtain controller with learning
- *
- * Protocol (reverse-engineered):
- *   Freq:     433.92 MHz OOK (AM650)
- *   Preamble: 8 × (290us HIGH + 600us LOW) — first frame only
- *   Sync:     5000us HIGH + 650us LOW
- *   Data:     64 bits PWM — bit 1: 600H+290L, bit 0: 290H+600L
- *   Frame:    [24-bit ID][24-bit addr][16-bit cmd]
- *   TX:       UP/DOWN: N× cmd + N× confirm, STOP: N× cmd
+ * Dooya Remote — Motorized blind controller
+ * Buttons are learned individually, like the IR app.
+ * Each button = a named 16-bit command on a 64-bit Dooya frame.
  */
-
-#include <furi.h>
-#include <furi_hal.h>
-#include <gui/gui.h>
-#include <input/input.h>
-#include <notification/notification_messages.h>
-#include <storage/storage.h>
-#include <lib/flipper_format/flipper_format.h>
-#include <lib/subghz/devices/devices.h>
-#include <lib/subghz/subghz_worker.h>
-#include <lib/toolbox/level_duration.h>
-#include "helpers/radio_device_loader.h"
-
+#include "dooya_remote.h"
 #define TAG "DooyaRemote"
-
-// Protocol timing (microseconds)
-#define DOOYA_SHORT   290
-#define DOOYA_LONG    600
-#define DOOYA_SYNC_H  5000
-#define DOOYA_SYNC_L  650
-#define DOOYA_GAP     5000
-#define DOOYA_PRE     8
-#define DOOYA_BITS    64
-#define DOOYA_REPEATS 3
-
-#define DOOYA_UPLOAD_MAX 900
-#define DOOYA_CMD_CONFIRM 0x24F2
-#define DOOYA_MAX_REMOTES 4
-#define DOOYA_SAVE_PATH "/ext/apps_data/dooya_remote"
-#define DOOYA_SAVE_FILE "/ext/apps_data/dooya_remote/remotes.txt"
-
-// Learned remote: ID + addr + 3 commands
-typedef struct {
-    uint32_t id;    // 24-bit remote ID
-    uint32_t addr;  // 24-bit address
-    uint16_t cmd_up;
-    uint16_t cmd_stop;
-    uint16_t cmd_down;
-    uint16_t cmd_confirm;
-    char name[16];
-} DooyaRemoteData;
-
-typedef enum {
-    DooyaModeRemote,  // normal remote control
-    DooyaModeLearn,   // listening for signal
-} DooyaMode;
-
-// RX decoder state machine
-typedef enum {
-    RxIdle,
-    RxPreamble,
-    RxSync,
-    RxData,
-} DooyaRxState;
-
-typedef struct {
-    ViewPort* view_port;
-    Gui* gui;
-    FuriMessageQueue* event_queue;
-    NotificationApp* notifications;
-    const SubGhzDevice* radio;
-    SubGhzWorker* worker;
-    bool running;
-
-    // Mode
-    DooyaMode mode;
-    uint8_t learn_btn; // 0=waiting for UP, 1=STOP, 2=DOWN, 3=done
-
-    // Remotes
-    DooyaRemoteData remotes[DOOYA_MAX_REMOTES];
-    uint8_t remote_count;
-    uint8_t remote_sel; // currently selected
-
-    // TX state
-    uint8_t last_cmd; // 0=none 1=up 2=stop 3=down
-    bool transmitting;
-    uint16_t pending_cmd;
-    bool pending_confirm;
-    LevelDuration* upload;
-    volatile uint16_t upload_size;
-    volatile uint16_t upload_idx;
-
-    // RX decoder state (accessed from worker callback)
-    volatile DooyaRxState rx_state;
-    volatile uint8_t rx_pre_count;
-    volatile uint8_t rx_bit_count;
-    volatile uint64_t rx_data;
-    volatile bool rx_frame_ready;
-    volatile uint64_t rx_frame; // completed frame
-} DooyaApp;
 
 // ============== File I/O ==============
 static void dooya_save(DooyaApp* app) {
     Storage* st = furi_record_open(RECORD_STORAGE);
-    storage_simply_mkdir(st, DOOYA_SAVE_PATH);
+    storage_simply_mkdir(st, DOOYA_DIR);
     FlipperFormat* ff = flipper_format_file_alloc(st);
     if(flipper_format_file_open_always(ff, DOOYA_SAVE_FILE)) {
         flipper_format_write_header_cstr(ff, "Dooya Remotes", 1);
         uint32_t cnt = app->remote_count;
         flipper_format_write_uint32(ff, "Count", &cnt, 1);
-        for(uint8_t i = 0; i < app->remote_count; i++) {
-            DooyaRemoteData* r = &app->remotes[i];
-            uint32_t vals[6] = {r->id, r->addr, r->cmd_up, r->cmd_stop, r->cmd_down, r->cmd_confirm};
-            char key[8];
-            snprintf(key, sizeof(key), "R%d", i);
-            flipper_format_write_uint32(ff, key, vals, 6);
-            char nkey[8];
-            snprintf(nkey, sizeof(nkey), "N%d", i);
-            flipper_format_write_string_cstr(ff, nkey, r->name);
+        for(uint8_t r = 0; r < app->remote_count; r++) {
+            DooyaRemoteData* rem = &app->remotes[r];
+            uint32_t hdr[3] = {rem->id, rem->addr, rem->btn_count};
+            flipper_format_write_string_cstr(ff, "Remote", rem->name);
+            flipper_format_write_uint32(ff, "Hdr", hdr, 3);
+            for(uint8_t b = 0; b < rem->btn_count; b++) {
+                flipper_format_write_string_cstr(ff, "Btn", rem->buttons[b].name);
+                uint32_t c = rem->buttons[b].cmd;
+                flipper_format_write_uint32(ff, "Cmd", &c, 1);
+            }
         }
     }
     flipper_format_free(ff);
@@ -135,40 +42,43 @@ static void dooya_load(DooyaApp* app) {
             uint32_t cnt = 0;
             flipper_format_read_uint32(ff, "Count", &cnt, 1);
             if(cnt > DOOYA_MAX_REMOTES) cnt = DOOYA_MAX_REMOTES;
-            for(uint32_t i = 0; i < cnt; i++) {
-                uint32_t vals[6] = {0};
-                char key[8];
-                snprintf(key, sizeof(key), "R%d", (int)i);
-                if(flipper_format_read_uint32(ff, key, vals, 6)) {
-                    DooyaRemoteData* r = &app->remotes[i];
-                    r->id = vals[0]; r->addr = vals[1];
-                    r->cmd_up = vals[2]; r->cmd_stop = vals[3];
-                    r->cmd_down = vals[4]; r->cmd_confirm = vals[5];
-                    char nkey[8];
-                    snprintf(nkey, sizeof(nkey), "N%d", (int)i);
-                    FuriString* ns = furi_string_alloc();
-                    if(flipper_format_read_string(ff, nkey, ns)) {
-                        snprintf(r->name, sizeof(r->name), "%s", furi_string_get_cstr(ns));
-                    } else {
-                        snprintf(r->name, sizeof(r->name), "Rem %u", (unsigned)(i + 1));
-                    }
-                    furi_string_free(ns);
-                    app->remote_count++;
+            FuriString* s = furi_string_alloc();
+            for(uint32_t r = 0; r < cnt; r++) {
+                DooyaRemoteData* rem = &app->remotes[app->remote_count];
+                memset(rem, 0, sizeof(DooyaRemoteData));
+                if(!flipper_format_read_string(ff, "Remote", s)) break;
+                snprintf(rem->name, DOOYA_NAME_LEN, "%s", furi_string_get_cstr(s));
+                uint32_t hdr[3] = {0};
+                if(!flipper_format_read_uint32(ff, "Hdr", hdr, 3)) break;
+                rem->id = hdr[0]; rem->addr = hdr[1];
+                uint8_t bc = hdr[2] > DOOYA_MAX_BTNS ? DOOYA_MAX_BTNS : hdr[2];
+                for(uint8_t b = 0; b < bc; b++) {
+                    if(!flipper_format_read_string(ff, "Btn", s)) break;
+                    snprintf(rem->buttons[b].name, DOOYA_NAME_LEN, "%s", furi_string_get_cstr(s));
+                    uint32_t c = 0;
+                    if(!flipper_format_read_uint32(ff, "Cmd", &c, 1)) break;
+                    rem->buttons[b].cmd = c;
+                    rem->btn_count++;
                 }
+                app->remote_count++;
             }
+            furi_string_free(s);
         }
         furi_string_free(type);
     }
     flipper_format_free(ff);
     furi_record_close(RECORD_STORAGE);
 
-    // If no saved remotes, create default
+    // Default remote if nothing saved
     if(app->remote_count == 0) {
-        DooyaRemoteData* r = &app->remotes[0];
-        r->id = 0xA3C0A1; r->addr = 0x6C0100;
-        r->cmd_up = 0x0BD9; r->cmd_stop = 0x23F1;
-        r->cmd_down = 0x4311; r->cmd_confirm = 0x24F2;
-        snprintf(r->name, sizeof(r->name), "Default");
+        DooyaRemoteData* rem = &app->remotes[0];
+        rem->id = 0xA3C0A1; rem->addr = 0x6C0100;
+        snprintf(rem->name, DOOYA_NAME_LEN, "Default");
+        rem->buttons[0] = (DooyaButton){.cmd = 0x0BD9}; snprintf(rem->buttons[0].name, DOOYA_NAME_LEN, "Up");
+        rem->buttons[1] = (DooyaButton){.cmd = 0x23F1}; snprintf(rem->buttons[1].name, DOOYA_NAME_LEN, "Stop");
+        rem->buttons[2] = (DooyaButton){.cmd = 0x4311}; snprintf(rem->buttons[2].name, DOOYA_NAME_LEN, "Down");
+        rem->buttons[3] = (DooyaButton){.cmd = 0x24F2}; snprintf(rem->buttons[3].name, DOOYA_NAME_LEN, "Confirm");
+        rem->btn_count = 4;
         app->remote_count = 1;
     }
 }
@@ -201,29 +111,19 @@ static LevelDuration dooya_tx_yield(void* ctx) {
     return app->upload[app->upload_idx++];
 }
 
-static void dooya_transmit(DooyaApp* app, uint16_t cmd, bool with_confirm) {
-    DooyaRemoteData* r = &app->remotes[app->remote_sel];
+static void dooya_transmit(DooyaApp* app, uint16_t cmd) {
+    DooyaRemoteData* rem = &app->remotes[app->remote_sel];
     app->transmitting = true;
     view_port_update(app->view_port);
-
-    uint64_t data = ((uint64_t)r->id << 40) | ((uint64_t)r->addr << 16) | cmd;
-    uint64_t conf = ((uint64_t)r->id << 40) | ((uint64_t)r->addr << 16) | r->cmd_confirm;
-
+    uint64_t data = ((uint64_t)rem->id << 40) | ((uint64_t)rem->addr << 16) | cmd;
     uint16_t pos = 0;
     for(uint8_t i = 0; i < DOOYA_REPEATS; i++)
         pos = dooya_encode_frame(app->upload, pos, data);
-    if(with_confirm) {
-        for(uint8_t i = 0; i < DOOYA_REPEATS; i++)
-            pos = dooya_encode_frame(app->upload, pos, conf);
-    }
-    app->upload_size = pos;
-    app->upload_idx = 0;
-
+    app->upload_size = pos; app->upload_idx = 0;
     subghz_devices_idle(app->radio);
     subghz_devices_load_preset(app->radio, FuriHalSubGhzPresetOok650Async, NULL);
     subghz_devices_set_frequency(app->radio, 433920000);
     subghz_devices_set_async_mirror_pin(app->radio, NULL);
-
     if(subghz_devices_start_async_tx(app->radio, dooya_tx_yield, app)) {
         while(!subghz_devices_is_async_complete_tx(app->radio)) furi_delay_ms(10);
         subghz_devices_stop_async_tx(app->radio);
@@ -234,77 +134,41 @@ static void dooya_transmit(DooyaApp* app, uint16_t cmd, bool with_confirm) {
 }
 
 // ============== RX Decoder ==============
-static void dooya_rx_callback(void* ctx, bool level, uint32_t duration) {
+static void dooya_rx_cb(void* ctx, bool level, uint32_t duration) {
     DooyaApp* app = ctx;
-
     switch(app->rx_state) {
     case RxIdle:
-        // Look for preamble: short HIGH
-        if(level && duration > 180 && duration < 450) {
-            app->rx_pre_count = 1;
-            app->rx_state = RxPreamble;
-        }
+        if(level && duration > 180 && duration < 450) { app->rx_pre_count = 1; app->rx_state = RxPreamble; }
         break;
-
     case RxPreamble:
-        if(!level && duration > 400 && duration < 800) {
-            // Long LOW after short HIGH — preamble pair OK, wait for next
-        } else if(level && duration > 180 && duration < 450) {
-            app->rx_pre_count++;
-        } else if(level && duration > 3500 && duration < 6500) {
-            // Sync HIGH! Need at least 4 preamble pulses
-            if(app->rx_pre_count >= 4) {
-                app->rx_state = RxSync;
-            } else {
-                app->rx_state = RxIdle;
-            }
-        } else {
-            app->rx_state = RxIdle;
-        }
+        if(!level && duration > 400 && duration < 800) { /* preamble LOW */ }
+        else if(level && duration > 180 && duration < 450) { app->rx_pre_count++; }
+        else if(level && duration > 3500 && duration < 6500) { app->rx_state = app->rx_pre_count >= 4 ? RxSync : RxIdle; }
+        else { app->rx_state = RxIdle; }
         break;
-
     case RxSync:
-        // Expect sync LOW (~650us)
-        if(!level && duration > 300 && duration < 1000) {
-            app->rx_bit_count = 0;
-            app->rx_data = 0;
-            app->rx_state = RxData;
-        } else {
-            app->rx_state = RxIdle;
-        }
+        if(!level && duration > 300 && duration < 1000) { app->rx_bit_count = 0; app->rx_data = 0; app->rx_state = RxData; }
+        else { app->rx_state = RxIdle; }
         break;
-
     case RxData:
         if(level) {
-            // HIGH pulse: long=1, short=0
             app->rx_data <<= 1;
             if(duration > 400) app->rx_data |= 1;
-            app->rx_bit_count++;
-            if(app->rx_bit_count >= 64) {
-                app->rx_frame = app->rx_data;
-                app->rx_frame_ready = true;
-                app->rx_state = RxIdle;
-            }
+            if(++app->rx_bit_count >= 64) { app->rx_frame = app->rx_data; app->rx_frame_ready = true; app->rx_state = RxIdle; }
         } else if(duration > 3500) {
-            // Gap or next sync — frame ended early
-            if(app->rx_bit_count >= 48) {
-                app->rx_frame = app->rx_data << (64 - app->rx_bit_count);
-                app->rx_frame_ready = true;
-            }
+            if(app->rx_bit_count >= 48) { app->rx_frame = app->rx_data << (64 - app->rx_bit_count); app->rx_frame_ready = true; }
             app->rx_state = RxIdle;
         }
-        // Normal LOW between bits — just continue
         break;
     }
 }
 
 static void dooya_rx_start(DooyaApp* app) {
-    app->rx_state = RxIdle;
-    app->rx_frame_ready = false;
+    app->rx_state = RxIdle; app->rx_frame_ready = false;
     subghz_devices_idle(app->radio);
     subghz_devices_load_preset(app->radio, FuriHalSubGhzPresetOok650Async, NULL);
     subghz_devices_set_frequency(app->radio, 433920000);
-    subghz_worker_set_pair_callback(app->worker, (SubGhzWorkerPairCallback)dooya_rx_callback);
+    subghz_worker_set_pair_callback(app->worker, (SubGhzWorkerPairCallback)dooya_rx_cb);
     subghz_worker_set_context(app->worker, app);
     subghz_devices_start_async_rx(app->radio, subghz_worker_rx_callback, app->worker);
     subghz_worker_start(app->worker);
@@ -316,161 +180,165 @@ static void dooya_rx_stop(DooyaApp* app) {
     subghz_devices_idle(app->radio);
 }
 
+// ============== Blocking UI helpers ==============
+static void dooya_menu_cb(void* ctx, uint32_t index) {
+    DooyaApp* app = ctx; app->menu_result = index; view_dispatcher_stop(app->vd);
+}
+static bool dooya_nav_cb(void* ctx) {
+    DooyaApp* app = ctx; app->menu_result = UINT32_MAX; view_dispatcher_stop(app->vd); return true;
+}
+static void dooya_text_cb(void* ctx) {
+    DooyaApp* app = ctx; app->menu_result = 0; view_dispatcher_stop(app->vd);
+}
+
+static uint32_t dooya_show_menu(DooyaApp* app, const char* header, const char** items, uint8_t count) {
+    gui_remove_view_port(app->gui, app->view_port);
+    ViewDispatcher* vd = view_dispatcher_alloc();
+    Submenu* sm = submenu_alloc();
+    app->vd = vd; app->menu_result = UINT32_MAX;
+    view_dispatcher_set_event_callback_context(vd, app);
+    view_dispatcher_set_navigation_event_callback(vd, dooya_nav_cb);
+    view_dispatcher_add_view(vd, 0, submenu_get_view(sm));
+    if(header) submenu_set_header(sm, header);
+    for(uint8_t i = 0; i < count; i++) submenu_add_item(sm, items[i], i, dooya_menu_cb, app);
+    view_dispatcher_switch_to_view(vd, 0);
+    view_dispatcher_attach_to_gui(vd, app->gui, ViewDispatcherTypeFullscreen);
+    view_dispatcher_run(vd);
+    view_dispatcher_remove_view(vd, 0);
+    submenu_free(sm); view_dispatcher_free(vd); app->vd = NULL;
+    gui_add_view_port(app->gui, app->view_port, GuiLayerFullscreen);
+    return app->menu_result;
+}
+
+static bool dooya_show_keyboard(DooyaApp* app, const char* header, char* buf, uint8_t len) {
+    gui_remove_view_port(app->gui, app->view_port);
+    ViewDispatcher* vd = view_dispatcher_alloc();
+    TextInput* ti = text_input_alloc();
+    app->vd = vd; app->menu_result = UINT32_MAX;
+    view_dispatcher_set_event_callback_context(vd, app);
+    view_dispatcher_set_navigation_event_callback(vd, dooya_nav_cb);
+    view_dispatcher_add_view(vd, 0, text_input_get_view(ti));
+    text_input_set_header_text(ti, header);
+    text_input_set_result_callback(ti, dooya_text_cb, app, buf, len, false);
+    view_dispatcher_switch_to_view(vd, 0);
+    view_dispatcher_attach_to_gui(vd, app->gui, ViewDispatcherTypeFullscreen);
+    view_dispatcher_run(vd);
+    bool ok = app->menu_result != UINT32_MAX;
+    view_dispatcher_remove_view(vd, 0);
+    text_input_free(ti); view_dispatcher_free(vd); app->vd = NULL;
+    gui_add_view_port(app->gui, app->view_port, GuiLayerFullscreen);
+    return ok;
+}
+
 // ============== Drawing ==============
 static void dooya_draw_remote(Canvas* canvas, DooyaApp* app) {
-    DooyaRemoteData* r = &app->remotes[app->remote_sel];
+    DooyaRemoteData* rem = &app->remotes[app->remote_sel];
     char buf[32];
 
-    // Row 1: name
+    // Title
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str_aligned(canvas, 64, 0, AlignCenter, AlignTop, r->name);
+    canvas_draw_str_aligned(canvas, 64, 0, AlignCenter, AlignTop, rem->name);
 
-    // Row 2: status
+    // Status
     canvas_set_font(canvas, FontSecondary);
     if(app->transmitting) {
         canvas_draw_str_aligned(canvas, 64, 12, AlignCenter, AlignTop, ">>> Transmitting <<<");
     } else {
         snprintf(buf, sizeof(buf), "%06lX:%06lX  %d/%d",
-            r->id, r->addr, app->remote_sel + 1, app->remote_count);
+            rem->id, rem->addr, app->remote_sel + 1, app->remote_count);
         canvas_draw_str_aligned(canvas, 64, 12, AlignCenter, AlignTop, buf);
     }
 
-    // 3 buttons: y=21,32,43 — 10px tall, 1px gap
-    static const uint8_t by[] = {21, 32, 43};
-    static const char* labels[] = {"\x18 OPEN", "STOP", "\x19 CLOSE"};
-    for(uint8_t i = 0; i < 3; i++) {
-        canvas_draw_rframe(canvas, 30, by[i], 68, 10, 3);
-        if(app->last_cmd == (i + 1) && app->transmitting) {
-            canvas_draw_rbox(canvas, 30, by[i], 68, 10, 3);
-            canvas_set_color(canvas, ColorWhite);
+    // Button list — show up to 3 visible, selected one highlighted
+    if(rem->btn_count == 0) {
+        canvas_draw_str_aligned(canvas, 64, 34, AlignCenter, AlignCenter, "No buttons");
+    } else {
+        uint8_t first = 0;
+        if(app->btn_sel > 1) first = app->btn_sel - 1;
+        if(first + 3 > rem->btn_count && rem->btn_count >= 3) first = rem->btn_count - 3;
+        for(uint8_t i = 0; i < 3 && (first + i) < rem->btn_count; i++) {
+            uint8_t idx = first + i;
+            uint8_t y = 22 + i * 12;
+            canvas_draw_rframe(canvas, 20, y, 88, 11, 3);
+            if(idx == app->btn_sel) {
+                canvas_draw_rbox(canvas, 20, y, 88, 11, 3);
+                canvas_set_color(canvas, ColorWhite);
+            }
+            snprintf(buf, sizeof(buf), "%s [%04X]", rem->buttons[idx].name, rem->buttons[idx].cmd);
+            canvas_draw_str_aligned(canvas, 64, y + 2, AlignCenter, AlignTop, buf);
+            canvas_set_color(canvas, ColorBlack);
         }
-        canvas_draw_str_aligned(canvas, 64, by[i] + 1, AlignCenter, AlignTop, labels[i]);
-        canvas_set_color(canvas, ColorBlack);
+        // Scroll indicators
+        if(first > 0) canvas_draw_str_aligned(canvas, 6, 28, AlignCenter, AlignCenter, "\x18");
+        if(first + 3 < rem->btn_count) canvas_draw_str_aligned(canvas, 6, 40, AlignCenter, AlignCenter, "\x19");
     }
 
-    // L/R arrows centered vertically with middle button
-    canvas_draw_str_aligned(canvas, 15, 37, AlignCenter, AlignCenter, "<");
-    canvas_draw_str_aligned(canvas, 113, 37, AlignCenter, AlignCenter, ">");
+    // L/R remote switch
+    canvas_draw_str_aligned(canvas, 2, 34, AlignLeft, AlignCenter, "<");
+    canvas_draw_str_aligned(canvas, 126, 34, AlignRight, AlignCenter, ">");
 
-    // Bottom hint line — y=55 gives 8px clearance from buttons ending at y=53
-    canvas_draw_str(canvas, 0, 63, "<Prev");
-    canvas_draw_str_aligned(canvas, 64, 55, AlignCenter, AlignTop, "Hold OK:Menu");
-    canvas_draw_str_aligned(canvas, 127, 63, AlignRight, AlignBottom, "Next>");
+    // Bottom
+    canvas_draw_str(canvas, 0, 63, "OK:Send");
+    canvas_draw_str_aligned(canvas, 127, 63, AlignRight, AlignBottom, "Hold OK:Menu");
 }
 
 static void dooya_draw_learn(Canvas* canvas, DooyaApp* app) {
+    DooyaRemoteData* rem = &app->remotes[app->remote_sel];
+    char buf[40];
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str_aligned(canvas, 64, 2, AlignCenter, AlignTop, "Learn Remote");
-
+    canvas_draw_str_aligned(canvas, 64, 0, AlignCenter, AlignTop, "Learn Buttons");
     canvas_set_font(canvas, FontSecondary);
-    if(app->learn_btn < 5) {
-        // States 0-4: still learning
-        // 0=press UP, 1=hold UP (catching confirm), 2=press STOP, 3=press DOWN, 4=hold DOWN
-        static const char* prompts[] = {
-            "Press UP on remote...",
-            "Keep holding UP...",
-            "Press STOP on remote...",
-            "Press DOWN on remote...",
-            "Keep holding DOWN..."};
-        canvas_draw_str_aligned(canvas, 64, 24, AlignCenter, AlignTop, prompts[app->learn_btn]);
-        canvas_draw_str_aligned(canvas, 64, 36, AlignCenter, AlignTop, "Listening 433.92 MHz");
-
-        if(app->learn_btn > 0) {
-            uint8_t idx = app->remote_count < DOOYA_MAX_REMOTES ? app->remote_count : DOOYA_MAX_REMOTES - 1;
-            DooyaRemoteData* r = &app->remotes[idx];
-            char buf[40];
-            snprintf(buf, sizeof(buf), "ID:%06lX Addr:%06lX", r->id, r->addr);
-            canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignTop, buf);
-        }
-    } else {
-        // State 5: all done
-        uint8_t idx = app->remote_count < DOOYA_MAX_REMOTES ? app->remote_count : DOOYA_MAX_REMOTES - 1;
-        DooyaRemoteData* r = &app->remotes[idx];
-        char buf[40];
-        canvas_draw_str_aligned(canvas, 64, 18, AlignCenter, AlignTop, "All buttons captured!");
-        snprintf(buf, sizeof(buf), "ID:%06lX Addr:%06lX", r->id, r->addr);
-        canvas_draw_str_aligned(canvas, 64, 30, AlignCenter, AlignTop, buf);
-        snprintf(buf, sizeof(buf), "UP:%04X ST:%04X DN:%04X", r->cmd_up, r->cmd_stop, r->cmd_down);
-        canvas_draw_str_aligned(canvas, 64, 42, AlignCenter, AlignTop, buf);
-        snprintf(buf, sizeof(buf), "Confirm:%04X", r->cmd_confirm);
+    canvas_draw_str_aligned(canvas, 64, 16, AlignCenter, AlignTop, "Press any button on remote");
+    canvas_draw_str_aligned(canvas, 64, 28, AlignCenter, AlignTop, "Listening 433.92 MHz...");
+    snprintf(buf, sizeof(buf), "Captured: %d buttons", rem->btn_count);
+    canvas_draw_str_aligned(canvas, 64, 42, AlignCenter, AlignTop, buf);
+    if(rem->btn_count > 0) {
+        DooyaButton* last = &rem->buttons[rem->btn_count - 1];
+        snprintf(buf, sizeof(buf), "Last: %s [%04X]", last->name, last->cmd);
         canvas_draw_str_aligned(canvas, 64, 52, AlignCenter, AlignTop, buf);
     }
-
-    canvas_draw_str(canvas, 0, 63, "Back:Cancel");
-    if(app->learn_btn >= 5) {
-        canvas_draw_str_aligned(canvas, 127, 63, AlignRight, AlignBottom, "OK:Save");
-    }
+    canvas_draw_str(canvas, 0, 63, "Back:Done");
 }
 
 static void dooya_draw_cb(Canvas* canvas, void* ctx) {
     DooyaApp* app = ctx;
-    canvas_clear(canvas);
-    canvas_set_color(canvas, ColorBlack);
-    if(app->mode == DooyaModeLearn) {
-        dooya_draw_learn(canvas, app);
-    } else {
-        dooya_draw_remote(canvas, app);
-    }
+    canvas_clear(canvas); canvas_set_color(canvas, ColorBlack);
+    if(app->mode == DooyaModeLearn) dooya_draw_learn(canvas, app);
+    else dooya_draw_remote(canvas, app);
 }
 
-// ============== Input ==============
 static void dooya_input_cb(InputEvent* ev, void* ctx) {
     furi_message_queue_put(((DooyaApp*)ctx)->event_queue, ev, FuriWaitForever);
 }
 
+// ============== Learn: auto-save each unique signal ==============
 static void dooya_handle_learn_frame(DooyaApp* app, uint64_t frame) {
     uint32_t id = (frame >> 40) & 0xFFFFFF;
     uint32_t addr = (frame >> 16) & 0xFFFFFF;
     uint16_t cmd = frame & 0xFFFF;
 
-    uint8_t slot = app->remote_count < DOOYA_MAX_REMOTES ? app->remote_count : DOOYA_MAX_REMOTES - 1;
-    DooyaRemoteData* r = &app->remotes[slot];
+    DooyaRemoteData* rem = &app->remotes[app->remote_sel];
 
-    // learn_btn: 0=wait UP, 1=wait UP confirm, 2=wait STOP, 3=wait DOWN, 4=wait DOWN confirm, 5=done
-    if(app->learn_btn == 0) {
-        // First frame — store ID, addr, UP command
-        r->id = id;
-        r->addr = addr;
-        r->cmd_up = cmd;
-        r->cmd_confirm = 0; // will be captured
-        snprintf(r->name, sizeof(r->name), "Learned %d", slot + 1);
-        app->learn_btn = 1; // now wait for confirm
+    // First frame sets ID+addr
+    if(rem->btn_count == 0) {
+        rem->id = id; rem->addr = addr;
+    } else if(rem->id != id || rem->addr != addr) {
+        return; // different remote, ignore
+    }
+
+    // Check if this cmd already captured
+    for(uint8_t i = 0; i < rem->btn_count; i++) {
+        if(rem->buttons[i].cmd == cmd) return; // duplicate
+    }
+
+    // Add new button
+    if(rem->btn_count < DOOYA_MAX_BTNS) {
+        DooyaButton* btn = &rem->buttons[rem->btn_count];
+        snprintf(btn->name, DOOYA_NAME_LEN, "Button %d", rem->btn_count + 1);
+        btn->cmd = cmd;
+        rem->btn_count++;
+        dooya_save(app); // save immediately
         notification_message(app->notifications, &sequence_success);
-    } else if(id == r->id && addr == r->addr) {
-        switch(app->learn_btn) {
-        case 1: // waiting for UP confirm
-            if(cmd != r->cmd_up) {
-                r->cmd_confirm = cmd; // got the confirm code!
-                app->learn_btn = 2; // move to STOP
-                notification_message(app->notifications, &sequence_success);
-            }
-            // else: duplicate UP frame, ignore
-            break;
-        case 2: // waiting for STOP
-            if(cmd != r->cmd_up && cmd != r->cmd_confirm) {
-                r->cmd_stop = cmd;
-                app->learn_btn = 3; // move to DOWN
-                notification_message(app->notifications, &sequence_success);
-            }
-            break;
-        case 3: // waiting for DOWN
-            if(cmd != r->cmd_up && cmd != r->cmd_stop && cmd != r->cmd_confirm) {
-                r->cmd_down = cmd;
-                app->learn_btn = 4; // wait for DOWN confirm
-                notification_message(app->notifications, &sequence_success);
-            }
-            break;
-        case 4: // waiting for DOWN confirm (should match UP confirm)
-            if(cmd == r->cmd_confirm || cmd != r->cmd_down) {
-                // Confirmed — or got a different trailer. Either way, done.
-                app->learn_btn = 5;
-                notification_message(app->notifications, &sequence_success);
-            }
-            // else: duplicate DOWN frame, ignore
-            break;
-        default:
-            break;
-        }
     }
     view_port_update(app->view_port);
 }
@@ -481,16 +349,12 @@ int32_t dooya_remote_app(void* p) {
     DooyaApp* app = malloc(sizeof(DooyaApp));
     memset(app, 0, sizeof(DooyaApp));
     app->running = true;
-    app->mode = DooyaModeRemote;
     app->upload = malloc(DOOYA_UPLOAD_MAX * sizeof(LevelDuration));
-
     app->event_queue = furi_message_queue_alloc(8, sizeof(InputEvent));
     app->notifications = furi_record_open(RECORD_NOTIFICATION);
-
     subghz_devices_init();
     app->radio = radio_device_loader_set(NULL, SubGhzRadioDeviceTypeInternal);
     app->worker = subghz_worker_alloc();
-
     dooya_load(app);
 
     app->view_port = view_port_alloc();
@@ -501,85 +365,92 @@ int32_t dooya_remote_app(void* p) {
 
     InputEvent event;
     while(app->running) {
-        // In learn mode, check for decoded frames
         if(app->mode == DooyaModeLearn && app->rx_frame_ready) {
             app->rx_frame_ready = false;
             dooya_handle_learn_frame(app, app->rx_frame);
         }
-
         if(furi_message_queue_get(app->event_queue, &event, 50) != FuriStatusOk) continue;
 
         if(app->mode == DooyaModeLearn) {
-            // Learn mode input
             if(event.key == InputKeyBack && event.type == InputTypeShort) {
                 dooya_rx_stop(app);
                 app->mode = DooyaModeRemote;
-                view_port_update(app->view_port);
-            } else if(event.key == InputKeyOk && event.type == InputTypeShort && app->learn_btn >= 5) {
-                // Save the learned remote
-                dooya_rx_stop(app);
-                uint8_t slot = app->remote_count < DOOYA_MAX_REMOTES ? app->remote_count : DOOYA_MAX_REMOTES - 1;
-                if(app->remote_count < DOOYA_MAX_REMOTES) app->remote_count++;
-                app->remote_sel = slot;
-                dooya_save(app);
-                app->mode = DooyaModeRemote;
-                notification_message(app->notifications, &sequence_success);
                 view_port_update(app->view_port);
             }
-        } else {
-            // Remote mode input
-            if(event.key == InputKeyBack && event.type == InputTypeShort) {
-                app->running = false;
-            } else if(event.key == InputKeyOk && event.type == InputTypeLong) {
-                // Menu — no transmit on long press
-                if(app->remote_count < DOOYA_MAX_REMOTES) {
-                    app->mode = DooyaModeLearn;
-                    app->learn_btn = 0;
-                    dooya_rx_start(app);
-                    view_port_update(app->view_port);
-                }
-            } else if(event.key == InputKeyOk && event.type == InputTypeShort) {
-                // STOP — fires on release, so long-press OK won't trigger this
-                DooyaRemoteData* r = &app->remotes[app->remote_sel];
-                app->last_cmd = 2;
-                dooya_transmit(app, r->cmd_stop, false);
+            continue;
+        }
+
+        // Remote mode
+        DooyaRemoteData* rem = &app->remotes[app->remote_sel];
+        if(event.key == InputKeyBack && event.type == InputTypeShort) {
+            app->running = false;
+        } else if(event.key == InputKeyUp && event.type == InputTypeShort) {
+            if(app->btn_sel > 0) app->btn_sel--;
+            view_port_update(app->view_port);
+        } else if(event.key == InputKeyDown && event.type == InputTypeShort) {
+            if(rem->btn_count > 0 && app->btn_sel < rem->btn_count - 1) app->btn_sel++;
+            view_port_update(app->view_port);
+        } else if(event.key == InputKeyLeft && event.type == InputTypeShort) {
+            app->remote_sel = app->remote_sel > 0 ? app->remote_sel - 1 : app->remote_count - 1;
+            app->btn_sel = 0;
+            view_port_update(app->view_port);
+        } else if(event.key == InputKeyRight && event.type == InputTypeShort) {
+            app->remote_sel = (app->remote_sel + 1) % app->remote_count;
+            app->btn_sel = 0;
+            view_port_update(app->view_port);
+        } else if(event.key == InputKeyOk && event.type == InputTypeShort) {
+            // Send selected button
+            if(rem->btn_count > 0 && app->btn_sel < rem->btn_count) {
+                dooya_transmit(app, rem->buttons[app->btn_sel].cmd);
                 notification_message(app->notifications, &sequence_blink_cyan_100);
-            } else if(event.key == InputKeyLeft && event.type == InputTypeShort) {
-                if(app->remote_sel > 0) app->remote_sel--;
-                else app->remote_sel = app->remote_count - 1;
-                view_port_update(app->view_port);
-            } else if(event.key == InputKeyRight && event.type == InputTypeShort) {
-                app->remote_sel = (app->remote_sel + 1) % app->remote_count;
-                view_port_update(app->view_port);
-            } else if(event.type == InputTypePress) {
-                DooyaRemoteData* r = &app->remotes[app->remote_sel];
-                uint16_t cmd = 0;
-                bool confirm = false;
-                uint8_t cmd_id = 0;
-                switch(event.key) {
-                case InputKeyUp:   cmd = r->cmd_up;   confirm = true;  cmd_id = 1; break;
-                case InputKeyDown: cmd = r->cmd_down;  confirm = true;  cmd_id = 3; break;
-                default: break;
-                }
-                if(cmd) {
-                    if(app->transmitting) {
-                        app->pending_cmd = cmd;
-                        app->pending_confirm = confirm;
-                        app->last_cmd = cmd_id;
-                    } else {
-                        app->last_cmd = cmd_id;
-                        dooya_transmit(app, cmd, confirm);
-                        notification_message(app->notifications, &sequence_blink_cyan_100);
-                        if(app->pending_cmd) {
-                            uint16_t pc = app->pending_cmd;
-                            bool pcf = app->pending_confirm;
-                            app->pending_cmd = 0;
-                            dooya_transmit(app, pc, pcf);
-                            notification_message(app->notifications, &sequence_blink_cyan_100);
-                        }
+            }
+        } else if(event.key == InputKeyOk && event.type == InputTypeLong) {
+            // Menu
+            const char* items[5]; uint8_t n = 0;
+            items[n++] = "Learn buttons";
+            if(rem->btn_count > 0) items[n++] = "Rename button";
+            if(rem->btn_count > 0) items[n++] = "Delete button";
+            items[n++] = "Rename remote";
+            if(app->remote_count > 1) items[n++] = "Delete remote";
+
+            uint32_t sel = dooya_show_menu(app, rem->name, items, n);
+            if(sel != UINT32_MAX && sel < n) {
+                const char* picked = items[sel];
+                if(picked == items[0]) { // Learn
+                    // If this is a new remote slot, set it up
+                    if(rem->btn_count == 0 && app->remote_count < DOOYA_MAX_REMOTES) {
+                        snprintf(rem->name, DOOYA_NAME_LEN, "Remote %d", app->remote_count + 1);
                     }
+                    app->mode = DooyaModeLearn;
+                    dooya_rx_start(app);
+                } else if(!strcmp(picked, "Rename button")) {
+                    snprintf(app->name_buf, DOOYA_NAME_LEN, "%s", rem->buttons[app->btn_sel].name);
+                    if(dooya_show_keyboard(app, "Rename button", app->name_buf, DOOYA_NAME_LEN)) {
+                        snprintf(rem->buttons[app->btn_sel].name, DOOYA_NAME_LEN, "%s", app->name_buf);
+                        dooya_save(app);
+                    }
+                } else if(!strcmp(picked, "Delete button")) {
+                    for(uint8_t i = app->btn_sel; i + 1 < rem->btn_count; i++)
+                        rem->buttons[i] = rem->buttons[i + 1];
+                    rem->btn_count--;
+                    if(app->btn_sel >= rem->btn_count && app->btn_sel > 0) app->btn_sel--;
+                    dooya_save(app);
+                } else if(!strcmp(picked, "Rename remote")) {
+                    snprintf(app->name_buf, DOOYA_NAME_LEN, "%s", rem->name);
+                    if(dooya_show_keyboard(app, "Rename remote", app->name_buf, DOOYA_NAME_LEN)) {
+                        snprintf(rem->name, DOOYA_NAME_LEN, "%s", app->name_buf);
+                        dooya_save(app);
+                    }
+                } else if(!strcmp(picked, "Delete remote")) {
+                    for(uint8_t i = app->remote_sel; i + 1 < app->remote_count; i++)
+                        app->remotes[i] = app->remotes[i + 1];
+                    app->remote_count--;
+                    if(app->remote_sel >= app->remote_count) app->remote_sel = app->remote_count - 1;
+                    app->btn_sel = 0;
+                    dooya_save(app);
                 }
             }
+            view_port_update(app->view_port);
         }
     }
 
@@ -592,7 +463,6 @@ int32_t dooya_remote_app(void* p) {
     subghz_devices_deinit();
     furi_record_close(RECORD_NOTIFICATION);
     furi_message_queue_free(app->event_queue);
-    free(app->upload);
-    free(app);
+    free(app->upload); free(app);
     return 0;
 }
