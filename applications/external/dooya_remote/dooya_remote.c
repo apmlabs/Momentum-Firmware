@@ -337,10 +337,10 @@ static void dooya_handle_learn_frame(DooyaApp* app, uint64_t frame) {
         return; // different remote, ignore
     }
 
-    // Check if this cmd already captured
-    for(uint8_t i = 0; i < rem->btn_count; i++) {
-        if(rem->buttons[i].cmd == cmd) return; // duplicate
-    }
+    // Check if this cmd already captured (skip — save all for testing)
+    // for(uint8_t i = 0; i < rem->btn_count; i++) {
+    //     if(rem->buttons[i].cmd == cmd) return; // duplicate
+    // }
 
     // Add new button
     if(rem->btn_count < DOOYA_MAX_BTNS) {
