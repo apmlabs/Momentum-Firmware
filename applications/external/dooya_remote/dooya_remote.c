@@ -285,19 +285,30 @@ static void dooya_draw_remote(Canvas* canvas, DooyaApp* app) {
 static void dooya_draw_learn(Canvas* canvas, DooyaApp* app) {
     DooyaRemoteData* rem = &app->remotes[app->remote_sel];
     char buf[40];
+    uint8_t new_count = rem->btn_count - app->learn_start;
+
     canvas_set_font(canvas, FontPrimary);
     canvas_draw_str_aligned(canvas, 64, 0, AlignCenter, AlignTop, "Learn Buttons");
     canvas_set_font(canvas, FontSecondary);
-    canvas_draw_str_aligned(canvas, 64, 16, AlignCenter, AlignTop, "Press any button on remote");
-    canvas_draw_str_aligned(canvas, 64, 28, AlignCenter, AlignTop, "Listening 433.92 MHz...");
-    snprintf(buf, sizeof(buf), "Captured: %d buttons", rem->btn_count);
-    canvas_draw_str_aligned(canvas, 64, 42, AlignCenter, AlignTop, buf);
-    if(rem->btn_count > 0) {
-        DooyaButton* last = &rem->buttons[rem->btn_count - 1];
-        snprintf(buf, sizeof(buf), "Last: %s [%04X]", last->name, last->cmd);
-        canvas_draw_str_aligned(canvas, 64, 52, AlignCenter, AlignTop, buf);
+
+    if(new_count == 0) {
+        canvas_draw_str_aligned(canvas, 64, 20, AlignCenter, AlignTop, "Press any button on remote");
+        canvas_draw_str_aligned(canvas, 64, 32, AlignCenter, AlignTop, "Listening 433.92 MHz...");
+    } else {
+        // Show log of captured buttons (last 3 fit on screen)
+        snprintf(buf, sizeof(buf), "New: %d  Total: %d", new_count, rem->btn_count);
+        canvas_draw_str_aligned(canvas, 64, 13, AlignCenter, AlignTop, buf);
+        uint8_t first = app->learn_start;
+        if(rem->btn_count > first + 3) first = rem->btn_count - 3;
+        for(uint8_t i = 0; i < 3 && (first + i) < rem->btn_count; i++) {
+            DooyaButton* b = &rem->buttons[first + i];
+            snprintf(buf, sizeof(buf), "+ %s  [%04X]", b->name, b->cmd);
+            canvas_draw_str(canvas, 4, 28 + i * 10, buf);
+        }
     }
+
     canvas_draw_str(canvas, 0, 63, "Back:Done");
+    canvas_draw_str_aligned(canvas, 127, 63, AlignRight, AlignBottom, "Listening...");
 }
 
 static void dooya_draw_cb(Canvas* canvas, void* ctx) {
@@ -422,6 +433,7 @@ int32_t dooya_remote_app(void* p) {
                         snprintf(rem->name, DOOYA_NAME_LEN, "Remote %d", app->remote_count + 1);
                     }
                     app->mode = DooyaModeLearn;
+                    app->learn_start = rem->btn_count;
                     dooya_rx_start(app);
                 } else if(!strcmp(picked, "Rename button")) {
                     snprintf(app->name_buf, DOOYA_NAME_LEN, "%s", rem->buttons[app->btn_sel].name);

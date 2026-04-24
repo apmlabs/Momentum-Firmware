@@ -62,6 +62,7 @@ typedef struct {
     uint8_t remote_count;
     uint8_t remote_sel;
     uint8_t btn_sel;       // selected button index in current remote
+    uint8_t learn_start;   // btn_count when learn mode started
 
     bool transmitting;
     uint16_t pending_cmd;
