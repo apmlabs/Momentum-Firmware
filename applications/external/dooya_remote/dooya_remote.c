@@ -42,6 +42,19 @@ static void dooya_load(DooyaApp* app) {
             uint32_t cnt = 0;
             flipper_format_read_uint32(ff, "Count", &cnt, 1);
             if(cnt > DOOYA_MAX_REMOTES) cnt = DOOYA_MAX_REMOTES;
+            // Detect format: try reading first Frm key to see if it exists
+            bool has_frm = false;
+            {
+                uint32_t probe[2] = {0};
+                // Save position by trying to read — if Frm exists anywhere, use new format
+                // We need to rewind after probing
+                if(flipper_format_read_uint32(ff, "Frm", probe, 2)) has_frm = true;
+                flipper_format_rewind(ff);
+                // Re-skip header and Count
+                flipper_format_read_header(ff, type, &ver);
+                flipper_format_read_uint32(ff, "Count", &cnt, 1);
+                if(cnt > DOOYA_MAX_REMOTES) cnt = DOOYA_MAX_REMOTES;
+            }
             FuriString* s = furi_string_alloc();
             for(uint32_t r = 0; r < cnt; r++) {
                 DooyaRemoteData* rem = &app->remotes[app->remote_count];
@@ -56,12 +69,15 @@ static void dooya_load(DooyaApp* app) {
                     if(!flipper_format_read_string(ff, "Btn", s)) break;
                     snprintf(rem->buttons[b].name, DOOYA_NAME_LEN, "%s", furi_string_get_cstr(s));
                     uint32_t f[2] = {0};
-                    if(flipper_format_read_uint32(ff, "Frm", f, 2)) {
-                        rem->buttons[b].frame = ((uint64_t)f[0] << 32) | f[1];
-                    } else if(flipper_format_read_uint32(ff, "Cmd", f, 1)) {
-                        // Legacy: reconstruct frame from id+addr+cmd
-                        rem->buttons[b].frame = ((uint64_t)rem->id << 40) | ((uint64_t)rem->addr << 16) | (uint16_t)f[0];
-                    } else break;
+                    bool got = false;
+                    if(has_frm) {
+                        got = flipper_format_read_uint32(ff, "Frm", f, 2);
+                        if(got) rem->buttons[b].frame = ((uint64_t)f[0] << 32) | f[1];
+                    } else {
+                        got = flipper_format_read_uint32(ff, "Cmd", f, 1);
+                        if(got) rem->buttons[b].frame = ((uint64_t)rem->id << 40) | ((uint64_t)rem->addr << 16) | (uint16_t)f[0];
+                    }
+                    if(!got) break;
                     rem->btn_count++;
                 }
                 app->remote_count++;
