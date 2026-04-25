@@ -233,16 +233,7 @@ static bool dooya_show_keyboard(DooyaApp* app, const char* header, char* buf, ui
 }
 
 // ============== Scan: brute-force TX ==============
-static const uint16_t DOOYA_BASE[] = {0x0B70, 0x42A8, 0x2388}; // UP, DOWN, STOP
-static const uint16_t DOOYA_BASE_CONFIRM = 0x2489;
 static const char* DOOYA_BTN_NAMES[] = {"UP", "DOWN", "STOP"};
-
-static int16_t dooya_channel_offset(uint8_t ch) {
-    if(ch == 0) return 0;
-    int16_t off = 2 + (1 << ((ch - 1) % 8));
-    if(off >= 128) off -= 256;
-    return off;
-}
 
 static uint16_t dooya_calc_channel_field(uint8_t ch) {
     if(ch == 0) return 0x0000;
@@ -253,20 +244,28 @@ static void dooya_scan_transmit(DooyaApp* app) {
     app->transmitting = true;
     view_port_update(app->view_port);
 
-    int16_t off = dooya_channel_offset(app->scan_ch);
-    uint16_t cmd = (uint16_t)((DOOYA_BASE[app->scan_btn] + app->scan_rid - off) & 0xFFFF);
+    static const uint8_t CMD_BYTES[] = {0x0B, 0x43, 0x23}; // UP, DOWN, STOP
+    static const uint8_t CMD_CONFIRM = 0x24;
+
     uint16_t ch_field = dooya_calc_channel_field(app->scan_ch);
-    uint32_t addr = ((uint32_t)app->scan_rid << 16) | ch_field;
-    uint64_t data = ((uint64_t)0xA3C0A1 << 40) | ((uint64_t)addr << 16) | cmd;
+    uint8_t id0 = 0xC0, id1 = 0xA1, id2 = app->scan_rid;
+    uint8_t addr_hi = (ch_field >> 8) & 0xFF, addr_lo = ch_field & 0xFF;
+    uint8_t cmd = CMD_BYTES[app->scan_btn];
+    uint8_t chk = (id0 + id1 + id2 + addr_hi + addr_lo + cmd) & 0xFF;
+    uint64_t data = ((uint64_t)0xA3 << 56) | ((uint64_t)id0 << 48) | ((uint64_t)id1 << 40) |
+                    ((uint64_t)id2 << 32) | ((uint64_t)ch_field << 16) |
+                    ((uint64_t)cmd << 8) | chk;
 
     uint16_t pos = 0;
     for(uint8_t i = 0; i < DOOYA_REPEATS; i++)
         pos = dooya_encode_frame(app->upload, pos, data);
 
-    // STOP doesn't need confirm; UP and DOWN do
+    // UP and DOWN get confirm burst; STOP doesn't
     if(app->scan_btn != 2) {
-        uint16_t confirm = (uint16_t)((DOOYA_BASE_CONFIRM + app->scan_rid - off) & 0xFFFF);
-        uint64_t data_c = ((uint64_t)0xA3C0A1 << 40) | ((uint64_t)addr << 16) | confirm;
+        uint8_t chk_c = (id0 + id1 + id2 + addr_hi + addr_lo + CMD_CONFIRM) & 0xFF;
+        uint64_t data_c = ((uint64_t)0xA3 << 56) | ((uint64_t)id0 << 48) | ((uint64_t)id1 << 40) |
+                          ((uint64_t)id2 << 32) | ((uint64_t)ch_field << 16) |
+                          ((uint64_t)CMD_CONFIRM << 8) | chk_c;
         for(uint8_t i = 0; i < DOOYA_REPEATS; i++)
             pos = dooya_encode_frame(app->upload, pos, data_c);
     }
@@ -299,20 +298,19 @@ static bool dooya_scan_advance(DooyaApp* app) {
 
 // ============== Drawing ==============
 static void dooya_draw_scan(Canvas* canvas, DooyaApp* app) {
+    static const uint8_t CMD_BYTES[] = {0x0B, 0x43, 0x23};
     char buf[40];
     canvas_set_font(canvas, FontPrimary);
     canvas_draw_str_aligned(canvas, 64, 0, AlignCenter, AlignTop, "Scan Remotes");
 
     canvas_set_font(canvas, FontSecondary);
     if(app->scan_ch == 0)
-        snprintf(buf, sizeof(buf), "RID: 0x%02X  Ch:CC  [%s]", app->scan_rid, DOOYA_BTN_NAMES[app->scan_btn]);
+        snprintf(buf, sizeof(buf), "RID: 0x%02X  Ch:BC  [%s]", app->scan_rid, DOOYA_BTN_NAMES[app->scan_btn]);
     else
         snprintf(buf, sizeof(buf), "RID: 0x%02X  Ch:%d  [%s]", app->scan_rid, app->scan_ch, DOOYA_BTN_NAMES[app->scan_btn]);
     canvas_draw_str_aligned(canvas, 64, 14, AlignCenter, AlignTop, buf);
 
-    int16_t off = dooya_channel_offset(app->scan_ch);
-    uint16_t cmd = (uint16_t)((DOOYA_BASE[app->scan_btn] + app->scan_rid - off) & 0xFFFF);
-    snprintf(buf, sizeof(buf), "%s cmd: 0x%04X", DOOYA_BTN_NAMES[app->scan_btn], cmd);
+    snprintf(buf, sizeof(buf), "ID:C0A1%02X Cmd:0x%02X", app->scan_rid, CMD_BYTES[app->scan_btn]);
     canvas_draw_str_aligned(canvas, 64, 26, AlignCenter, AlignTop, buf);
 
     uint32_t total = (uint32_t)app->scan_ch * 256 + app->scan_rid;
