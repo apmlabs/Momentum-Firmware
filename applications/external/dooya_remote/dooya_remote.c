@@ -22,8 +22,8 @@ static void dooya_save(DooyaApp* app) {
             flipper_format_write_uint32(ff, "Hdr", hdr, 3);
             for(uint8_t b = 0; b < rem->btn_count; b++) {
                 flipper_format_write_string_cstr(ff, "Btn", rem->buttons[b].name);
-                uint32_t c = rem->buttons[b].cmd;
-                flipper_format_write_uint32(ff, "Cmd", &c, 1);
+                uint32_t f[2] = {(uint32_t)(rem->buttons[b].frame >> 32), (uint32_t)rem->buttons[b].frame};
+                flipper_format_write_uint32(ff, "Frm", f, 2);
             }
         }
     }
@@ -55,9 +55,13 @@ static void dooya_load(DooyaApp* app) {
                 for(uint8_t b = 0; b < bc; b++) {
                     if(!flipper_format_read_string(ff, "Btn", s)) break;
                     snprintf(rem->buttons[b].name, DOOYA_NAME_LEN, "%s", furi_string_get_cstr(s));
-                    uint32_t c = 0;
-                    if(!flipper_format_read_uint32(ff, "Cmd", &c, 1)) break;
-                    rem->buttons[b].cmd = c;
+                    uint32_t f[2] = {0};
+                    if(flipper_format_read_uint32(ff, "Frm", f, 2)) {
+                        rem->buttons[b].frame = ((uint64_t)f[0] << 32) | f[1];
+                    } else if(flipper_format_read_uint32(ff, "Cmd", f, 1)) {
+                        // Legacy: reconstruct frame from id+addr+cmd
+                        rem->buttons[b].frame = ((uint64_t)rem->id << 40) | ((uint64_t)rem->addr << 16) | (uint16_t)f[0];
+                    } else break;
                     rem->btn_count++;
                 }
                 app->remote_count++;
@@ -74,10 +78,10 @@ static void dooya_load(DooyaApp* app) {
         DooyaRemoteData* rem = &app->remotes[0];
         rem->id = 0xA3C0A1; rem->addr = 0x6C0100;
         snprintf(rem->name, DOOYA_NAME_LEN, "Default");
-        rem->buttons[0] = (DooyaButton){.cmd = 0x0BD9}; snprintf(rem->buttons[0].name, DOOYA_NAME_LEN, "Up");
-        rem->buttons[1] = (DooyaButton){.cmd = 0x23F1}; snprintf(rem->buttons[1].name, DOOYA_NAME_LEN, "Stop");
-        rem->buttons[2] = (DooyaButton){.cmd = 0x4311}; snprintf(rem->buttons[2].name, DOOYA_NAME_LEN, "Down");
-        rem->buttons[3] = (DooyaButton){.cmd = 0x24F2}; snprintf(rem->buttons[3].name, DOOYA_NAME_LEN, "Confirm");
+        rem->buttons[0] = (DooyaButton){.frame = 0xA3C0A16C01000BD9}; snprintf(rem->buttons[0].name, DOOYA_NAME_LEN, "Up");
+        rem->buttons[1] = (DooyaButton){.frame = 0xA3C0A16C010023F1}; snprintf(rem->buttons[1].name, DOOYA_NAME_LEN, "Stop");
+        rem->buttons[2] = (DooyaButton){.frame = 0xA3C0A16C01004311}; snprintf(rem->buttons[2].name, DOOYA_NAME_LEN, "Down");
+        rem->buttons[3] = (DooyaButton){.frame = 0xA3C0A16C010024F2}; snprintf(rem->buttons[3].name, DOOYA_NAME_LEN, "Confirm");
         rem->btn_count = 4;
         app->remote_count = 1;
     }
@@ -111,14 +115,12 @@ static LevelDuration dooya_tx_yield(void* ctx) {
     return app->upload[app->upload_idx++];
 }
 
-static void dooya_transmit(DooyaApp* app, uint16_t cmd) {
-    DooyaRemoteData* rem = &app->remotes[app->remote_sel];
+static void dooya_transmit(DooyaApp* app, uint64_t frame) {
     app->transmitting = true;
     view_port_update(app->view_port);
-    uint64_t data = ((uint64_t)rem->id << 40) | ((uint64_t)rem->addr << 16) | cmd;
     uint16_t pos = 0;
     for(uint8_t i = 0; i < DOOYA_REPEATS; i++)
-        pos = dooya_encode_frame(app->upload, pos, data);
+        pos = dooya_encode_frame(app->upload, pos, frame);
     app->upload_size = pos; app->upload_idx = 0;
     subghz_devices_idle(app->radio);
     subghz_devices_load_preset(app->radio, FuriHalSubGhzPresetOok650Async, NULL);
@@ -363,7 +365,7 @@ static void dooya_draw_remote(Canvas* canvas, DooyaApp* app) {
                 canvas_draw_rbox(canvas, 20, y, 88, 11, 3);
                 canvas_set_color(canvas, ColorWhite);
             }
-            snprintf(buf, sizeof(buf), "%s [%04X]", rem->buttons[idx].name, rem->buttons[idx].cmd);
+            snprintf(buf, sizeof(buf), "%s [%02X]", rem->buttons[idx].name, (uint8_t)(rem->buttons[idx].frame >> 8));
             canvas_draw_str_aligned(canvas, 64, y + 2, AlignCenter, AlignTop, buf);
             canvas_set_color(canvas, ColorBlack);
         }
@@ -400,7 +402,7 @@ static void dooya_draw_learn(Canvas* canvas, DooyaApp* app) {
         if(rem->btn_count > first + 3) first = rem->btn_count - 3;
         for(uint8_t i = 0; i < 3 && (first + i) < rem->btn_count; i++) {
             DooyaButton* b = &rem->buttons[first + i];
-            snprintf(buf, sizeof(buf), "+ %s  [%04X]", b->name, b->cmd);
+            snprintf(buf, sizeof(buf), "+ %s  [%02X]", b->name, (uint8_t)(b->frame >> 8));
             canvas_draw_str(canvas, 4, 28 + i * 10, buf);
         }
     }
@@ -425,15 +427,12 @@ static void dooya_input_cb(InputEvent* ev, void* ctx) {
 static void dooya_handle_learn_frame(DooyaApp* app, uint64_t frame) {
     uint32_t id = (frame >> 40) & 0xFFFFFF;
     uint32_t addr = (frame >> 16) & 0xFFFFFF;
-    uint16_t cmd = frame & 0xFFFF;
 
     DooyaRemoteData* rem = &app->remotes[app->remote_sel];
 
     // First frame sets ID+addr
     if(rem->btn_count == 0) {
         rem->id = id; rem->addr = addr;
-    } else if(rem->id != id || rem->addr != addr) {
-        return; // different remote, ignore
     }
 
     // Check if this cmd already captured (skip — save all for testing)
@@ -445,7 +444,7 @@ static void dooya_handle_learn_frame(DooyaApp* app, uint64_t frame) {
     if(rem->btn_count < DOOYA_MAX_BTNS) {
         DooyaButton* btn = &rem->buttons[rem->btn_count];
         snprintf(btn->name, DOOYA_NAME_LEN, "Button %d", rem->btn_count + 1);
-        btn->cmd = cmd;
+        btn->frame = frame;
         rem->btn_count++;
         dooya_save(app); // save immediately
         notification_message(app->notifications, &sequence_success);
@@ -485,7 +484,13 @@ int32_t dooya_remote_app(void* p) {
             if(furi_message_queue_get(app->event_queue, &event, 0) == FuriStatusOk) {
                 // Got input during scan — handle it below
             } else {
-                dooya_scan_transmit(app);
+                // Skip known remotes
+                bool skip = false;
+                for(uint8_t r = 0; r < app->remote_count && !skip; r++) {
+                    if((app->remotes[r].addr >> 16) == app->scan_rid) skip = true;
+                }
+                if(!skip) dooya_scan_transmit(app);
+                else furi_delay_ms(10);
                 furi_delay_ms(200); // pause between codes
                 if(!dooya_scan_advance(app)) {
                     app->scan_running = false; // finished all combos
@@ -554,7 +559,7 @@ int32_t dooya_remote_app(void* p) {
         } else if(event.key == InputKeyOk && event.type == InputTypeShort) {
             // Send selected button
             if(rem->btn_count > 0 && app->btn_sel < rem->btn_count) {
-                dooya_transmit(app, rem->buttons[app->btn_sel].cmd);
+                dooya_transmit(app, rem->buttons[app->btn_sel].frame);
                 notification_message(app->notifications, &sequence_blink_cyan_100);
             }
         } else if(event.key == InputKeyOk && event.type == InputTypeLong) {

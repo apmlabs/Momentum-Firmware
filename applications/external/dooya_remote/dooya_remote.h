@@ -33,7 +33,7 @@
 // A single learned button
 typedef struct {
     char name[DOOYA_NAME_LEN];
-    uint16_t cmd;
+    uint64_t frame;
 } DooyaButton;
 
 // A remote: ID + addr + list of buttons
