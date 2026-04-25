@@ -302,8 +302,10 @@ static void dooya_draw_scan(Canvas* canvas, DooyaApp* app) {
     canvas_draw_str_aligned(canvas, 64, 0, AlignCenter, AlignTop, "Scan Remotes");
 
     canvas_set_font(canvas, FontSecondary);
-    snprintf(buf, sizeof(buf), "RID: 0x%02X  Ch: %d  [%s]",
-        app->scan_rid, app->scan_ch, DOOYA_BTN_NAMES[app->scan_btn]);
+    if(app->scan_ch == 0)
+        snprintf(buf, sizeof(buf), "RID: 0x%02X  Ch:CC  [%s]", app->scan_rid, DOOYA_BTN_NAMES[app->scan_btn]);
+    else
+        snprintf(buf, sizeof(buf), "RID: 0x%02X  Ch:%d  [%s]", app->scan_rid, app->scan_ch, DOOYA_BTN_NAMES[app->scan_btn]);
     canvas_draw_str_aligned(canvas, 64, 14, AlignCenter, AlignTop, buf);
 
     int16_t off = dooya_channel_offset(app->scan_ch);
@@ -311,8 +313,8 @@ static void dooya_draw_scan(Canvas* canvas, DooyaApp* app) {
     snprintf(buf, sizeof(buf), "%s cmd: 0x%04X", DOOYA_BTN_NAMES[app->scan_btn], cmd);
     canvas_draw_str_aligned(canvas, 64, 26, AlignCenter, AlignTop, buf);
 
-    uint32_t total = (uint32_t)(app->scan_ch - 1) * 256 + app->scan_rid;
-    uint32_t max = 16 * 256;
+    uint32_t total = (uint32_t)app->scan_ch * 256 + app->scan_rid;
+    uint32_t max = 17 * 256;
     snprintf(buf, sizeof(buf), "%lu / %lu  (%lu%%)", total, max, total * 100 / max);
     canvas_draw_str_aligned(canvas, 64, 38, AlignCenter, AlignTop, buf);
 
@@ -392,8 +394,7 @@ static void dooya_draw_learn(Canvas* canvas, DooyaApp* app) {
         canvas_draw_str_aligned(canvas, 64, 20, AlignCenter, AlignTop, "Press any button on remote");
         canvas_draw_str_aligned(canvas, 64, 32, AlignCenter, AlignTop, "Listening 433.92 MHz...");
     } else {
-        // Show log of captured buttons (last 3 fit on screen)
-        snprintf(buf, sizeof(buf), "New: %d  Total: %d", new_count, rem->btn_count);
+        snprintf(buf, sizeof(buf), "%06lX:%06lX  New:%d", rem->id, rem->addr, new_count);
         canvas_draw_str_aligned(canvas, 64, 13, AlignCenter, AlignTop, buf);
         uint8_t first = app->learn_start;
         if(rem->btn_count > first + 3) first = rem->btn_count - 3;
@@ -579,7 +580,7 @@ int32_t dooya_remote_app(void* p) {
                     dooya_rx_start(app);
                 } else if(!strcmp(picked, "Scan remotes")) {
                     app->scan_rid = 0;
-                    app->scan_ch = 1;
+                    app->scan_ch = 0;
                     app->scan_btn = 0;
                     app->scan_running = false;
                     app->mode = DooyaModeScan;
