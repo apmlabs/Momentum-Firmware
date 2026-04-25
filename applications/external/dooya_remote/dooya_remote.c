@@ -230,7 +230,104 @@ static bool dooya_show_keyboard(DooyaApp* app, const char* header, char* buf, ui
     return ok;
 }
 
+// ============== Scan: brute-force TX ==============
+static const uint16_t DOOYA_BASE[] = {0x0B70, 0x42A8, 0x2388}; // UP, DOWN, STOP
+static const uint16_t DOOYA_BASE_CONFIRM = 0x2489;
+static const char* DOOYA_BTN_NAMES[] = {"UP", "DOWN", "STOP"};
+
+static int16_t dooya_channel_offset(uint8_t ch) {
+    if(ch == 0) return 0;
+    int16_t off = 2 + (1 << ((ch - 1) % 8));
+    if(off >= 128) off -= 256;
+    return off;
+}
+
+static uint16_t dooya_calc_channel_field(uint8_t ch) {
+    if(ch == 0) return 0x0000;
+    return (uint16_t)(1 << ((ch + 7) % 16));
+}
+
+static void dooya_scan_transmit(DooyaApp* app) {
+    app->transmitting = true;
+    view_port_update(app->view_port);
+
+    int16_t off = dooya_channel_offset(app->scan_ch);
+    uint16_t cmd = (uint16_t)((DOOYA_BASE[app->scan_btn] + app->scan_rid - off) & 0xFFFF);
+    uint16_t ch_field = dooya_calc_channel_field(app->scan_ch);
+    uint32_t addr = ((uint32_t)app->scan_rid << 16) | ch_field;
+    uint64_t data = ((uint64_t)0xA3C0A1 << 40) | ((uint64_t)addr << 16) | cmd;
+
+    uint16_t pos = 0;
+    for(uint8_t i = 0; i < DOOYA_REPEATS; i++)
+        pos = dooya_encode_frame(app->upload, pos, data);
+
+    // STOP doesn't need confirm; UP and DOWN do
+    if(app->scan_btn != 2) {
+        uint16_t confirm = (uint16_t)((DOOYA_BASE_CONFIRM + app->scan_rid - off) & 0xFFFF);
+        uint64_t data_c = ((uint64_t)0xA3C0A1 << 40) | ((uint64_t)addr << 16) | confirm;
+        for(uint8_t i = 0; i < DOOYA_REPEATS; i++)
+            pos = dooya_encode_frame(app->upload, pos, data_c);
+    }
+
+    app->upload_size = pos; app->upload_idx = 0;
+    subghz_devices_idle(app->radio);
+    subghz_devices_load_preset(app->radio, FuriHalSubGhzPresetOok650Async, NULL);
+    subghz_devices_set_frequency(app->radio, 433920000);
+    subghz_devices_set_async_mirror_pin(app->radio, NULL);
+    if(subghz_devices_start_async_tx(app->radio, dooya_tx_yield, app)) {
+        while(!subghz_devices_is_async_complete_tx(app->radio)) furi_delay_ms(10);
+        subghz_devices_stop_async_tx(app->radio);
+    }
+    subghz_devices_idle(app->radio);
+    app->transmitting = false;
+    view_port_update(app->view_port);
+}
+
+static bool dooya_scan_advance(DooyaApp* app) {
+    if(app->scan_rid < 0xFF) {
+        app->scan_rid++;
+    } else if(app->scan_ch < 16) {
+        app->scan_rid = 0;
+        app->scan_ch++;
+    } else {
+        return false; // done
+    }
+    return true;
+}
+
 // ============== Drawing ==============
+static void dooya_draw_scan(Canvas* canvas, DooyaApp* app) {
+    char buf[40];
+    canvas_set_font(canvas, FontPrimary);
+    canvas_draw_str_aligned(canvas, 64, 0, AlignCenter, AlignTop, "Scan Remotes");
+
+    canvas_set_font(canvas, FontSecondary);
+    snprintf(buf, sizeof(buf), "RID: 0x%02X  Ch: %d  [%s]",
+        app->scan_rid, app->scan_ch, DOOYA_BTN_NAMES[app->scan_btn]);
+    canvas_draw_str_aligned(canvas, 64, 14, AlignCenter, AlignTop, buf);
+
+    int16_t off = dooya_channel_offset(app->scan_ch);
+    uint16_t cmd = (uint16_t)((DOOYA_BASE[app->scan_btn] + app->scan_rid - off) & 0xFFFF);
+    snprintf(buf, sizeof(buf), "%s cmd: 0x%04X", DOOYA_BTN_NAMES[app->scan_btn], cmd);
+    canvas_draw_str_aligned(canvas, 64, 26, AlignCenter, AlignTop, buf);
+
+    uint32_t total = (uint32_t)(app->scan_ch - 1) * 256 + app->scan_rid;
+    uint32_t max = 16 * 256;
+    snprintf(buf, sizeof(buf), "%lu / %lu  (%lu%%)", total, max, total * 100 / max);
+    canvas_draw_str_aligned(canvas, 64, 38, AlignCenter, AlignTop, buf);
+
+    if(app->transmitting) {
+        canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignTop, ">>> TX <<<");
+    } else if(app->scan_running) {
+        canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignTop, "<>:Btn  OK:Pause");
+    } else {
+        canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignTop, "OK:Send ^v:RID <>:Btn");
+    }
+
+    canvas_draw_str(canvas, 0, 63, "Back:Exit");
+    canvas_draw_str_aligned(canvas, 127, 63, AlignRight, AlignBottom,
+        app->scan_running ? "Running" : "Hold OK:Auto");
+}
 static void dooya_draw_remote(Canvas* canvas, DooyaApp* app) {
     DooyaRemoteData* rem = &app->remotes[app->remote_sel];
     char buf[32];
@@ -315,6 +412,7 @@ static void dooya_draw_cb(Canvas* canvas, void* ctx) {
     DooyaApp* app = ctx;
     canvas_clear(canvas); canvas_set_color(canvas, ColorBlack);
     if(app->mode == DooyaModeLearn) dooya_draw_learn(canvas, app);
+    else if(app->mode == DooyaModeScan) dooya_draw_scan(canvas, app);
     else dooya_draw_remote(canvas, app);
 }
 
@@ -380,7 +478,23 @@ int32_t dooya_remote_app(void* p) {
             app->rx_frame_ready = false;
             dooya_handle_learn_frame(app, app->rx_frame);
         }
-        if(furi_message_queue_get(app->event_queue, &event, 50) != FuriStatusOk) continue;
+
+        // Auto-scan: transmit and advance when no input pending
+        if(app->mode == DooyaModeScan && app->scan_running) {
+            if(furi_message_queue_get(app->event_queue, &event, 0) == FuriStatusOk) {
+                // Got input during scan — handle it below
+            } else {
+                dooya_scan_transmit(app);
+                furi_delay_ms(200); // pause between codes
+                if(!dooya_scan_advance(app)) {
+                    app->scan_running = false; // finished all combos
+                }
+                view_port_update(app->view_port);
+                continue;
+            }
+        } else {
+            if(furi_message_queue_get(app->event_queue, &event, 50) != FuriStatusOk) continue;
+        }
 
         if(app->mode == DooyaModeLearn) {
             if(event.key == InputKeyBack && event.type == InputTypeShort) {
@@ -388,6 +502,33 @@ int32_t dooya_remote_app(void* p) {
                 app->mode = DooyaModeRemote;
                 view_port_update(app->view_port);
             }
+            continue;
+        }
+
+        if(app->mode == DooyaModeScan) {
+            if(event.key == InputKeyBack && event.type == InputTypeShort) {
+                app->scan_running = false;
+                app->mode = DooyaModeRemote;
+            } else if(event.key == InputKeyOk && event.type == InputTypeShort) {
+                if(app->scan_running) {
+                    app->scan_running = false; // pause
+                } else {
+                    dooya_scan_transmit(app); // single shot
+                }
+            } else if(event.key == InputKeyOk && event.type == InputTypeLong) {
+                app->scan_running = !app->scan_running; // toggle auto
+            } else if(event.key == InputKeyLeft && event.type == InputTypeShort) {
+                app->scan_btn = app->scan_btn == 0 ? 2 : app->scan_btn - 1;
+            } else if(event.key == InputKeyRight && event.type == InputTypeShort) {
+                app->scan_btn = app->scan_btn >= 2 ? 0 : app->scan_btn + 1;
+            } else if(!app->scan_running) {
+                if(event.key == InputKeyUp && event.type == InputTypeShort) {
+                    app->scan_rid++;
+                } else if(event.key == InputKeyDown && event.type == InputTypeShort) {
+                    app->scan_rid--;
+                }
+            }
+            view_port_update(app->view_port);
             continue;
         }
 
@@ -417,8 +558,9 @@ int32_t dooya_remote_app(void* p) {
             }
         } else if(event.key == InputKeyOk && event.type == InputTypeLong) {
             // Menu
-            const char* items[5]; uint8_t n = 0;
+            const char* items[6]; uint8_t n = 0;
             items[n++] = "Learn buttons";
+            items[n++] = "Scan remotes";
             if(rem->btn_count > 0) items[n++] = "Rename button";
             if(rem->btn_count > 0) items[n++] = "Delete button";
             items[n++] = "Rename remote";
@@ -435,6 +577,12 @@ int32_t dooya_remote_app(void* p) {
                     app->mode = DooyaModeLearn;
                     app->learn_start = rem->btn_count;
                     dooya_rx_start(app);
+                } else if(!strcmp(picked, "Scan remotes")) {
+                    app->scan_rid = 0;
+                    app->scan_ch = 1;
+                    app->scan_btn = 0;
+                    app->scan_running = false;
+                    app->mode = DooyaModeScan;
                 } else if(!strcmp(picked, "Rename button")) {
                     snprintf(app->name_buf, DOOYA_NAME_LEN, "%s", rem->buttons[app->btn_sel].name);
                     if(dooya_show_keyboard(app, "Rename button", app->name_buf, DOOYA_NAME_LEN)) {

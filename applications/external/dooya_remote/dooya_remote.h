@@ -45,7 +45,7 @@ typedef struct {
     char name[DOOYA_NAME_LEN];
 } DooyaRemoteData;
 
-typedef enum { DooyaModeRemote, DooyaModeLearn } DooyaMode;
+typedef enum { DooyaModeRemote, DooyaModeLearn, DooyaModeScan } DooyaMode;
 typedef enum { RxIdle, RxPreamble, RxSync, RxData } DooyaRxState;
 
 typedef struct {
@@ -82,4 +82,10 @@ typedef struct {
     ViewDispatcher* vd;
     uint32_t menu_result;
     char name_buf[DOOYA_NAME_LEN];
+
+    // Scan mode
+    uint8_t scan_rid;       // current remote_id 0x00-0xFF
+    uint8_t scan_ch;        // current channel 1-16
+    uint8_t scan_btn;       // 0=UP, 1=DOWN, 2=STOP
+    bool scan_running;      // auto-advance active
 } DooyaApp;
