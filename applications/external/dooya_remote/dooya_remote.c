@@ -338,7 +338,7 @@ static void dooya_draw_scan(Canvas* canvas, DooyaApp* app) {
     } else if(app->scan_running) {
         canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignTop, "<>:Btn  OK:Pause");
     } else {
-        canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignTop, "OK:Send ^v:Skip500 <>:Btn");
+        canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignTop, "OK:Send ^v:Step <>:Btn");
     }
 
     canvas_draw_str(canvas, 0, 63, "Back:Exit");
@@ -546,11 +546,14 @@ int32_t dooya_remote_app(void* p) {
             } else if(event.key == InputKeyRight && event.type == InputTypeShort) {
                 app->scan_btn = app->scan_btn >= 2 ? 0 : app->scan_btn + 1;
             } else if(!app->scan_running) {
-                if(event.key == InputKeyUp && event.type == InputTypeShort) {
-                    app->scan_step = (app->scan_step + 500 < 65536) ? app->scan_step + 500 : 65535;
+                uint32_t jump = 0;
+                if(event.key == InputKeyUp && (event.type == InputTypeShort || event.type == InputTypeRepeat)) {
+                    jump = (event.type == InputTypeRepeat) ? 10 : 1;
+                    app->scan_step = (app->scan_step + jump < 65536) ? app->scan_step + jump : 65535;
                     app->scan_id16 = dooya_spiral_id(app->scan_center, app->scan_step);
-                } else if(event.key == InputKeyDown && event.type == InputTypeShort) {
-                    app->scan_step = (app->scan_step >= 500) ? app->scan_step - 500 : 0;
+                } else if(event.key == InputKeyDown && (event.type == InputTypeShort || event.type == InputTypeRepeat)) {
+                    jump = (event.type == InputTypeRepeat) ? 10 : 1;
+                    app->scan_step = (app->scan_step >= jump) ? app->scan_step - jump : 0;
                     app->scan_id16 = dooya_spiral_id(app->scan_center, app->scan_step);
                 }
             }
