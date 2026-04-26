@@ -83,9 +83,11 @@ typedef struct {
     uint32_t menu_result;
     char name_buf[DOOYA_NAME_LEN];
 
-    // Scan mode
-    uint16_t scan_id16;     // bytes 1+2 of remote ID (0x0000-0xFFFF), byte 0 fixed at 0xC0
-    uint8_t scan_ch;        // current channel 1-16
+    // Scan mode — spiral outward from midpoint of known remotes
+    uint16_t scan_id16;     // current ID bytes 1+2 being tested
+    uint16_t scan_center;   // midpoint of known remotes
+    uint32_t scan_step;     // spiral step counter (0,1,2,3...)
+    uint8_t scan_ch;        // current channel (fixed at 1)
     uint8_t scan_btn;       // 0=UP, 1=DOWN, 2=STOP
     bool scan_running;      // auto-advance active
 } DooyaApp;

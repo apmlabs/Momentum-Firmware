@@ -301,11 +301,15 @@ static void dooya_scan_transmit(DooyaApp* app) {
 }
 
 static bool dooya_scan_advance(DooyaApp* app) {
-    if(app->scan_id16 < 0xFFFF) {
-        app->scan_id16++;
-    } else {
-        return false; // done all 65536
-    }
+    // Spiral: step 0=center, 1=center+1, 2=center-1, 3=center+2, 4=center-2...
+    app->scan_step++;
+    if(app->scan_step >= 65536) return false;
+    int32_t offset = (app->scan_step + 1) / 2;
+    if(app->scan_step & 1) offset = -offset;
+    int32_t val = (int32_t)app->scan_center + offset;
+    if(val < 0) val += 65536;
+    if(val > 0xFFFF) val -= 65536;
+    app->scan_id16 = (uint16_t)val;
     return true;
 }
 
@@ -323,7 +327,7 @@ static void dooya_draw_scan(Canvas* canvas, DooyaApp* app) {
     snprintf(buf, sizeof(buf), "ID:C0%04X Cmd:0x%02X", app->scan_id16, CMD_BYTES[app->scan_btn]);
     canvas_draw_str_aligned(canvas, 64, 26, AlignCenter, AlignTop, buf);
 
-    snprintf(buf, sizeof(buf), "%u / 65536  (%lu%%)", app->scan_id16, (uint32_t)app->scan_id16 * 100 / 65536);
+    snprintf(buf, sizeof(buf), "%lu / 65536  (%lu%%)", (uint32_t)app->scan_step, (uint32_t)app->scan_step * 100 / 65536);
     canvas_draw_str_aligned(canvas, 64, 38, AlignCenter, AlignTop, buf);
 
     if(app->transmitting) {
@@ -595,7 +599,18 @@ int32_t dooya_remote_app(void* p) {
                     app->learn_start = rem->btn_count;
                     dooya_rx_start(app);
                 } else if(!strcmp(picked, "Scan remotes")) {
-                    app->scan_id16 = 0;
+                    // Compute center: midpoint of known remote ID bytes 1+2
+                    uint32_t sum = 0; uint8_t cnt = 0;
+                    for(uint8_t r = 0; r < app->remote_count; r++) {
+                        if(app->remotes[r].btn_count > 0) {
+                            uint64_t f = app->remotes[r].buttons[0].frame;
+                            uint16_t id16 = (uint16_t)(((f >> 40) & 0xFF) << 8 | ((f >> 32) & 0xFF));
+                            sum += id16; cnt++;
+                        }
+                    }
+                    app->scan_center = cnt > 0 ? (uint16_t)(sum / cnt) : 0;
+                    app->scan_id16 = app->scan_center;
+                    app->scan_step = 0;
                     app->scan_ch = 1;
                     app->scan_btn = 0;
                     app->scan_running = false;
