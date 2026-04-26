@@ -264,7 +264,7 @@ static void dooya_scan_transmit(DooyaApp* app) {
     static const uint8_t CMD_CONFIRM = 0x24;
 
     uint16_t ch_field = dooya_calc_channel_field(app->scan_ch);
-    uint8_t id0 = 0xC0, id1 = 0xA1, id2 = app->scan_rid;
+    uint8_t id0 = 0xC0, id1 = (app->scan_id16 >> 8) & 0xFF, id2 = app->scan_id16 & 0xFF;
     uint8_t addr_hi = (ch_field >> 8) & 0xFF, addr_lo = ch_field & 0xFF;
     uint8_t cmd = CMD_BYTES[app->scan_btn];
     uint8_t chk = (id0 + id1 + id2 + addr_hi + addr_lo + cmd) & 0xFF;
@@ -301,13 +301,10 @@ static void dooya_scan_transmit(DooyaApp* app) {
 }
 
 static bool dooya_scan_advance(DooyaApp* app) {
-    if(app->scan_rid < 0xFF) {
-        app->scan_rid++;
-    } else if(app->scan_ch < 16) {
-        app->scan_rid = 0;
-        app->scan_ch++;
+    if(app->scan_id16 < 0xFFFF) {
+        app->scan_id16++;
     } else {
-        return false; // done
+        return false; // done all 65536
     }
     return true;
 }
@@ -320,18 +317,13 @@ static void dooya_draw_scan(Canvas* canvas, DooyaApp* app) {
     canvas_draw_str_aligned(canvas, 64, 0, AlignCenter, AlignTop, "Scan Remotes");
 
     canvas_set_font(canvas, FontSecondary);
-    if(app->scan_ch == 0)
-        snprintf(buf, sizeof(buf), "RID: 0x%02X  Ch:BC  [%s]", app->scan_rid, DOOYA_BTN_NAMES[app->scan_btn]);
-    else
-        snprintf(buf, sizeof(buf), "RID: 0x%02X  Ch:%d  [%s]", app->scan_rid, app->scan_ch, DOOYA_BTN_NAMES[app->scan_btn]);
+    snprintf(buf, sizeof(buf), "ID: C0%04X  [%s]", app->scan_id16, DOOYA_BTN_NAMES[app->scan_btn]);
     canvas_draw_str_aligned(canvas, 64, 14, AlignCenter, AlignTop, buf);
 
-    snprintf(buf, sizeof(buf), "ID:C0A1%02X Cmd:0x%02X", app->scan_rid, CMD_BYTES[app->scan_btn]);
+    snprintf(buf, sizeof(buf), "ID:C0%04X Cmd:0x%02X", app->scan_id16, CMD_BYTES[app->scan_btn]);
     canvas_draw_str_aligned(canvas, 64, 26, AlignCenter, AlignTop, buf);
 
-    uint32_t total = (uint32_t)app->scan_ch * 256 + app->scan_rid;
-    uint32_t max = 17 * 256;
-    snprintf(buf, sizeof(buf), "%lu / %lu  (%lu%%)", total, max, total * 100 / max);
+    snprintf(buf, sizeof(buf), "%u / 65536  (%lu%%)", app->scan_id16, (uint32_t)app->scan_id16 * 100 / 65536);
     canvas_draw_str_aligned(canvas, 64, 38, AlignCenter, AlignTop, buf);
 
     if(app->transmitting) {
@@ -339,7 +331,7 @@ static void dooya_draw_scan(Canvas* canvas, DooyaApp* app) {
     } else if(app->scan_running) {
         canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignTop, "<>:Btn  OK:Pause");
     } else {
-        canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignTop, "OK:Send ^v:RID <>:Btn");
+        canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignTop, "OK:Send ^v:Step <>:Btn");
     }
 
     canvas_draw_str(canvas, 0, 63, "Back:Exit");
@@ -501,7 +493,12 @@ int32_t dooya_remote_app(void* p) {
                 // Skip known remotes
                 bool skip = false;
                 for(uint8_t r = 0; r < app->remote_count && !skip; r++) {
-                    if((app->remotes[r].addr >> 16) == app->scan_rid) skip = true;
+                    // Compare bytes 1+2 of remote ID from stored frames
+                    if(app->remotes[r].btn_count > 0) {
+                        uint64_t f = app->remotes[r].buttons[0].frame;
+                        uint16_t stored_id16 = (uint16_t)(((f >> 40) & 0xFF) << 8 | ((f >> 32) & 0xFF));
+                        if(stored_id16 == app->scan_id16) skip = true;
+                    }
                 }
                 if(!skip) dooya_scan_transmit(app);
                 else furi_delay_ms(10);
@@ -543,9 +540,9 @@ int32_t dooya_remote_app(void* p) {
                 app->scan_btn = app->scan_btn >= 2 ? 0 : app->scan_btn + 1;
             } else if(!app->scan_running) {
                 if(event.key == InputKeyUp && event.type == InputTypeShort) {
-                    app->scan_rid++;
+                    app->scan_id16 += 256; // step byte 1
                 } else if(event.key == InputKeyDown && event.type == InputTypeShort) {
-                    app->scan_rid--;
+                    app->scan_id16 -= 256; // step byte 1
                 }
             }
             view_port_update(app->view_port);
@@ -598,8 +595,8 @@ int32_t dooya_remote_app(void* p) {
                     app->learn_start = rem->btn_count;
                     dooya_rx_start(app);
                 } else if(!strcmp(picked, "Scan remotes")) {
-                    app->scan_rid = 0;
-                    app->scan_ch = 0;
+                    app->scan_id16 = 0;
+                    app->scan_ch = 1;
                     app->scan_btn = 0;
                     app->scan_running = false;
                     app->mode = DooyaModeScan;

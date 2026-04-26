@@ -84,7 +84,7 @@ typedef struct {
     char name_buf[DOOYA_NAME_LEN];
 
     // Scan mode
-    uint8_t scan_rid;       // current remote_id 0x00-0xFF
+    uint16_t scan_id16;     // bytes 1+2 of remote ID (0x0000-0xFFFF), byte 0 fixed at 0xC0
     uint8_t scan_ch;        // current channel 1-16
     uint8_t scan_btn;       // 0=UP, 1=DOWN, 2=STOP
     bool scan_running;      // auto-advance active
