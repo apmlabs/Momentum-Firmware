@@ -300,16 +300,19 @@ static void dooya_scan_transmit(DooyaApp* app) {
     view_port_update(app->view_port);
 }
 
-static bool dooya_scan_advance(DooyaApp* app) {
-    // Spiral: step 0=center, 1=center+1, 2=center-1, 3=center+2, 4=center-2...
-    app->scan_step++;
-    if(app->scan_step >= 65536) return false;
-    int32_t offset = (app->scan_step + 1) / 2;
-    if(app->scan_step & 1) offset = -offset;
-    int32_t val = (int32_t)app->scan_center + offset;
+static uint16_t dooya_spiral_id(uint16_t center, uint32_t step) {
+    int32_t offset = (step + 1) / 2;
+    if(step & 1) offset = -offset;
+    int32_t val = (int32_t)center + offset;
     if(val < 0) val += 65536;
     if(val > 0xFFFF) val -= 65536;
-    app->scan_id16 = (uint16_t)val;
+    return (uint16_t)val;
+}
+
+static bool dooya_scan_advance(DooyaApp* app) {
+    app->scan_step++;
+    if(app->scan_step >= 65536) return false;
+    app->scan_id16 = dooya_spiral_id(app->scan_center, app->scan_step);
     return true;
 }
 
@@ -335,7 +338,7 @@ static void dooya_draw_scan(Canvas* canvas, DooyaApp* app) {
     } else if(app->scan_running) {
         canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignTop, "<>:Btn  OK:Pause");
     } else {
-        canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignTop, "OK:Send ^v:Step <>:Btn");
+        canvas_draw_str_aligned(canvas, 64, 50, AlignCenter, AlignTop, "OK:Send ^v:Skip500 <>:Btn");
     }
 
     canvas_draw_str(canvas, 0, 63, "Back:Exit");
@@ -544,9 +547,11 @@ int32_t dooya_remote_app(void* p) {
                 app->scan_btn = app->scan_btn >= 2 ? 0 : app->scan_btn + 1;
             } else if(!app->scan_running) {
                 if(event.key == InputKeyUp && event.type == InputTypeShort) {
-                    app->scan_id16 += 256; // step byte 1
+                    app->scan_step = (app->scan_step + 500 < 65536) ? app->scan_step + 500 : 65535;
+                    app->scan_id16 = dooya_spiral_id(app->scan_center, app->scan_step);
                 } else if(event.key == InputKeyDown && event.type == InputTypeShort) {
-                    app->scan_id16 -= 256; // step byte 1
+                    app->scan_step = (app->scan_step >= 500) ? app->scan_step - 500 : 0;
+                    app->scan_id16 = dooya_spiral_id(app->scan_center, app->scan_step);
                 }
             }
             view_port_update(app->view_port);
