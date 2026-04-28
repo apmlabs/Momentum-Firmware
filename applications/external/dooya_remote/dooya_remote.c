@@ -547,12 +547,12 @@ int32_t dooya_remote_app(void* p) {
                 app->scan_btn = app->scan_btn >= 2 ? 0 : app->scan_btn + 1;
             } else if(!app->scan_running) {
                 uint32_t jump = 0;
-                if(event.key == InputKeyUp && (event.type == InputTypeShort || event.type == InputTypeRepeat)) {
-                    jump = (event.type == InputTypeRepeat) ? 10 : 1;
+                if(event.key == InputKeyUp && (event.type == InputTypeShort || event.type == InputTypeRepeat || event.type == InputTypeLong)) {
+                    jump = (event.type == InputTypeLong) ? 100 : (event.type == InputTypeRepeat) ? 10 : 1;
                     app->scan_step = (app->scan_step + jump < 65536) ? app->scan_step + jump : 65535;
                     app->scan_id16 = dooya_spiral_id(app->scan_center, app->scan_step);
-                } else if(event.key == InputKeyDown && (event.type == InputTypeShort || event.type == InputTypeRepeat)) {
-                    jump = (event.type == InputTypeRepeat) ? 10 : 1;
+                } else if(event.key == InputKeyDown && (event.type == InputTypeShort || event.type == InputTypeRepeat || event.type == InputTypeLong)) {
+                    jump = (event.type == InputTypeLong) ? 100 : (event.type == InputTypeRepeat) ? 10 : 1;
                     app->scan_step = (app->scan_step >= jump) ? app->scan_step - jump : 0;
                     app->scan_id16 = dooya_spiral_id(app->scan_center, app->scan_step);
                 }
