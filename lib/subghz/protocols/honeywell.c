@@ -75,7 +75,7 @@ const SubGhzProtocolEncoder subghz_protocol_honeywell_encoder = {
 const SubGhzProtocol subghz_protocol_honeywell = {
     .name = SUBGHZ_PROTOCOL_HONEYWELL_NAME,
     .type = SubGhzProtocolTypeStatic,
-    .flag = SubGhzProtocolFlag_315 | SubGhzProtocolFlag_AM | SubGhzProtocolFlag_Decodable |
+    .flag = SubGhzProtocolFlag_315 | SubGhzProtocolFlag_433 | SubGhzProtocolFlag_AM | SubGhzProtocolFlag_Decodable |
             SubGhzProtocolFlag_Load | SubGhzProtocolFlag_Save | SubGhzProtocolFlag_Send,
     .encoder = &subghz_protocol_honeywell_encoder,
     .decoder = &subghz_protocol_honeywell_decoder,

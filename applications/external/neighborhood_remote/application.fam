@@ -1,0 +1,13 @@
+App(
+    appid="neighborhood_remote",
+    name="Neighborhood",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="neighborhood_remote_app",
+    stack_size=4 * 1024,
+    fap_category="Sub-GHz",
+    fap_icon="neighborhood_10px.png",
+    fap_icon_assets="",
+    fap_author="apmlabs",
+    fap_version="0.1",
+    fap_description="Universal 433.92 MHz signal learner and replayer",
+)
