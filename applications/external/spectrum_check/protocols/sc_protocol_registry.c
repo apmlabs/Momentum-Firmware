@@ -2,9 +2,12 @@
 #include "weather/protocol_items.h"
 #include "tpms/protocol_items.h"
 #include "pocsag/protocol_items.h"
+#include "aok/protocol_aok.h"
 
-// Combined extra protocol registry (weather + tpms + pocsag)
+// Combined extra protocol registry (weather + tpms + pocsag + aok)
 static const SubGhzProtocol* const sc_extra_protocols[] = {
+    // A-OK AC114 (Dooya/Zemismart 64-bit blinds)
+    &subghz_protocol_aok,
     // Weather Station protocols
     &ws_protocol_infactory,
     &ws_protocol_thermopro_tx4,

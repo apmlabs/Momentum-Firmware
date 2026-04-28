@@ -91,6 +91,9 @@ typedef struct {
     uint8_t  locked_mod_idx;
     bool     was_on_signal; // prevents duplicate hit logging per hop
 
+    // Modulation rotation (separate from hopper_idx)
+    uint8_t  mod_rotation;
+
     // Spectrum
     uint8_t  spec_peak[SC_SPEC_CH];
     float    spec_held_rssi;

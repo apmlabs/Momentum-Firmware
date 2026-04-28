@@ -460,9 +460,9 @@ static void sc_tick_hopper(SpectrumCheckApp* app) {
     app->was_on_signal = true;
     app->hopper_timeout = 20; // 1s dwell (matches firmware's 10 ticks × 100ms)
 
-    // Pick modulation: try AM650 first, then cycle on subsequent visits
-    // Use hopper_idx as a simple rotation counter for modulation attempts
-    SCMod mod = sc_try_mods[app->hopper_idx % SC_TRY_MOD_COUNT];
+    // Pick modulation: separate counter from freq index
+    app->mod_rotation = (app->mod_rotation + 1) % SC_TRY_MOD_COUNT;
+    SCMod mod = sc_try_mods[app->mod_rotation];
     sc_set_freq_mod(app, fine_freq, mod);
 }
 
@@ -496,6 +496,7 @@ static void sc_tick_locked(SpectrumCheckApp* app) {
 
     if(sc_signal_present(app, rssi)) {
         app->hopper_timeout = 40; // Reset: 2s from last signal presence
+        sc_hit_add(app, app->locked_freq, rssi, NULL); // Keep hit log updated
         return;
     }
     if(app->hopper_timeout > 0) {
@@ -509,14 +510,52 @@ static void sc_tick_locked(SpectrumCheckApp* app) {
 }
 
 static void sc_tick_camp(SpectrumCheckApp* app) {
-    // Camp uses locked mode but doesn't auto-cycle modulation
-    if(!app->rx_active || app->current_freq != app->locked_freq ||
-       app->current_mod != sc_try_mods[app->camp_mod_idx % SC_TRY_MOD_COUNT]) {
-        sc_set_freq_mod(app, app->locked_freq, sc_try_mods[app->camp_mod_idx % SC_TRY_MOD_COUNT]);
+    // Ensure worker is running on the right freq+mod (only set once, not every tick)
+    SCMod target_mod = sc_try_mods[app->camp_mod_idx % SC_TRY_MOD_COUNT];
+    if(!app->rx_active) {
+        sc_set_freq_mod(app, app->locked_freq, target_mod);
         if(!app->camp_start_tick) app->camp_start_tick = furi_get_tick();
     }
     float rssi = subghz_devices_get_rssi(app->radio_device);
     sc_update_noise_floor(app, rssi);
+
+    // Log hits when signal present (so freq analyzer updates in real-time)
+    if(sc_signal_present(app, rssi)) {
+        sc_hit_add(app, app->locked_freq, rssi, NULL);
+    }
+
+    // Coherent signal detection: check raw buffer periodically for non-protocol signals
+    if(app->raw_write > 40) {
+        static uint16_t last_check = 0;
+        if(app->raw_write - last_check > 200) {
+            last_check = app->raw_write;
+            uint32_t te = 0;
+            uint16_t coherent_len = sc_detect_coherent(app, &te);
+            if(coherent_len >= 18) {
+                // Check if we already have this freq captured
+                bool already = false;
+                for(uint8_t i = 0; i < app->signal_count; i++) {
+                    uint32_t d = app->signals[i].frequency > app->locked_freq ?
+                        app->signals[i].frequency - app->locked_freq : app->locked_freq - app->signals[i].frequency;
+                    if(d < 50000) { already = true; break; }
+                }
+                if(!already) {
+                    uint8_t slot = sc_find_slot(app);
+                    SCSignal* sig = &app->signals[slot];
+                    memset(sig, 0, sizeof(SCSignal));
+                    sig->frequency = app->locked_freq;
+                    sig->modulation = app->current_mod;
+                    sig->raw_count = app->raw_write > SC_SIG_SAMPLES ? SC_SIG_SAMPLES : app->raw_write;
+                    memcpy(sig->raw_data, app->raw_buf, sig->raw_count * sizeof(int32_t));
+                    sig->min_pulse_us = te;
+                    sig->pulse_count = coherent_len;
+                    sig->analyzed = true;
+                    if(slot >= app->signal_count && app->signal_count < SC_SIGNAL_SLOTS) app->signal_count++;
+                    sc_hit_add(app, app->locked_freq, rssi, "Coherent");
+                }
+            }
+        }
+    }
 }
 
 // Process pending decode from worker thread
@@ -881,7 +920,7 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
                     app->radio_state = SCRadioHopping;
                 } else {
                     uint32_t freq = 0;
-                    if(app->current_view == SCViewSpectrum && app->spec_held_rssi > -90.0f)
+                    if(app->current_view == SCViewSpectrum && app->spec_held_ch < SC_SPEC_CH)
                         freq = sc_spec_freqs[app->spec_held_ch];
                     else if(app->current_view == SCViewFreqAnalyzer && app->hit_count > 0)
                         freq = app->hits[app->hit_cursor].frequency;

@@ -89,17 +89,34 @@ static void dooya_load(DooyaApp* app) {
     flipper_format_free(ff);
     furi_record_close(RECORD_STORAGE);
 
-    // Default remote if nothing saved
+    // Default remotes if nothing saved
     if(app->remote_count == 0) {
-        DooyaRemoteData* rem = &app->remotes[0];
+        DooyaRemoteData* rem;
+        // Window 1
+        rem = &app->remotes[0];
         rem->id = 0xA3C0A1; rem->addr = 0x6C0100;
-        snprintf(rem->name, DOOYA_NAME_LEN, "Default");
+        snprintf(rem->name, DOOYA_NAME_LEN, "Window 1");
         rem->buttons[0] = (DooyaButton){.frame = 0xA3C0A16C01000BD9}; snprintf(rem->buttons[0].name, DOOYA_NAME_LEN, "Up");
         rem->buttons[1] = (DooyaButton){.frame = 0xA3C0A16C010023F1}; snprintf(rem->buttons[1].name, DOOYA_NAME_LEN, "Stop");
         rem->buttons[2] = (DooyaButton){.frame = 0xA3C0A16C01004311}; snprintf(rem->buttons[2].name, DOOYA_NAME_LEN, "Down");
-        rem->buttons[3] = (DooyaButton){.frame = 0xA3C0A16C010024F2}; snprintf(rem->buttons[3].name, DOOYA_NAME_LEN, "Confirm");
-        rem->btn_count = 4;
-        app->remote_count = 1;
+        rem->btn_count = 3;
+        // Window 2
+        rem = &app->remotes[1];
+        rem->id = 0xA3C0AD; rem->addr = 0x010100;
+        snprintf(rem->name, DOOYA_NAME_LEN, "Window 2");
+        rem->buttons[0] = (DooyaButton){.frame = 0xA3C0AD0101000B7A}; snprintf(rem->buttons[0].name, DOOYA_NAME_LEN, "Up");
+        rem->buttons[1] = (DooyaButton){.frame = 0xA3C0AD0101002392}; snprintf(rem->buttons[1].name, DOOYA_NAME_LEN, "Stop");
+        rem->buttons[2] = (DooyaButton){.frame = 0xA3C0AD01010043B2}; snprintf(rem->buttons[2].name, DOOYA_NAME_LEN, "Down");
+        rem->btn_count = 3;
+        // Window 3
+        rem = &app->remotes[2];
+        rem->id = 0xA3C09E; rem->addr = 0xBD0100;
+        snprintf(rem->name, DOOYA_NAME_LEN, "Window 3");
+        rem->buttons[0] = (DooyaButton){.frame = 0xA3C09EBD01000B27}; snprintf(rem->buttons[0].name, DOOYA_NAME_LEN, "Up");
+        rem->buttons[1] = (DooyaButton){.frame = 0xA3C09EBD0100233F}; snprintf(rem->buttons[1].name, DOOYA_NAME_LEN, "Stop");
+        rem->buttons[2] = (DooyaButton){.frame = 0xA3C09EBD0100435F}; snprintf(rem->buttons[2].name, DOOYA_NAME_LEN, "Down");
+        rem->btn_count = 3;
+        app->remote_count = 3;
     }
 }
 
