@@ -351,8 +351,8 @@ static uint16_t sc_detect_coherent(SpectrumCheckApp* app, uint32_t* te) {
 }
 
 // Modulation presets to try when signal detected (most common first)
-static const SCMod sc_try_mods[] = {SCModAM650, SCModAM270, SCModFM476, SCModFM238};
-#define SC_TRY_MOD_COUNT 4
+static const SCMod sc_try_mods[] = {SCModAM650, SCModFM476};
+#define SC_TRY_MOD_COUNT 2
 
 static void sc_tick_hopper(SpectrumCheckApp* app) {
     // === STATE: Worker running, staying on a signal ===
@@ -460,9 +460,9 @@ static void sc_tick_hopper(SpectrumCheckApp* app) {
     app->was_on_signal = true;
     app->hopper_timeout = 20; // 1s dwell (matches firmware's 10 ticks × 100ms)
 
-    // Pick modulation: separate counter from freq index
-    app->mod_rotation = (app->mod_rotation + 1) % SC_TRY_MOD_COUNT;
-    SCMod mod = sc_try_mods[app->mod_rotation];
+    // Pick modulation: 3× AM650 then 1× FM476 (most 433 MHz is OOK)
+    app->mod_rotation++;
+    SCMod mod = (app->mod_rotation % 4 == 0) ? SCModFM476 : SCModAM650;
     sc_set_freq_mod(app, fine_freq, mod);
 }
 
@@ -564,18 +564,19 @@ static void sc_tick_camp(SpectrumCheckApp* app) {
 static void sc_process_decode(SpectrumCheckApp* app) {
     if(!app->pending_decode) return;
     sc_hit_add(app, app->pending_freq, app->noise_floor + 10.0f, app->pending_name);
-    // Dedup: find existing slot for same freq+protocol, OR upgrade BinRAW/Unknown on same freq
+    // Dedup: find existing slot for same freq+protocol+data, OR upgrade BinRAW on same freq
     uint8_t slot = 0xFF;
     for(uint8_t i = 0; i < app->signal_count; i++) {
         uint32_t d = app->signals[i].frequency > app->pending_freq ?
             app->signals[i].frequency - app->pending_freq : app->pending_freq - app->signals[i].frequency;
         if(d < 50000) {
-            if(strcmp(app->signals[i].protocol_name, app->pending_name) == 0) {
-                slot = i; break; // Exact match — update in place
+            if(strcmp(app->signals[i].protocol_name, app->pending_name) == 0 &&
+               strcmp(app->signals[i].decoded_string, app->pending_str) == 0) {
+                slot = i; break; // Exact same signal — update in place
             }
-            // Upgrade: specific protocol replaces BinRAW or unidentified
-            if(!app->signals[i].protocol_decoded ||
-               strcmp(app->signals[i].protocol_name, "BinRAW") == 0) {
+            // Upgrade: named protocol replaces BinRAW on same freq
+            if((strcmp(app->signals[i].protocol_name, "BinRAW") == 0) &&
+               (strcmp(app->pending_name, "BinRAW") != 0)) {
                 slot = i; break;
             }
         }
@@ -618,7 +619,7 @@ static void sc_draw_status(Canvas* canvas, SpectrumCheckApp* app) {
         if(cx > 27) cx = 27;
         canvas_draw_box(canvas, cx, 58, 4, 4);
         snprintf(buf, sizeof(buf), "%s %dh %ds",
-            sc_mod_names[sc_try_mods[app->mod_rotation % SC_TRY_MOD_COUNT]],
+            sc_mod_names[app->current_mod],
             app->hit_count, app->signal_count);
         canvas_draw_str(canvas, 35, 63, buf);
     }
@@ -732,10 +733,11 @@ static void sc_draw_decoder(Canvas* canvas, SpectrumCheckApp* app) {
     SCSignal* sig = &app->signals[app->signal_selected];
     // Header: slot, freq, mod, quality indicator
     const char* type_icon = sig->protocol_decoded ? (strcmp(sig->protocol_name, "BinRAW") == 0 ? "BIN" : "DEC") : "RAW";
-    snprintf(buf, sizeof(buf), "%d/%d %s %ld.%03ld %s %dp",
+    const char* mod_hint = (sig->modulation == SCModFM476 || sig->modulation == SCModFM238) ? "FSK" : "OOK";
+    snprintf(buf, sizeof(buf), "%d/%d %s %ld.%03ld %s(%s) %dp",
         app->signal_selected + 1, app->signal_count, type_icon,
         sig->frequency / 1000000, (sig->frequency / 1000) % 1000,
-        sc_mod_names[sig->modulation], sig->pulse_count);
+        sc_mod_names[sig->modulation], mod_hint, sig->pulse_count);
     canvas_draw_str(canvas, 0, 7, buf);
     if(sig->protocol_decoded) {
         canvas_set_font(canvas, FontPrimary);
