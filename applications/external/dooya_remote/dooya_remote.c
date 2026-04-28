@@ -677,6 +677,7 @@ int32_t dooya_remote_app(void* p) {
     furi_record_close(RECORD_GUI);
     subghz_worker_free(app->worker);
     radio_device_loader_end(app->radio);
+    dooya_save(app); // persist defaults or any changes on exit
     subghz_devices_deinit();
     furi_record_close(RECORD_NOTIFICATION);
     furi_message_queue_free(app->event_queue);
