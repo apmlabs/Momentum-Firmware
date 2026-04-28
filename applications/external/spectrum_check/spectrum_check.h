@@ -31,7 +31,7 @@
 #define SC_RSSI_MAX     (-60.0f)
 #define SC_TRIGGER_STEP 1
 
-typedef enum { SCViewSpectrum, SCViewFreqAnalyzer, SCViewCamp, SCViewDecoder, SCViewCount } SCView;
+typedef enum { SCViewSpectrum, SCViewFreqAnalyzer, SCViewCamp, SCViewDecoder, SCViewSettings, SCViewCount } SCView;
 typedef enum { SCRadioHopping, SCRadioLocked, SCRadioPaused } SCRadioState;
 typedef enum {
     SCModAM650, SCModAM270, SCModFM238, SCModFM476,
@@ -140,6 +140,9 @@ typedef struct {
     uint8_t  camp_mod_idx; // index into sc_try_mods[]
     uint32_t camp_start_tick;
     char     camp_last_proto[32];
+
+    // Settings
+    uint8_t  settings_digit; // 0-8: which digit of freq to edit (xxx.xxx.xxx)
 } SpectrumCheckApp;
 
 int32_t spectrum_check_app(void* p);

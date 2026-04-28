@@ -496,7 +496,6 @@ static void sc_tick_locked(SpectrumCheckApp* app) {
 
     if(sc_signal_present(app, rssi)) {
         app->hopper_timeout = 40; // Reset: 2s from last signal presence
-        sc_hit_add(app, app->locked_freq, rssi, NULL); // Keep hit log updated
         return;
     }
     if(app->hopper_timeout > 0) {
@@ -519,10 +518,13 @@ static void sc_tick_camp(SpectrumCheckApp* app) {
     float rssi = subghz_devices_get_rssi(app->radio_device);
     sc_update_noise_floor(app, rssi);
 
-    // Log hits when signal present (so freq analyzer updates in real-time)
-    if(sc_signal_present(app, rssi)) {
+    // Log hit once when signal first appears (not every tick)
+    static bool camp_signal_was_present = false;
+    bool sig_now = sc_signal_present(app, rssi);
+    if(sig_now && !camp_signal_was_present) {
         sc_hit_add(app, app->locked_freq, rssi, NULL);
     }
+    camp_signal_was_present = sig_now;
 
     // Coherent signal detection: check raw buffer periodically for non-protocol signals
     if(app->raw_write > 40) {
@@ -602,20 +604,23 @@ static void sc_draw_status(Canvas* canvas, SpectrumCheckApp* app) {
     char buf[48];
     canvas_set_font(canvas, FontSecondary);
     if(app->radio_state == SCRadioLocked) {
-        SCMod cur_mod = sc_try_mods[app->locked_mod_idx % SC_TRY_MOD_COUNT];
-        snprintf(buf, sizeof(buf), "LOCK %ld.%03ld %s %d/%d NF:%.0f",
+        // Locked: show lock icon + freq + modulation
+        canvas_draw_str(canvas, 0, 63, "\xE2"); // lock icon (or just text)
+        snprintf(buf, sizeof(buf), "L %ld.%03ld %s",
             app->locked_freq / 1000000 % 1000, app->locked_freq / 1000 % 1000,
-            sc_mod_names[cur_mod],
-            (app->locked_mod_idx % SC_TRY_MOD_COUNT) + 1, SC_TRY_MOD_COUNT, (double)app->noise_floor);
-        canvas_draw_str(canvas, 0, 63, buf);
+            sc_mod_names[sc_try_mods[app->locked_mod_idx % SC_TRY_MOD_COUNT]]);
+        canvas_draw_str(canvas, 8, 63, buf);
     } else {
-        // Hopping: progress bar + hit count
-        uint8_t bar_fill = (app->hopper_idx * 58) / SC_HOPPER_COUNT;
-        canvas_draw_frame(canvas, 0, 56, 60, 7);
-        if(bar_fill > 0) canvas_draw_box(canvas, 1, 57, bar_fill, 5);
-        snprintf(buf, sizeof(buf), "%dh %ds NF:%.0f",
-            app->hit_count, app->signal_count, (double)app->noise_floor);
-        canvas_draw_str(canvas, 63, 63, buf);
+        // Hopping: animated bar that sweeps as we scan frequencies
+        uint8_t pos = (app->hopper_idx * 30) / SC_HOPPER_COUNT;
+        canvas_draw_frame(canvas, 0, 57, 32, 6);
+        uint8_t cx = 1 + pos;
+        if(cx > 27) cx = 27;
+        canvas_draw_box(canvas, cx, 58, 4, 4);
+        snprintf(buf, sizeof(buf), "%s %dh %ds",
+            sc_mod_names[sc_try_mods[app->mod_rotation % SC_TRY_MOD_COUNT]],
+            app->hit_count, app->signal_count);
+        canvas_draw_str(canvas, 35, 63, buf);
     }
 }
 
@@ -800,8 +805,40 @@ static void sc_draw_camp(Canvas* canvas, SpectrumCheckApp* app) {
         } else {
             canvas_draw_str(canvas, 0, 46, "Waiting for signal...");
         }
-        canvas_draw_str(canvas, 0, 56, "L/R:mod  LongOK:save");
+        canvas_draw_str(canvas, 0, 56, "L/R:modulation");
     }
+}
+
+static void sc_draw_settings(Canvas* canvas, SpectrumCheckApp* app) {
+    char buf[48];
+    canvas_set_font(canvas, FontPrimary);
+    canvas_draw_str(canvas, 30, 10, "SETTINGS");
+    canvas_set_font(canvas, FontSecondary);
+
+    // Frequency editor
+    uint32_t f = app->locked_freq ? app->locked_freq : app->current_freq;
+    uint32_t mhz = f / 1000000;
+    uint32_t khz = (f / 1000) % 1000;
+    uint32_t hz = f % 1000;
+    snprintf(buf, sizeof(buf), "%03ld.%03ld.%03ld", mhz, khz, hz);
+
+    canvas_draw_str(canvas, 0, 22, "Frequency (MHz):");
+
+    canvas_set_font(canvas, FontBigNumbers);
+    canvas_draw_str(canvas, 4, 42, buf);
+
+    // Draw cursor under active digit
+    // buf layout: 0-2=mhz, 3=dot, 4-6=khz, 7=dot, 8-10=hz
+    uint8_t digit = app->settings_digit;
+    uint8_t char_pos = digit < 3 ? digit : digit < 6 ? digit + 1 : digit + 2;
+    uint8_t cursor_x = 4 + char_pos * 11;
+    canvas_set_font(canvas, FontPrimary);
+    canvas_draw_str(canvas, cursor_x + 2, 48, "_");
+
+    // Controls
+    canvas_set_font(canvas, FontSecondary);
+    canvas_draw_str(canvas, 0, 56, "L/R:digit  U/D:value");
+    canvas_draw_str(canvas, 0, 64, "OK:camp  LongOK:spectrum");
 }
 
 static void sc_draw_cb(Canvas* canvas, void* ctx) {
@@ -814,9 +851,11 @@ static void sc_draw_cb(Canvas* canvas, void* ctx) {
     case SCViewFreqAnalyzer: sc_draw_freq(canvas, app); break;
     case SCViewCamp: sc_draw_camp(canvas, app); break;
     case SCViewDecoder: sc_draw_decoder(canvas, app); break;
+    case SCViewSettings: sc_draw_settings(canvas, app); break;
     default: break;
     }
-    if(app->current_view != SCViewCamp) sc_draw_status(canvas, app);
+    if(app->current_view != SCViewCamp && app->current_view != SCViewSettings)
+        sc_draw_status(canvas, app);
 }
 
 // ============== Input ==============
@@ -826,6 +865,53 @@ static void sc_input_cb(InputEvent* ev, void* ctx) {
 
 static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
     if(ev->type != InputTypeShort && ev->type != InputTypeLong && ev->type != InputTypeRepeat) return;
+
+    // Settings view has its own input handling (Up/Down change freq, not views)
+    if(app->current_view == SCViewSettings) {
+        uint32_t f = app->locked_freq ? app->locked_freq : app->current_freq;
+        // Digit multipliers: 100M, 10M, 1M, 100K, 10K, 1K, 100, 10, 1
+        static const uint32_t digit_mul[] = {100000000,10000000,1000000,100000,10000,1000,100,10,1};
+        switch(ev->key) {
+        case InputKeyLeft:
+            if(app->settings_digit > 0) app->settings_digit--;
+            break;
+        case InputKeyRight:
+            if(app->settings_digit < 8) app->settings_digit++;
+            break;
+        case InputKeyUp:
+            f += digit_mul[app->settings_digit];
+            if(f > 928000000) f = 928000000;
+            if(app->locked_freq) app->locked_freq = f; else app->current_freq = f;
+            break;
+        case InputKeyDown:
+            if(f > digit_mul[app->settings_digit])
+                f -= digit_mul[app->settings_digit];
+            else
+                f = 300000000;
+            if(f < 300000000) f = 300000000;
+            if(app->locked_freq) app->locked_freq = f; else app->current_freq = f;
+            break;
+        case InputKeyOk:
+            if(ev->type == InputTypeShort) {
+                // Apply: lock on this freq and go to camp
+                app->locked_freq = f;
+                app->locked_mod_idx = 0;
+                app->radio_state = SCRadioLocked;
+                app->camp_mod_idx = 0;
+                app->camp_start_tick = 0;
+                app->camp_last_proto[0] = 0;
+                app->current_view = SCViewCamp;
+            } else if(ev->type == InputTypeLong) {
+                // Long OK: back to spectrum with hopping
+                app->radio_state = SCRadioHopping;
+                app->current_view = SCViewSpectrum;
+            }
+            break;
+        default: break;
+        }
+        return;
+    }
+
     switch(ev->key) {
     case InputKeyUp:
         if(app->current_view == SCViewCamp) { app->camp_start_tick = 0; app->camp_last_proto[0] = 0; }
@@ -898,7 +984,7 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
             if(app->current_view == SCViewFreqAnalyzer) {
                 app->hit_sort = (app->hit_sort + 1) % SCSortModes;
                 sc_hit_sort(app->hits, app->hit_count, app->hit_sort);
-            } else if(app->signal_count > 0 && (app->current_view == SCViewDecoder || app->current_view == SCViewCamp)) {
+            } else if(app->signal_count > 0 && app->current_view == SCViewDecoder) {
                 // Long OK: save with keyboard
                 SCSignal* s = &app->signals[app->signal_selected];
                 if(s->raw_count > 0) {
@@ -1047,7 +1133,10 @@ int32_t spectrum_check_app(void* p) {
             }
         }
         // Tick: radio management based on current view and state
-        if(app->current_view == SCViewCamp && app->radio_state == SCRadioLocked) {
+        if(app->current_view == SCViewSettings) {
+            // Settings: stop radio, user is editing frequency
+            if(app->rx_active) sc_rx_end(app);
+        } else if(app->current_view == SCViewCamp && app->radio_state == SCRadioLocked) {
             sc_tick_camp(app);
         } else if(app->radio_state == SCRadioLocked) {
             sc_tick_locked(app);
