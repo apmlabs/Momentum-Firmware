@@ -27,13 +27,13 @@ static const char* nr_pname[] = {"Honeywell","PT2262","EV1527","Keeloq","FSK","N
 static const char* nr_picon[] = {"#",">",">","#","?","~","?"};
 static const bool nr_replayable[] = {false,true,true,false,false,false,false};
 static const char* nr_pdesc[] = {
-    "Honeywell 5800 alarm sensor.\nManchester TE=143us, 64-bit.\nFFFE+serial+event+CRC.\nEvents: open tamper lobat\nalarm heartbeat.\nNOT replayable.",
-    "PT2262/Princeton remote.\nPWM TE=194us, 24-bit.\nAddress + command.\nGarage, doorbell, switch.\nREPLAYABLE.",
-    "EV1527 learning code.\nPWM TE=117us, 25-bit.\n20-bit addr + 4-bit cmd.\nRemotes, sensors, alarms.\nREPLAYABLE.",
-    "Keeloq HCS301 rolling code.\nPWM TE=250us, 66-bit.\n32-bit hop + serial + btn.\nEncrypted. NOT replayable.",
-    "FSK signal on AM = noise.\nRecapture on FM476.\nLikely weather or HVAC.",
-    "Nexus-TH weather sensor.\nOOK_PWM TE=650us, 36-bit.\nID+flags+temp+humi.\nAuriol/Lidl/Rubicson.\nTemp in 0.1C, 8-bit humi.",
-    "Unknown protocol.\nRaw pulse timing only.\nTE and bit count shown.",
+    "Honeywell-family 5800EU alarm.\nManchester TE=143us 64-bit.\nFFFE+ch+serial+event+CRC.\nEvent: open tamper alarm\nbattery heartbeat.\n12+ zones. NOT replayable.",
+    "PT2262/Princeton remote.\nPWM TE=194us 24-bit.\nAddress + command.\nGarage, doorbell, switch.\nFixed code. REPLAYABLE.",
+    "EV1527 fixed OTP code.\nPWM TE=117us 24-bit.\n20-bit addr + 4-bit cmd.\nF=PIR E=Door 8=Panic\n2=BtnB 4=BtnC.\nFixed code. REPLAYABLE.",
+    "Keeloq HCS301 rolling.\nPWM TE=250us 66-bit.\n32-bit hop + serial + btn.\nEncrypted counter.\nNOT replayable.",
+    "FSK on AM demodulator.\nRecapture on FM476.\nLikely weather or HVAC\nsensor. TE=65us typical.",
+    "Nexus-TH weather sensor.\nOOK_PWM TE=650us 36-bit.\nID+flags+temp+humidity.\nAuriol/Lidl/Rubicson.\nUpdates every 50 seconds.",
+    "Unknown OOK protocol.\nRaw pulse timing only.\nTE and bit count shown.\nCheck TE for device type.",
 };
 
 typedef struct {
@@ -99,5 +99,8 @@ typedef struct {
     uint16_t rx_fte;
     uint8_t  rx_fdata[32];
     uint8_t  rx_flen;
+    uint8_t  rx_last[32]; // previous frame for repeat validation
+    uint8_t  rx_last_len;
+    uint16_t rx_last_te;
     uint16_t autosave_seq;
 } NRApp;

@@ -16,8 +16,9 @@ static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* d, uint8_t len) 
     if(te >= 500 && te <= 750 && bits >= 30) return NRProtoNexusTH;
     if(te >= 220 && te <= 360 && bits >= 50) return NRProtoKeeloq;
     if(te >= 125 && te <= 165 && bits >= 30) return NRProtoHoneywell;
+    if(te >= 70 && te <= 84 && bits >= 50) return NRProtoHoneywell; // half-bit Manchester
     if(te >= 175 && te <= 215 && bits >= 16) return NRProtoPT2262;
-    if(te >= 105 && te <= 130 && bits >= 20) return NRProtoEV1527;
+    if(te >= 105 && te <= 130 && bits >= 20 && bits <= 80) return NRProtoEV1527;
     return NRProtoBinRAW;
 }
 
@@ -38,30 +39,59 @@ static uint32_t nr_dev_id(NRProto p, uint8_t* d, uint8_t len, uint16_t te) {
 static void nr_sig_label(NRProto p, uint8_t* d, uint8_t len, char* out, uint8_t sz) {
     if(p == NRProtoPT2262 && len >= 3)
         snprintf(out, sz, "Cmd:%02X", (unsigned)d[len-1]);
-    else if(p == NRProtoEV1527 && len >= 3)
-        snprintf(out, sz, "Btn:%u", (unsigned)(d[2] & 0xF));
-    else if(p == NRProtoKeeloq && len >= 8)
-        snprintf(out, sz, "Btn:S%u", (unsigned)(d[7] & 0xF));
-    else if(p == NRProtoHoneywell)
-        snprintf(out, sz, "Event");
-    else if(p == NRProtoNexusTH && len >= 5) {
-        // Nexus-TH: [ID:8][Flags:4][Temp:12][Const:4][Humi:8]
-        // Bits packed MSB: d[0]=ID, d[1]=flags|temp_hi, d[2]=temp_lo|const, d[3..4]=humi
+    else if(p == NRProtoEV1527 && len >= 3) {
+        uint8_t cmd = d[2] & 0xF;
+        const char* hint = cmd == 0xF ? "Alrm" : cmd == 0xE ? "Door" :
+            cmd == 0x8 ? "PIR" : cmd == 0x2 ? "BtnB" :
+            cmd == 0x4 ? "BtnC" : cmd == 0x1 ? "BtnA" : "Sens";
+        uint32_t addr = (((uint32_t)d[0]<<16)|((uint32_t)d[1]<<8)|d[2]) >> 4;
+        snprintf(out, sz, "%05lX %s", (unsigned long)addr, hint);
+    } else if(p == NRProtoKeeloq && len >= 8) {
+        uint32_t sn = (((uint32_t)d[4]&0xF)<<24)|((uint32_t)d[5]<<16)|
+                      ((uint32_t)d[6]<<8)|d[7];
+        snprintf(out, sz, "S%u %06lX", (unsigned)(d[7]&0xF), (unsigned long)(sn>>4));
+    } else if(p == NRProtoHoneywell && len >= 4) {
+        // Manchester decode first 64 raw bits → 32 decoded bits
+        uint8_t dec[4] = {0};
+        uint8_t di = 0;
+        for(uint8_t i = 0; i < len * 8 - 1 && di < 32; i += 2) {
+            uint8_t b0 = (d[i/8] >> (7-(i%8))) & 1;
+            uint8_t b1 = (d[(i+1)/8] >> (7-((i+1)%8))) & 1;
+            if(b0 != b1) { // valid Manchester
+                if(b0 == 0) dec[di/8] |= (1 << (7-(di%8))); // 01→1
+                di++;
+            }
+        }
+        if(di >= 24) {
+            // Decoded: [preamble...][channel:4][serial:20][event:8]
+            // Find FFFE preamble or just show last meaningful bytes
+            uint8_t ev = dec[3]; // event byte if we got enough
+            const char* st = (ev & 0x80) ? "OPEN" : (ev & 0x04) ? "hb" :
+                (ev & 0x40) ? "TAMP" : (ev & 0x08) ? "LOBAT" : "ok";
+            snprintf(out, sz, "%s %02X", st, ev);
+        } else {
+            snprintf(out, sz, "Evt %ub", len * 8);
+        }
+    } else if(p == NRProtoNexusTH && len >= 5) {
         uint16_t raw = ((uint16_t)(d[1] & 0x0F) << 8) | d[2];
         int16_t temp = (raw > 2048) ? (int16_t)(raw - 4096) : (int16_t)raw;
         uint8_t humi = ((d[3] & 0x0F) << 4) | (d[4] >> 4);
         snprintf(out, sz, "%d.%dC %d%%", temp / 10, (temp < 0 ? -temp : temp) % 10, humi);
     } else
-        snprintf(out, sz, "%db", len * 8);
+        snprintf(out, sz, "TE=%u %db", len > 0 ? d[0] : 0, len * 8);
 }
 
 static void nr_dev_label(NRDev* d) {
     if(d->name[0]) return;
     if(d->proto == NRProtoPT2262)
         snprintf(d->name, NR_MAX_NAME, "Remote %02X", (unsigned)(d->dev_id & 0xFF));
-    else if(d->proto == NRProtoEV1527)
-        snprintf(d->name, NR_MAX_NAME, "Remote %05lX", (unsigned long)(d->dev_id & 0xFFFFF));
-    else if(d->proto == NRProtoKeeloq)
+    else if(d->proto == NRProtoEV1527) {
+        // Name by device type from first signal's cmd nibble
+        uint8_t cmd = (d->sig_count > 0) ? (d->sigs[0].raw[2] & 0xF) : 0;
+        const char* prefix = (cmd == 0xF || cmd == 0x8) ? "PIR" :
+            (cmd == 0xE) ? "Door" : (cmd == 0x2 || cmd == 0x4 || cmd == 0x1) ? "Rmt" : "Sens";
+        snprintf(d->name, NR_MAX_NAME, "%s %05lX", prefix, (unsigned long)(d->dev_id & 0xFFFFF));
+    } else if(d->proto == NRProtoKeeloq)
         snprintf(d->name, NR_MAX_NAME, "Fob %07lX", (unsigned long)(d->dev_id & 0xFFFFFFF));
     else if(d->proto == NRProtoHoneywell)
         snprintf(d->name, NR_MAX_NAME, "Alarm System");
@@ -194,26 +224,24 @@ static void nr_seed(NRApp* a) {
         d->proto=P; d->te=TE; d->dev_id=ID; d->hits=HITS; d->seeded=true; \
         snprintf(d->name, NR_MAX_NAME, NAME); }
 
-    SEED(NRProtoHoneywell, 143, 0x5800, 221, "Alarm System");
-    SEED(NRProtoKeeloq, 322, 0x2F9AE15, 18, "Parking Fob");
+    SEED(NRProtoHoneywell, 143, 0x5800, 1152, "Alarm System");
+    SEED(NRProtoKeeloq, 322, 0x2F9AE15, 23, "Parking Fob");
     a->devs[a->dev_count-1].sig_count = 2;
-    snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "Btn:S2 (main)");
-    snprintf(a->devs[a->dev_count-1].sigs[1].label, 20, "Btn:S3 (aux)");
+    snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "S2 2F9AE1");
+    snprintf(a->devs[a->dev_count-1].sigs[1].label, 20, "S3 2F9AE1");
 
-    SEED(NRProtoPT2262, 194, 0x01, 14, "Remote 01");
+    SEED(NRProtoPT2262, 194, 0x4F, 52, "Remote 4F");
     NRDev* r = &a->devs[a->dev_count-1];
-    r->sigs[0] = (NRSig){{0x00,0x44,0x80},3,24,"Cmd:22 (Btn A)"};
-    r->sigs[1] = (NRSig){{0x00,0x48,0x80},3,24,"Cmd:24 (Btn B)"};
+    r->sigs[0] = (NRSig){{0xFF,0xFE,0x4F,0xFF,0xE0},5,40,"Cmd:E0 (Btn A)"};
+    r->sigs[1] = (NRSig){{0x00,0x44,0x80},3,24,"Cmd:22 (Btn B)"};
     r->sig_count = 2;
 
-    SEED(NRProtoEV1527, 117, 0, 74, "EV1527 Remotes");
-    SEED(NRProtoFSK, 65, 0xF5C0, 24, "FSK Sensor");
-    SEED(NRProtoBinRAW, 98, 0xB109, 77, "OOK Sensors");
+    SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor");
+    SEED(NRProtoBinRAW, 98, 0xB109, 294, "OOK Unknown 98");
     SEED(NRProtoBinRAW, 81, 0xB108, 2, "Weather Stn?");
-    SEED(NRProtoBinRAW, 73, 0xB107, 56, "Sensor TE=73");
-    SEED(NRProtoNexusTH, 650, 0xE0E0, 6, "Weather E0");
+    SEED(NRProtoNexusTH, 650, 0xE0E0, 14, "Weather E0");
     a->devs[a->dev_count-1].sig_count = 1;
-    snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "22.8C 74%%");
+    snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "18.6C 68%%");
     SEED(NRProtoBinRAW, 345, 0xB122, 1, "Manch TE=345");
     #undef SEED
 }
@@ -228,9 +256,25 @@ static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
         if(a->rx_bit_count >= 24 && a->rx_te_n > 0 && !a->rx_ready) {
             uint16_t te = a->rx_te_sum / a->rx_te_n;
             uint8_t bl = (a->rx_bit_count + 7) / 8; if(bl > 32) bl = 32;
-            memset(a->rx_fdata, 0, 32);
+            uint8_t tmp[32];
+            memset(tmp, 0, 32);
             for(uint16_t i = 0; i < a->rx_bit_count && i < 256; i++)
-                if(a->rx_bits[i]) a->rx_fdata[i/8] |= (1 << (7-(i%8)));
+                if(a->rx_bits[i]) tmp[i/8] |= (1 << (7-(i%8)));
+            // Repeat validation: EV1527/PT2262 range requires 2 identical frames
+            bool need_repeat = (te >= 105 && te <= 215 && a->rx_bit_count <= 80);
+            if(need_repeat) {
+                bool match = (bl == a->rx_last_len && bl > 0 &&
+                    abs((int)te - (int)a->rx_last_te) < 20 &&
+                    memcmp(tmp, a->rx_last, bl) == 0);
+                memcpy(a->rx_last, tmp, bl);
+                a->rx_last_len = bl;
+                a->rx_last_te = te;
+                if(!match) { // first frame — store and wait for repeat
+                    a->rx_bit_count = 0; a->rx_te_sum = 0; a->rx_te_n = 0;
+                    return;
+                }
+            }
+            memcpy(a->rx_fdata, tmp, 32);
             a->rx_fte = te; a->rx_fbits = a->rx_bit_count; a->rx_flen = bl;
             a->rx_ready = true;
         }
@@ -535,11 +579,51 @@ static void nr_draw(Canvas* c, void* ctx) {
         canvas_set_font(c, FontSecondary);
 
         int8_t line = -(int8_t)a->dev_scroll;
-        // For NexusTH show hits + TE as first info line
+        // Protocol-specific info line
         if(d->proto == NRProtoNexusTH) {
             if(line >= 0 && line < MAX_ROWS) {
                 uint8_t y = ROW_START + line * ROW_H;
                 snprintf(buf, sizeof(buf), " Hits:%lu TE=%u Ch1",
+                    (unsigned long)d->hits, d->te);
+                canvas_draw_str(c, 0, y + 8, buf);
+            }
+            line++;
+        } else if(d->proto == NRProtoHoneywell) {
+            if(line >= 0 && line < MAX_ROWS) {
+                uint8_t y = ROW_START + line * ROW_H;
+                snprintf(buf, sizeof(buf), " %lu hits TE=%u Manch",
+                    (unsigned long)d->hits, d->te);
+                canvas_draw_str(c, 0, y + 8, buf);
+            }
+            line++;
+            if(line >= 0 && line < MAX_ROWS) {
+                uint8_t y = ROW_START + line * ROW_H;
+                snprintf(buf, sizeof(buf), " %u sigs %s",
+                    d->sig_count, d->confirmed ? "LIVE" : "seeded");
+                canvas_draw_str(c, 0, y + 8, buf);
+            }
+            line++;
+        } else if(d->proto == NRProtoKeeloq) {
+            if(line >= 0 && line < MAX_ROWS) {
+                uint8_t y = ROW_START + line * ROW_H;
+                snprintf(buf, sizeof(buf), " %lu hits TE=%u Rolling",
+                    (unsigned long)d->hits, d->te);
+                canvas_draw_str(c, 0, y + 8, buf);
+            }
+            line++;
+        } else if(d->proto == NRProtoEV1527) {
+            if(line >= 0 && line < MAX_ROWS) {
+                uint8_t y = ROW_START + line * ROW_H;
+                snprintf(buf, sizeof(buf), " %lu hits TE=%u Fixed",
+                    (unsigned long)d->hits, d->te);
+                canvas_draw_str(c, 0, y + 8, buf);
+            }
+            line++;
+        } else if(d->proto != NRProtoNexusTH) {
+            // FSK, BinRAW, PT2262
+            if(line >= 0 && line < MAX_ROWS) {
+                uint8_t y = ROW_START + line * ROW_H;
+                snprintf(buf, sizeof(buf), " %lu hits TE=%u",
                     (unsigned long)d->hits, d->te);
                 canvas_draw_str(c, 0, y + 8, buf);
             }
