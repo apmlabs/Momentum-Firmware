@@ -13,7 +13,7 @@ static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* d, uint8_t len) 
         for(uint8_t i = 0; i < len; i++) if(d[i] == 0xFF) ff++;
         if(ff > len / 3 && te < 70) return NRProtoFSK;
     }
-    if(te >= 500 && te <= 750 && bits >= 30 && bits <= 50) return NRProtoNexusTH;
+    if(te >= 500 && te <= 750 && bits >= 30) return NRProtoNexusTH;
     if(te >= 220 && te <= 360 && bits >= 50) return NRProtoKeeloq;
     if(te >= 125 && te <= 165 && bits >= 30) return NRProtoHoneywell;
     if(te >= 175 && te <= 215 && bits >= 16) return NRProtoPT2262;
@@ -239,10 +239,10 @@ static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
     }
     if(h < 50 || l < 50) return;
     uint32_t sh = h < l ? h : l;
-    if(sh < 500) { a->rx_te_sum += sh; a->rx_te_n++; }
+    if(sh < 800) { a->rx_te_sum += sh; a->rx_te_n++; }
     if(a->rx_bit_count < 128) {
         uint32_t te = a->rx_te_n > 0 ? a->rx_te_sum / a->rx_te_n : 200;
-        a->rx_bits[a->rx_bit_count++] = (h > te * 2) ? 1 : 0;
+        a->rx_bits[a->rx_bit_count++] = (sh > 400) ? (l > te * 4) : (h > te * 2) ? 1 : 0;
     }
 }
 
