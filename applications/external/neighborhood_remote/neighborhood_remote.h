@@ -102,5 +102,6 @@ typedef struct {
     uint8_t  rx_last[32]; // previous frame for repeat validation
     uint8_t  rx_last_len;
     uint16_t rx_last_te;
+    uint32_t tx_flash; // tick when last TX happened (for on-screen feedback)
     uint16_t autosave_seq;
 } NRApp;

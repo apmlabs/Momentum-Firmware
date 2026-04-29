@@ -536,6 +536,14 @@ static void nr_draw(Canvas* c, void* ctx) {
         canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
         canvas_draw_str(c, 0, FTR_Y, "OK:SEND  L/R:Dev  Bk");
 
+        if(a->tx_flash && (a->tick - a->tx_flash) < 30) {
+            canvas_draw_box(c, 34, 20, 60, 20);
+            canvas_set_color(c, ColorWhite);
+            canvas_set_font(c, FontPrimary);
+            canvas_draw_str_aligned(c, 64, 34, AlignCenter, AlignBottom, "SENT!");
+            canvas_set_color(c, ColorBlack);
+        }
+
     } else if(a->view == NRViewKnown) {
         canvas_set_font(c, FontPrimary);
         canvas_draw_str(c, 0, HDR_Y, "KNOWN DEVICES");
@@ -661,6 +669,14 @@ static void nr_draw(Canvas* c, void* ctx) {
         else
             canvas_draw_str(c, 0, FTR_Y, "U/D:Scroll");
         canvas_draw_str_aligned(c, 127, FTR_Y, AlignRight, AlignBottom, "L/R Bk");
+
+        if(a->tx_flash && (a->tick - a->tx_flash) < 30) {
+            canvas_draw_box(c, 34, 20, 60, 20);
+            canvas_set_color(c, ColorWhite);
+            canvas_set_font(c, FontPrimary);
+            canvas_draw_str_aligned(c, 64, 34, AlignCenter, AlignBottom, "SENT!");
+            canvas_set_color(c, ColorBlack);
+        }
 
     } else if(a->view == NRViewSettings) {
         canvas_set_font(c, FontPrimary);
@@ -847,6 +863,7 @@ int32_t neighborhood_remote_app(void* p) {
                     notification_message(a->notif, &sequence_blink_magenta_100);
                     nr_tx(a, d, &d->sigs[si]);
                     notification_message(a->notif, &sequence_blink_green_100);
+                    a->tx_flash = a->tick;
                 }
 
             } else if(a->view == NRViewKnown) {
@@ -876,6 +893,7 @@ int32_t neighborhood_remote_app(void* p) {
                     notification_message(a->notif, &sequence_blink_magenta_100);
                     nr_tx(a, d, &d->sigs[si]);
                     notification_message(a->notif, &sequence_blink_green_100);
+                    a->tx_flash = a->tick;
                 } else if(ev.key == InputKeyUp && a->dev_scroll > 0) {
                     a->dev_scroll--;
                 } else if(ev.key == InputKeyDown) {
