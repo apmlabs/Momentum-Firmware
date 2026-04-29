@@ -423,41 +423,38 @@ static void nr_draw(Canvas* c, void* ctx) {
         canvas_draw_line(c, 0, 13, 127, 13);
         canvas_set_font(c, FontSecondary);
 
-        // Flat list: device name as header, signals as items
-        uint8_t row = 0, vis = 0;
-        for(uint8_t i = 0; i < a->dev_count && row < 5; i++) {
-            NRDev* d = &a->devs[i];
-            if(!nr_replayable[d->proto] || d->sig_count == 0) continue;
-            // Device header
-            if(vis >= a->sel && row < 5) {
-                uint8_t y = 16 + row * 9;
-                canvas_set_font(c, FontSecondary);
-                snprintf(buf, sizeof(buf), "%s", d->name);
-                canvas_draw_str(c, 0, y + 7, buf);
-                row++;
-            }
-            vis++;
-            // Signals
-            for(uint8_t s = 0; s < d->sig_count && row < 5; s++) {
-                if(vis >= a->sel && row < 5) {
-                    uint8_t y = 16 + row * 9;
-                    bool sel = (vis == a->sel);
-                    if(sel) {
-                        canvas_draw_box(c, 0, y - 1, 128, 9);
-                        canvas_set_color(c, ColorWhite);
-                    }
-                    snprintf(buf, sizeof(buf), "  > %s", d->sigs[s].label);
-                    canvas_draw_str(c, 0, y + 7, buf);
-                    canvas_set_color(c, ColorBlack);
-                    row++;
-                }
-                vis++;
-            }
+        // Find nth replayable device (sel = which remote, dev_scroll = which button)
+        uint8_t rc = 0, ri = 255;
+        for(uint8_t i = 0; i < a->dev_count; i++) {
+            if(!nr_replayable[a->devs[i].proto] || a->devs[i].sig_count == 0) continue;
+            if(rc == a->sel) ri = i;
+            rc++;
         }
-        if(row == 0) canvas_draw_str(c, 4, 30, "No replayable signals");
-
+        if(ri < a->dev_count) {
+            NRDev* d = &a->devs[ri];
+            snprintf(buf, sizeof(buf), "%s", d->name);
+            canvas_draw_str_aligned(c, 64, 22, AlignCenter, AlignBottom, buf);
+            if(rc > 1) {
+                canvas_draw_str(c, 0, 22, "<");
+                canvas_draw_str_aligned(c, 127, 22, AlignRight, AlignBottom, ">");
+            }
+            canvas_draw_line(c, 0, 24, 127, 24);
+            for(uint8_t s = 0; s < d->sig_count; s++) {
+                uint8_t y = 26 + s * 10;
+                if(y > 50) break;
+                if(s == a->dev_scroll) {
+                    canvas_draw_box(c, 0, y, 128, 10);
+                    canvas_set_color(c, ColorWhite);
+                }
+                snprintf(buf, sizeof(buf), "  > %s", d->sigs[s].label);
+                canvas_draw_str(c, 2, y + 8, buf);
+                canvas_set_color(c, ColorBlack);
+            }
+        } else {
+            canvas_draw_str(c, 4, 30, "No replayable devices");
+        }
         canvas_draw_line(c, 0, 56, 127, 56);
-        canvas_draw_str(c, 0, 63, "OK:SEND  Bk:Menu");
+        canvas_draw_str(c, 0, 63, "OK:SEND  L/R:Dev  Bk");
 
     } else if(a->view == NRViewKnown) {
         canvas_set_font(c, FontPrimary);
@@ -599,21 +596,6 @@ static int8_t nr_live_idx(NRApp* a, uint8_t n) {
     return -1;
 }
 
-// Find which remote signal is at flat-list position
-static bool nr_remote_at(NRApp* a, uint8_t pos, uint8_t* out_dev, uint8_t* out_sig) {
-    uint8_t p = 0;
-    for(uint8_t i = 0; i < a->dev_count; i++) {
-        NRDev* d = &a->devs[i];
-        if(!nr_replayable[d->proto] || d->sig_count == 0) continue;
-        p++; // device header
-        for(uint8_t s = 0; s < d->sig_count; s++) {
-            if(p == pos) { *out_dev = i; *out_sig = s; return true; }
-            p++;
-        }
-    }
-    return false;
-}
-
 // ============== Main ==============
 
 int32_t neighborhood_remote_app(void* p) {
@@ -710,19 +692,35 @@ int32_t neighborhood_remote_app(void* p) {
                 }
 
             } else if(a->view == NRViewRemotes) {
+                // Count replayable devices
+                uint8_t rc = 0;
+                for(uint8_t i = 0; i < a->dev_count; i++)
+                    if(nr_replayable[a->devs[i].proto] && a->devs[i].sig_count > 0) rc++;
+                // Find current device
+                uint8_t ri = 255, c2 = 0;
+                for(uint8_t i = 0; i < a->dev_count; i++) {
+                    if(!nr_replayable[a->devs[i].proto] || a->devs[i].sig_count == 0) continue;
+                    if(c2 == a->sel) { ri = i; break; }
+                    c2++;
+                }
+
                 if(ev.key == InputKeyBack) {
                     a->view = NRViewMenu;
-                } else if(ev.key == InputKeyUp && a->sel > 0) {
-                    a->sel--;
-                } else if(ev.key == InputKeyDown) {
-                    a->sel++;
-                } else if(ev.key == InputKeyOk) {
-                    uint8_t di, si;
-                    if(nr_remote_at(a, a->sel, &di, &si)) {
-                        notification_message(a->notif, &sequence_blink_magenta_100);
-                        nr_tx(a, &a->devs[di], &a->devs[di].sigs[si]);
-                        notification_message(a->notif, &sequence_blink_green_100);
-                    }
+                } else if(ev.key == InputKeyLeft && a->sel > 0) {
+                    a->sel--; a->dev_scroll = 0;
+                } else if(ev.key == InputKeyRight && a->sel + 1 < rc) {
+                    a->sel++; a->dev_scroll = 0;
+                } else if(ev.key == InputKeyUp && a->dev_scroll > 0) {
+                    a->dev_scroll--;
+                } else if(ev.key == InputKeyDown && ri < a->dev_count &&
+                          a->dev_scroll + 1 < a->devs[ri].sig_count) {
+                    a->dev_scroll++;
+                } else if(ev.key == InputKeyOk && ri < a->dev_count) {
+                    NRDev* d = &a->devs[ri];
+                    uint8_t si = a->dev_scroll < d->sig_count ? a->dev_scroll : 0;
+                    notification_message(a->notif, &sequence_blink_magenta_100);
+                    nr_tx(a, d, &d->sigs[si]);
+                    notification_message(a->notif, &sequence_blink_green_100);
                 }
 
             } else if(a->view == NRViewKnown) {
