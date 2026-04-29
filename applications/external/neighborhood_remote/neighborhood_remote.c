@@ -115,9 +115,9 @@ static void nr_save(NRApp* a) {
             flipper_format_write_string_cstr(ff, "Name", d->name);
             for(uint8_t s = 0; s < d->sig_count; s++) {
                 flipper_format_write_string_cstr(ff, "SL", d->sigs[s].label);
-                uint32_t sb = d->sigs[s].bits;
-                flipper_format_write_uint32(ff, "SB", &sb, 1);
-                if(d->sigs[s].raw_len)
+                uint32_t sb[2] = {d->sigs[s].bits, d->sigs[s].raw_len};
+                flipper_format_write_uint32(ff, "SB", sb, 2);
+                if(d->sigs[s].raw_len > 0)
                     flipper_format_write_hex(ff, "SD", d->sigs[s].raw, d->sigs[s].raw_len);
             }
         }
@@ -133,7 +133,7 @@ static void nr_load(NRApp* a) {
     if(flipper_format_file_open_existing(ff, NR_SAVE_FILE)) {
         uint32_t ver = 0;
         FuriString* t = furi_string_alloc();
-        if(flipper_format_read_header(ff, t, &ver)) {
+        if(flipper_format_read_header(ff, t, &ver) && ver == 3) {
             uint32_t cnt = 0;
             flipper_format_read_uint32(ff, "Count", &cnt, 1);
             if(cnt > NR_MAX_DEVICES) cnt = NR_MAX_DEVICES;
@@ -150,15 +150,18 @@ static void nr_load(NRApp* a) {
                 if(flipper_format_read_string(ff, "Name", s))
                     snprintf(d->name, NR_MAX_NAME, "%s", furi_string_get_cstr(s));
                 for(uint8_t j = 0; j < sc; j++) {
-                    if(flipper_format_read_string(ff, "SL", s))
-                        snprintf(d->sigs[j].label, 20, "%s", furi_string_get_cstr(s));
-                    uint32_t sb = 0;
-                    flipper_format_read_uint32(ff, "SB", &sb, 1);
-                    d->sigs[j].bits = sb;
-                    uint8_t dd[32]; uint32_t dl = 32;
-                    if(flipper_format_read_hex(ff, "SD", dd, dl)) {
-                        memcpy(d->sigs[j].raw, dd, dl);
-                        d->sigs[j].raw_len = dl;
+                    if(!flipper_format_read_string(ff, "SL", s)) break;
+                    snprintf(d->sigs[j].label, 20, "%s", furi_string_get_cstr(s));
+                    uint32_t sb[2] = {0, 0};
+                    if(!flipper_format_read_uint32(ff, "SB", sb, 2)) break;
+                    d->sigs[j].bits = sb[0];
+                    uint8_t rl = sb[1]; if(rl > 32) rl = 32;
+                    if(rl > 0) {
+                        uint8_t dd[32] = {0};
+                        if(flipper_format_read_hex(ff, "SD", dd, rl)) {
+                            memcpy(d->sigs[j].raw, dd, rl);
+                            d->sigs[j].raw_len = rl;
+                        }
                     }
                     d->sig_count++;
                 }
@@ -166,6 +169,7 @@ static void nr_load(NRApp* a) {
             }
             furi_string_free(s);
         }
+        // If ver != 3, old format — ignore, seed will populate
         furi_string_free(t);
     }
     flipper_format_free(ff);
@@ -332,6 +336,18 @@ static void nr_process(NRApp* a) {
 
 // ============== Drawing ==============
 
+// Layout constants: screen is 128x64 (y: 0-63)
+// Header: y=0-12 (title at y=10, line at y=12)
+// Content: y=14-52 (4 rows, 10px each: y=14,24,34,44, text baseline +8)
+// Footer: y=54 (line), y=63 (text baseline)
+#define HDR_Y     10
+#define HDR_LINE  12
+#define ROW_START 14
+#define ROW_H     10
+#define MAX_ROWS  4
+#define FTR_LINE  54
+#define FTR_Y     63
+
 static void nr_draw(Canvas* c, void* ctx) {
     NRApp* a = ctx;
     canvas_clear(c);
@@ -339,34 +355,33 @@ static void nr_draw(Canvas* c, void* ctx) {
 
     if(a->view == NRViewMenu) {
         canvas_set_font(c, FontPrimary);
-        canvas_draw_str(c, 20, 11, "NEIGHBORHOOD");
-        canvas_draw_line(c, 0, 13, 127, 13);
+        canvas_draw_str(c, 20, HDR_Y, "NEIGHBORHOOD");
+        canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
 
         const char* items[] = {"Scan", "My Remotes", "Known Devices", "Settings"};
-        // Count remotes
         uint8_t rc = 0;
         for(uint8_t i = 0; i < a->dev_count; i++)
             if(nr_replayable[a->devs[i].proto] && a->devs[i].sig_count > 0) rc++;
 
         for(uint8_t i = 0; i < 4; i++) {
-            uint8_t y = 18 + i * 11;
+            uint8_t y = ROW_START + i * ROW_H;
             if(i == a->menu_sel) {
-                canvas_draw_box(c, 0, y - 1, 128, 11);
+                canvas_draw_box(c, 0, y, 128, ROW_H);
                 canvas_set_color(c, ColorWhite);
             }
-            canvas_draw_str(c, 6, y + 7, items[i]);
+            canvas_draw_str(c, 6, y + 8, items[i]);
             if(i == 1 && rc > 0) {
                 snprintf(buf, sizeof(buf), "(%d)", rc);
-                canvas_draw_str(c, 90, y + 7, buf);
+                canvas_draw_str(c, 90, y + 8, buf);
             } else if(i == 2) {
                 snprintf(buf, sizeof(buf), "(%d)", a->dev_count);
-                canvas_draw_str(c, 90, y + 7, buf);
+                canvas_draw_str(c, 90, y + 8, buf);
             }
             canvas_set_color(c, ColorBlack);
         }
-        canvas_draw_line(c, 0, 56, 127, 56);
-        canvas_draw_str(c, 0, 63, "OK:Select  Bk:Exit");
+        canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
+        canvas_draw_str(c, 0, FTR_Y, "OK:Select  Bk:Exit");
 
     } else if(a->view == NRViewScan) {
         canvas_set_font(c, FontPrimary);
@@ -375,28 +390,25 @@ static void nr_draw(Canvas* c, void* ctx) {
             snprintf(buf, sizeof(buf), "SCAN %s", anim[a->scan_anim % 6]);
         else
             snprintf(buf, sizeof(buf), "SCAN [%s]", nr_pname[a->lock_proto]);
-        canvas_draw_str(c, 0, 11, buf);
-        // Count live devices
+        canvas_draw_str(c, 0, HDR_Y, buf);
         uint8_t live = 0;
         for(uint8_t i = 0; i < a->dev_count; i++)
             if(!a->devs[i].seeded && a->devs[i].last_seen >= a->session_start) live++;
         snprintf(buf, sizeof(buf), "%d live", live);
-        canvas_draw_str_aligned(c, 127, 11, AlignRight, AlignBottom, buf);
-        canvas_draw_line(c, 0, 13, 127, 13);
+        canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
+        canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
 
-        // Show only live devices (last_seen >= session_start, or seeded+confirmed this session)
         uint8_t vis = 0, row = 0;
-        for(uint8_t i = 0; i < a->dev_count && row < 4; i++) {
+        for(uint8_t i = 0; i < a->dev_count && row < MAX_ROWS; i++) {
             NRDev* d = &a->devs[i];
             bool is_live = (!d->seeded && d->last_seen >= a->session_start) ||
                            (d->seeded && d->confirmed && d->last_seen >= a->session_start);
             if(!is_live) continue;
             if(vis < a->sel) { vis++; continue; }
-
-            uint8_t y = 16 + row * 10;
+            uint8_t y = ROW_START + row * ROW_H;
             if(vis == a->sel) {
-                canvas_draw_box(c, 0, y - 1, 128, 10);
+                canvas_draw_box(c, 0, y, 128, ROW_H);
                 canvas_set_color(c, ColorWhite);
             }
             uint32_t age = a->tick - d->last_seen;
@@ -405,25 +417,22 @@ static void nr_draw(Canvas* c, void* ctx) {
                 ac, (unsigned long)d->hits, nr_picon[d->proto], d->name,
                 d->sig_count > 1 ? " +" : "");
             buf[42] = 0;
-            canvas_draw_str(c, 0, y + 7, buf);
+            canvas_draw_str(c, 0, y + 8, buf);
             canvas_set_color(c, ColorBlack);
             vis++; row++;
         }
-        if(row == 0) {
-            canvas_draw_str(c, 10, 32, "Listening...");
-        }
+        if(row == 0) canvas_draw_str(c, 10, 32, "Listening...");
 
-        canvas_draw_line(c, 0, 56, 127, 56);
-        canvas_draw_str(c, 0, 63, "OK:Lock LongOK:Save");
-        canvas_draw_str_aligned(c, 127, 63, AlignRight, AlignBottom, "Bk");
+        canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
+        canvas_draw_str(c, 0, FTR_Y, "OK:Lock LongOK:Save");
+        canvas_draw_str_aligned(c, 127, FTR_Y, AlignRight, AlignBottom, "Bk");
 
     } else if(a->view == NRViewRemotes) {
         canvas_set_font(c, FontPrimary);
-        canvas_draw_str(c, 0, 11, "MY REMOTES");
-        canvas_draw_line(c, 0, 13, 127, 13);
+        canvas_draw_str(c, 0, HDR_Y, "MY REMOTES");
+        canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
 
-        // Find nth replayable device (sel = which remote, dev_scroll = which button)
         uint8_t rc = 0, ri = 255;
         for(uint8_t i = 0; i < a->dev_count; i++) {
             if(!nr_replayable[a->devs[i].proto] || a->devs[i].sig_count == 0) continue;
@@ -433,17 +442,17 @@ static void nr_draw(Canvas* c, void* ctx) {
         if(ri < a->dev_count) {
             NRDev* d = &a->devs[ri];
             snprintf(buf, sizeof(buf), "%s", d->name);
-            canvas_draw_str_aligned(c, 64, 22, AlignCenter, AlignBottom, buf);
+            canvas_draw_str_aligned(c, 64, ROW_START + 8, AlignCenter, AlignBottom, buf);
             if(rc > 1) {
-                canvas_draw_str(c, 0, 22, "<");
-                canvas_draw_str_aligned(c, 127, 22, AlignRight, AlignBottom, ">");
+                canvas_draw_str(c, 0, ROW_START + 8, "<");
+                canvas_draw_str_aligned(c, 127, ROW_START + 8, AlignRight, AlignBottom, ">");
             }
-            canvas_draw_line(c, 0, 24, 127, 24);
+            canvas_draw_line(c, 0, ROW_START + ROW_H, 127, ROW_START + ROW_H);
             for(uint8_t s = 0; s < d->sig_count; s++) {
-                uint8_t y = 26 + s * 10;
-                if(y > 50) break;
+                uint8_t y = ROW_START + ROW_H + 2 + s * ROW_H;
+                if(y + ROW_H > FTR_LINE) break;
                 if(s == a->dev_scroll) {
-                    canvas_draw_box(c, 0, y, 128, 10);
+                    canvas_draw_box(c, 0, y, 128, ROW_H);
                     canvas_set_color(c, ColorWhite);
                 }
                 snprintf(buf, sizeof(buf), "  > %s", d->sigs[s].label);
@@ -453,114 +462,105 @@ static void nr_draw(Canvas* c, void* ctx) {
         } else {
             canvas_draw_str(c, 4, 30, "No replayable devices");
         }
-        canvas_draw_line(c, 0, 56, 127, 56);
-        canvas_draw_str(c, 0, 63, "OK:SEND  L/R:Dev  Bk");
+        canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
+        canvas_draw_str(c, 0, FTR_Y, "OK:SEND  L/R:Dev  Bk");
 
     } else if(a->view == NRViewKnown) {
         canvas_set_font(c, FontPrimary);
-        snprintf(buf, sizeof(buf), "KNOWN DEVICES");
-        canvas_draw_str(c, 0, 11, buf);
+        canvas_draw_str(c, 0, HDR_Y, "KNOWN DEVICES");
         snprintf(buf, sizeof(buf), "%d", a->dev_count);
-        canvas_draw_str_aligned(c, 127, 11, AlignRight, AlignBottom, buf);
-        canvas_draw_line(c, 0, 13, 127, 13);
+        canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
+        canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
 
         uint8_t start = a->sel > 3 ? a->sel - 3 : 0;
-        for(uint8_t i = start; i < a->dev_count && (i - start) < 4; i++) {
+        for(uint8_t i = start; i < a->dev_count && (i - start) < MAX_ROWS; i++) {
             NRDev* d = &a->devs[i];
-            uint8_t y = 16 + (i - start) * 10;
+            uint8_t y = ROW_START + (i - start) * ROW_H;
             if(i == a->sel) {
-                canvas_draw_box(c, 0, y - 1, 128, 10);
+                canvas_draw_box(c, 0, y, 128, ROW_H);
                 canvas_set_color(c, ColorWhite);
             }
             char tag = d->seeded ? (d->confirmed ? '+' : ' ') : '*';
             snprintf(buf, sizeof(buf), "%c%s %-9s %3lu",
                 tag, nr_picon[d->proto], d->name, (unsigned long)d->hits);
             buf[42] = 0;
-            canvas_draw_str(c, 0, y + 7, buf);
+            canvas_draw_str(c, 0, y + 8, buf);
             canvas_set_color(c, ColorBlack);
         }
 
-        canvas_draw_line(c, 0, 56, 127, 56);
-        canvas_draw_str(c, 0, 63, "OK:Detail  Bk:Menu");
+        canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
+        canvas_draw_str(c, 0, FTR_Y, "OK:Detail  Bk:Menu");
 
     } else if(a->view == NRViewDevice) {
         if(a->dev_sel >= a->dev_count) { a->view = NRViewKnown; return; }
         NRDev* d = &a->devs[a->dev_sel];
         canvas_set_font(c, FontPrimary);
         snprintf(buf, sizeof(buf), "%s %s", nr_picon[d->proto], d->name);
-        canvas_draw_str(c, 0, 11, buf);
+        canvas_draw_str(c, 0, HDR_Y, buf);
         snprintf(buf, sizeof(buf), "%lux", (unsigned long)d->hits);
-        canvas_draw_str_aligned(c, 127, 11, AlignRight, AlignBottom, buf);
-        canvas_draw_line(c, 0, 13, 127, 13);
+        canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
+        canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
 
         int8_t line = -(int8_t)a->dev_scroll;
-        // Signals
         for(uint8_t s = 0; s < d->sig_count; s++) {
-            if(line >= 0 && line < 4) {
-                uint8_t y = 16 + line * 10;
-                bool rp = nr_replayable[d->proto];
-                snprintf(buf, sizeof(buf), " %s %s", rp ? ">" : " ", d->sigs[s].label);
-                canvas_draw_str(c, 0, y + 7, buf);
+            if(line >= 0 && line < MAX_ROWS) {
+                uint8_t y = ROW_START + line * ROW_H;
+                snprintf(buf, sizeof(buf), " %s %s",
+                    nr_replayable[d->proto] ? ">" : " ", d->sigs[s].label);
+                canvas_draw_str(c, 0, y + 8, buf);
             }
             line++;
         }
-        // Separator
-        if(line >= 0 && line < 4) {
-            uint8_t y = 16 + line * 10 + 3;
+        if(line >= 0 && line < MAX_ROWS) {
+            uint8_t y = ROW_START + line * ROW_H + 4;
             canvas_draw_line(c, 0, y, 127, y);
         }
         line++;
-        // Protocol desc
         const char* desc = nr_pdesc[d->proto];
         const char* p = desc;
         while(*p) {
             const char* nl = p; while(*nl && *nl != '\n') nl++;
-            if(line >= 0 && line < 4) {
+            if(line >= 0 && line < MAX_ROWS) {
                 uint8_t len = nl - p; if(len >= sizeof(buf)) len = sizeof(buf)-1;
                 memcpy(buf, p, len); buf[len] = 0;
-                canvas_draw_str(c, 2, 16 + line * 10 + 7, buf);
+                canvas_draw_str(c, 2, ROW_START + line * ROW_H + 8, buf);
             }
             line++;
             p = *nl ? nl + 1 : nl;
         }
-        canvas_draw_line(c, 0, 56, 127, 56);
+        canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
         if(nr_replayable[d->proto] && d->sig_count > 0)
-            canvas_draw_str(c, 0, 63, "OK:Send U/D:Scroll");
+            canvas_draw_str(c, 0, FTR_Y, "OK:Send U/D:Scroll");
         else
-            canvas_draw_str(c, 0, 63, "U/D:Scroll");
-        canvas_draw_str_aligned(c, 127, 63, AlignRight, AlignBottom, "L/R Bk");
+            canvas_draw_str(c, 0, FTR_Y, "U/D:Scroll");
+        canvas_draw_str_aligned(c, 127, FTR_Y, AlignRight, AlignBottom, "L/R Bk");
 
     } else if(a->view == NRViewSettings) {
         canvas_set_font(c, FontPrimary);
-        canvas_draw_str(c, 0, 11, "SETTINGS");
-        canvas_draw_line(c, 0, 13, 127, 13);
+        canvas_draw_str(c, 0, HDR_Y, "SETTINGS");
+        canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
 
-        // Lock
-        uint8_t y = 22;
-        if(a->sel == 0) { canvas_draw_box(c, 0, y-1, 128, 10); canvas_set_color(c, ColorWhite); }
-        snprintf(buf, sizeof(buf), "Protocol Lock: [%s]",
-            a->lock_proto < 0 ? "ALL" : nr_pname[a->lock_proto]);
-        canvas_draw_str(c, 2, y + 7, buf);
-        canvas_set_color(c, ColorBlack);
-
-        // Autosave
-        y = 32;
-        if(a->sel == 1) { canvas_draw_box(c, 0, y-1, 128, 10); canvas_set_color(c, ColorWhite); }
-        snprintf(buf, sizeof(buf), "Autosave: [%s]", a->autosave ? "ON" : "OFF");
-        canvas_draw_str(c, 2, y + 7, buf);
-        canvas_set_color(c, ColorBlack);
-
-        // Clear
-        y = 42;
-        if(a->sel == 2) { canvas_draw_box(c, 0, y-1, 128, 10); canvas_set_color(c, ColorWhite); }
-        canvas_draw_str(c, 2, y + 7, "Clear Live Data");
-        canvas_set_color(c, ColorBlack);
-
-        canvas_draw_line(c, 0, 56, 127, 56);
-        canvas_draw_str(c, 0, 63, "OK:Change  Bk:Menu");
+        for(uint8_t i = 0; i < 3; i++) {
+            uint8_t y = ROW_START + i * ROW_H;
+            if(a->sel == i) {
+                canvas_draw_box(c, 0, y, 128, ROW_H);
+                canvas_set_color(c, ColorWhite);
+            }
+            if(i == 0)
+                snprintf(buf, sizeof(buf), "Protocol Lock: [%s]",
+                    a->lock_proto < 0 ? "ALL" : nr_pname[a->lock_proto]);
+            else if(i == 1)
+                snprintf(buf, sizeof(buf), "Autosave: [%s]", a->autosave ? "ON" : "OFF");
+            else
+                snprintf(buf, sizeof(buf), "Clear Live Data");
+            canvas_draw_str(c, 2, y + 8, buf);
+            canvas_set_color(c, ColorBlack);
+        }
+        canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
+        canvas_draw_str(c, 0, FTR_Y, "OK:Change  Bk:Menu");
     }
 }
 
