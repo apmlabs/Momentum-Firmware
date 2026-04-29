@@ -13,25 +13,26 @@
 #define NR_SAVE_DIR      APP_DATA_PATH("neighborhood")
 #define NR_SAVE_FILE     APP_DATA_PATH("neighborhood/devices.txt")
 #define NR_AUTOSAVE_DIR  APP_DATA_PATH("neighborhood/autosave")
-#define NR_MAX_DEVICES   16
+#define NR_MAX_DEVICES   18
 #define NR_MAX_SIGS      4
 #define NR_MAX_NAME      16
 #define NR_HIT_COOLDOWN  40
 
 typedef enum {
     NRProtoHoneywell, NRProtoPT2262, NRProtoEV1527,
-    NRProtoKeeloq, NRProtoFSK, NRProtoBinRAW, NRProtoCount
+    NRProtoKeeloq, NRProtoFSK, NRProtoNexusTH, NRProtoBinRAW, NRProtoCount
 } NRProto;
 
-static const char* nr_pname[] = {"Honeywell","PT2262","EV1527","Keeloq","FSK","BinRAW"};
-static const char* nr_picon[] = {"#",">",">","#","?","?"};
-static const bool nr_replayable[] = {false,true,true,false,false,false};
+static const char* nr_pname[] = {"Honeywell","PT2262","EV1527","Keeloq","FSK","NexusTH","BinRAW"};
+static const char* nr_picon[] = {"#",">",">","#","?","~","?"};
+static const bool nr_replayable[] = {false,true,true,false,false,false,false};
 static const char* nr_pdesc[] = {
     "Honeywell 5800 alarm sensor.\nManchester TE=143us, 64-bit.\nFFFE+serial+event+CRC.\nEvents: open tamper lobat\nalarm heartbeat.\nNOT replayable.",
     "PT2262/Princeton remote.\nPWM TE=194us, 24-bit.\nAddress + command.\nGarage, doorbell, switch.\nREPLAYABLE.",
     "EV1527 learning code.\nPWM TE=117us, 25-bit.\n20-bit addr + 4-bit cmd.\nRemotes, sensors, alarms.\nREPLAYABLE.",
     "Keeloq HCS301 rolling code.\nPWM TE=250us, 66-bit.\n32-bit hop + serial + btn.\nEncrypted. NOT replayable.",
     "FSK signal on AM = noise.\nRecapture on FM476.\nLikely weather or HVAC.",
+    "Nexus-TH weather sensor.\nOOK_PWM TE=650us, 36-bit.\nID+flags+temp+humi.\nAuriol/Lidl/Rubicson.\nTemp in 0.1C, 8-bit humi.",
     "Unknown protocol.\nRaw pulse timing only.\nTE and bit count shown.",
 };
 

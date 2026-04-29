@@ -13,6 +13,7 @@ static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* d, uint8_t len) 
         for(uint8_t i = 0; i < len; i++) if(d[i] == 0xFF) ff++;
         if(ff > len / 3 && te < 70) return NRProtoFSK;
     }
+    if(te >= 500 && te <= 750 && bits >= 30 && bits <= 50) return NRProtoNexusTH;
     if(te >= 220 && te <= 360 && bits >= 50) return NRProtoKeeloq;
     if(te >= 125 && te <= 165 && bits >= 30) return NRProtoHoneywell;
     if(te >= 175 && te <= 215 && bits >= 16) return NRProtoPT2262;
@@ -30,6 +31,7 @@ static uint32_t nr_dev_id(NRProto p, uint8_t* d, uint8_t len, uint16_t te) {
     }
     if(p == NRProtoHoneywell) return 0x5800;
     if(p == NRProtoFSK) return 0xF5C0;
+    if(p == NRProtoNexusTH && len >= 1) return 0xE000 | d[0];
     return 0xB100 | ((te / 10) & 0xFF);
 }
 
@@ -42,7 +44,14 @@ static void nr_sig_label(NRProto p, uint8_t* d, uint8_t len, char* out, uint8_t 
         snprintf(out, sz, "Btn:S%u", (unsigned)(d[7] & 0xF));
     else if(p == NRProtoHoneywell)
         snprintf(out, sz, "Event");
-    else
+    else if(p == NRProtoNexusTH && len >= 5) {
+        // Nexus-TH: [ID:8][Flags:4][Temp:12][Const:4][Humi:8]
+        // Bits packed MSB: d[0]=ID, d[1]=flags|temp_hi, d[2]=temp_lo|const, d[3..4]=humi
+        uint16_t raw = ((uint16_t)(d[1] & 0x0F) << 8) | d[2];
+        int16_t temp = (raw > 2048) ? (int16_t)(raw - 4096) : (int16_t)raw;
+        uint8_t humi = ((d[3] & 0x0F) << 4) | (d[4] >> 4);
+        snprintf(out, sz, "%d.%dC %d%%", temp / 10, (temp < 0 ? -temp : temp) % 10, humi);
+    } else
         snprintf(out, sz, "%db", len * 8);
 }
 
@@ -58,6 +67,8 @@ static void nr_dev_label(NRDev* d) {
         snprintf(d->name, NR_MAX_NAME, "Alarm System");
     else if(d->proto == NRProtoFSK)
         snprintf(d->name, NR_MAX_NAME, "FSK Sensor");
+    else if(d->proto == NRProtoNexusTH)
+        snprintf(d->name, NR_MAX_NAME, "Weather %02X", (unsigned)(d->dev_id & 0xFF));
     else
         snprintf(d->name, NR_MAX_NAME, "Dev TE=%u", d->te);
 }
@@ -200,6 +211,10 @@ static void nr_seed(NRApp* a) {
     SEED(NRProtoBinRAW, 98, 0xB109, 77, "OOK Sensors");
     SEED(NRProtoBinRAW, 81, 0xB108, 2, "Weather Stn?");
     SEED(NRProtoBinRAW, 73, 0xB107, 56, "Sensor TE=73");
+    SEED(NRProtoNexusTH, 650, 0xE0E0, 6, "Weather E0");
+    a->devs[a->dev_count-1].sig_count = 1;
+    snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "22.8C 74%%");
+    SEED(NRProtoBinRAW, 345, 0xB122, 1, "Manch TE=345");
     #undef SEED
 }
 
@@ -297,6 +312,14 @@ static void nr_process(NRApp* a) {
             d->hits++; d->last_seen = a->tick;
         }
         if(d->seeded) d->confirmed = true;
+        // NexusTH: update first signal label with latest temp reading
+        if(p == NRProtoNexusTH && d->sig_count > 0) {
+            nr_sig_label(p, data, len, d->sigs[0].label, sizeof(d->sigs[0].label));
+            memcpy(d->sigs[0].raw, data, len);
+            d->sigs[0].raw_len = len;
+            d->sigs[0].bits = bits;
+            return;
+        }
         // Only store signals for replayable
         if(nr_replayable[p] && nr_find_sig(d, data, len) < 0 && d->sig_count < NR_MAX_SIGS) {
             NRSig* s = &d->sigs[d->sig_count];
@@ -330,7 +353,7 @@ static void nr_process(NRApp* a) {
     d->sig_count = 1;
     nr_dev_label(d);
     if(slot >= a->dev_count && a->dev_count < NR_MAX_DEVICES) a->dev_count++;
-    nr_autosave_sig(a, d, s);
+    if(p != NRProtoNexusTH) nr_autosave_sig(a, d, s);
     notification_message(a->notif, &sequence_blink_cyan_10);
 }
 
@@ -413,9 +436,13 @@ static void nr_draw(Canvas* c, void* ctx) {
             }
             uint32_t age = a->tick - d->last_seen;
             char ac = age < 100 ? '*' : age < 400 ? '.' : ' ';
-            snprintf(buf, sizeof(buf), "%c%3lu%s %-8s%s",
-                ac, (unsigned long)d->hits, nr_picon[d->proto], d->name,
-                d->sig_count > 1 ? " +" : "");
+            if(d->proto == NRProtoNexusTH && d->sig_count > 0)
+                snprintf(buf, sizeof(buf), "%c%3lu~ %s",
+                    ac, (unsigned long)d->hits, d->sigs[0].label);
+            else
+                snprintf(buf, sizeof(buf), "%c%3lu%s %-8s%s",
+                    ac, (unsigned long)d->hits, nr_picon[d->proto], d->name,
+                    d->sig_count > 1 ? " +" : "");
             buf[42] = 0;
             canvas_draw_str(c, 0, y + 8, buf);
             canvas_set_color(c, ColorBlack);
@@ -498,12 +525,26 @@ static void nr_draw(Canvas* c, void* ctx) {
         canvas_set_font(c, FontPrimary);
         snprintf(buf, sizeof(buf), "%s %s", nr_picon[d->proto], d->name);
         canvas_draw_str(c, 0, HDR_Y, buf);
-        snprintf(buf, sizeof(buf), "%lux", (unsigned long)d->hits);
+        // Show live temp for NexusTH, otherwise hit count
+        if(d->proto == NRProtoNexusTH && d->sig_count > 0)
+            snprintf(buf, sizeof(buf), "%s", d->sigs[0].label);
+        else
+            snprintf(buf, sizeof(buf), "%lux", (unsigned long)d->hits);
         canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
 
         int8_t line = -(int8_t)a->dev_scroll;
+        // For NexusTH show hits + TE as first info line
+        if(d->proto == NRProtoNexusTH) {
+            if(line >= 0 && line < MAX_ROWS) {
+                uint8_t y = ROW_START + line * ROW_H;
+                snprintf(buf, sizeof(buf), " Hits:%lu TE=%u Ch1",
+                    (unsigned long)d->hits, d->te);
+                canvas_draw_str(c, 0, y + 8, buf);
+            }
+            line++;
+        }
         for(uint8_t s = 0; s < d->sig_count; s++) {
             if(line >= 0 && line < MAX_ROWS) {
                 uint8_t y = ROW_START + line * ROW_H;
@@ -647,6 +688,7 @@ int32_t neighborhood_remote_app(void* p) {
                         a->view = NRViewRemotes;
                     } else if(a->menu_sel == 2) {
                         a->view = NRViewKnown;
+                        nr_rx_start(a);
                     } else if(a->menu_sel == 3) {
                         a->view = NRViewSettings;
                     }
@@ -725,6 +767,7 @@ int32_t neighborhood_remote_app(void* p) {
 
             } else if(a->view == NRViewKnown) {
                 if(ev.key == InputKeyBack) {
+                    nr_rx_stop(a);
                     a->view = NRViewMenu;
                 } else if(ev.key == InputKeyUp && a->sel > 0) {
                     a->sel--;
@@ -734,11 +777,13 @@ int32_t neighborhood_remote_app(void* p) {
                     a->dev_sel = a->sel;
                     a->dev_scroll = 0;
                     a->view = NRViewDevice;
+                    nr_rx_start(a);
                 }
 
             } else if(a->view == NRViewDevice) {
                 NRDev* d = a->dev_sel < a->dev_count ? &a->devs[a->dev_sel] : NULL;
                 if(ev.key == InputKeyBack) {
+                    nr_rx_stop(a);
                     a->view = NRViewKnown;
                     a->sel = a->dev_sel;
                 } else if(ev.key == InputKeyOk && d && d->sig_count > 0 && nr_replayable[d->proto]) {
