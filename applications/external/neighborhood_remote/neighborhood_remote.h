@@ -10,61 +10,45 @@
 #include <storage/storage.h>
 #include <flipper_format/flipper_format.h>
 
-#define NR_DIR           APP_DATA_PATH("neighborhood")
+#define NR_SAVE_DIR      APP_DATA_PATH("neighborhood")
 #define NR_SAVE_FILE     APP_DATA_PATH("neighborhood/devices.txt")
-#define NR_MAX_DEVICES   16
-#define NR_MAX_BUTTONS   8
-#define NR_MAX_NAME      20
+#define NR_AUTOSAVE_DIR  APP_DATA_PATH("neighborhood/autosave")
+#define NR_MAX_SIGNALS   32
+#define NR_MAX_NAME      24
 
-// Device categories matching our awareness skill
 typedef enum {
-    NRCatAlarm,      // Honeywell alarm sensors (TE~143, Manchester)
-    NRCatRemote,     // Fixed-code remotes (TE~194, replayable)
-    NRCatEV1527,     // EV1527/PT2262 sensors (TE~118, replayable)
-    NRCatKeeloq,     // Rolling code (TE~250, listen only)
-    NRCatWeather,    // Weather stations (TE~81)
-    NRCatUnknown,    // BinRAW unknown
-    NRCatCount
-} NRCategory;
+    NRProtoHoneywell,  // Manchester TE~143, serial+event
+    NRProtoPT2262,     // PWM TE~194, addr+cmd — REPLAYABLE
+    NRProtoEV1527,     // PWM TE~117, addr+cmd — REPLAYABLE
+    NRProtoKeeloq,     // PWM TE~250, serial+btn (encrypted)
+    NRProtoFSK,        // FSK on AM (high entropy)
+    NRProtoBinRAW,     // Unknown
+    NRProtoCount
+} NRProto;
 
-static const char* nr_cat_names[] = {"Alarm", "Remote", "EV1527", "Keeloq", "Weather", "Unknown"};
+static const char* nr_proto_name[] = {
+    "Honeywell", "PT2262", "EV1527", "Keeloq", "FSK?", "BinRAW"};
 
-static const char* nr_cat_desc[] = {
-    "Honeywell: serial, zone, open/close, tamper, battery",
-    "Fixed-code remote (replayable, no encryption)",
-    "EV1527: 20-bit addr + 4-bit cmd (replayable)",
-    "Keeloq rolling code (listen only, encrypted)",
-    "Weather station (temp, humidity, passive)",
-    "Unknown BinRAW signal (capture & store)",
-};
+// > = replayable, # = listen-only (lock), ? = unknown
+static const char* nr_proto_icon[] = {
+    "#", ">", ">", "#", "?", "?"};
+static const bool nr_proto_replayable[] = {
+    false, true, true, false, false, false};
 
 typedef struct {
-    char     name[NR_MAX_NAME];
+    NRProto  proto;
     uint16_t te;
     uint16_t bit_count;
-    uint8_t  data[32];     // up to 256 bits
-    uint8_t  data_len;     // bytes used
-} NRButton;
+    uint32_t hits;
+    uint32_t last_seen;   // tick of last hit
+    uint8_t  data[8];     // decoded payload
+    char     info[40];    // human-readable decode
+    uint8_t  raw_frame[32];
+    uint8_t  raw_len;
+} NRSignal;
 
-typedef struct {
-    char       name[NR_MAX_NAME];
-    NRCategory category;
-    uint8_t    btn_count;
-    NRButton   buttons[NR_MAX_BUTTONS];
-} NRDevice;
-
-typedef enum {
-    NRViewList,    // Device list
-    NRViewDetail,  // Device detail + buttons
-    NRViewLearn,   // Learning new signal
-} NRView;
-
-// RX state machine for raw pulse decoding
-typedef enum {
-    NRRxIdle,
-    NRRxPreamble,
-    NRRxData,
-} NRRxState;
+typedef enum { NRViewDash, NRViewScan, NRViewDetail } NRView;
+typedef enum { NRSortHits, NRSortRecent } NRSortMode;
 
 typedef struct {
     Gui*                  gui;
@@ -76,25 +60,25 @@ typedef struct {
     SubGhzWorker*         worker;
     bool                  rx_active;
 
-    NRDevice              devices[NR_MAX_DEVICES];
-    uint8_t               device_count;
-    uint8_t               sel_device;
-    uint8_t               sel_button;
+    NRSignal              signals[NR_MAX_SIGNALS];
+    uint8_t               signal_count;
+    uint8_t               sel;
+    uint32_t              tick;
 
-    NRView                current_view;
+    NRView                view;
+    NRSortMode            sort;
 
-    // RX learn state
-    NRRxState             rx_state;
-    int32_t               rx_pulses[512];
-    uint16_t              rx_pulse_count;
-    volatile bool         rx_got_signal;
-    uint32_t              rx_last_dur;
+    // RX pulse decoder
+    uint32_t              rx_pulse;     // last HIGH duration
+    uint8_t               rx_bits[128];
+    uint16_t              rx_bit_count;
+    uint32_t              rx_te_sum;
+    uint16_t              rx_te_n;
+    volatile bool         rx_frame_ready;
+    uint16_t              rx_frame_bits;
+    uint16_t              rx_frame_te;
+    uint8_t               rx_frame_data[32];
+    uint8_t               rx_frame_len;
 
-    // Decoded learn result
-    uint16_t              learn_te;
-    uint16_t              learn_bits;
-    uint8_t               learn_data[32];
-    uint8_t               learn_data_len;
-    NRCategory            learn_cat;
-    char                  learn_info[64]; // decoded info string
+    uint16_t              autosave_seq;
 } NRApp;
