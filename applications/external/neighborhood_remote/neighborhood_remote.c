@@ -21,11 +21,11 @@ static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* data, uint8_t le
     return NRProtoBinRAW;
 }
 
-// Extract device ID (for grouping) and signal ID (for dedup within device)
-static uint32_t nr_device_id(NRProto proto, uint8_t* data, uint8_t len) {
+// Extract device ID for grouping
+static uint32_t nr_device_id(NRProto proto, uint8_t* data, uint8_t len, uint16_t te) {
     switch(proto) {
     case NRProtoPT2262:
-        // Group by address byte (same remote)
+        // Group by address byte (same remote, diff buttons)
         if(len >= 3) return data[len - 3];
         break;
     case NRProtoEV1527:
@@ -41,14 +41,17 @@ static uint32_t nr_device_id(NRProto proto, uint8_t* data, uint8_t len) {
         }
         break;
     case NRProtoHoneywell:
-        // Group by last 4 bytes (serial area)
-        if(len >= 4) return ((uint32_t)data[len-4] << 24) | ((uint32_t)data[len-3] << 16) |
-                            ((uint32_t)data[len-2] << 8) | data[len-1];
-        break;
+        // ALL Honeywell = one device. Our PWM decoder can't extract
+        // Manchester serial, so every frame looks different. The firmware
+        // Honeywell decoder (with 433 flag fix) will decode properly.
+        return 0x5800;
+    case NRProtoFSK:
+        // ALL FSK = one device (garbage on AM anyway)
+        return 0xF5C0;
     default:
-        // Group by first 2 bytes + TE
-        if(len >= 2) return ((uint32_t)data[0] << 8) | data[1];
-        break;
+        // BinRAW: group by TE bucket (round to nearest 20)
+        UNUSED(data); UNUSED(len);
+        return 0xB100 | ((te / 10) & 0xFF);
     }
     return 0;
 }
@@ -339,7 +342,7 @@ static void nr_process_frame(NRApp* app) {
     app->rx_frame_ready = false;
 
     NRProto proto = nr_classify(app->proc_te, app->proc_bits, app->proc_data, app->proc_len);
-    uint32_t did = nr_device_id(proto, app->proc_data, app->proc_len);
+    uint32_t did = nr_device_id(proto, app->proc_data, app->proc_len, app->proc_te);
 
     int8_t di = nr_find_device(app, proto, did);
     if(di >= 0) {
@@ -349,18 +352,21 @@ static void nr_process_frame(NRApp* app) {
             d->hits++;
             d->last_seen = app->tick;
         }
-        // Check if this is a new signal (button) for existing device
-        if(nr_find_signal(d, app->proc_data, app->proc_len) < 0 &&
-           d->sig_count < NR_MAX_SIGNALS) {
-            NRSignalEntry* s = &d->sigs[d->sig_count];
-            memset(s, 0, sizeof(NRSignalEntry));
-            s->raw_len = app->proc_len;
-            s->bit_count = app->proc_bits;
-            memcpy(s->raw_frame, app->proc_data, app->proc_len);
-            nr_signal_label(proto, app->proc_data, app->proc_len, s->label, sizeof(s->label));
-            d->sig_count++;
-            nr_autosave(app, d, s);
-            notification_message(app->notifications, &sequence_blink_green_10);
+        // Only store individual signals for replayable protocols
+        // Honeywell/FSK/BinRAW: just bump hit counter, don't fill signal slots
+        if(nr_proto_replayable[proto]) {
+            if(nr_find_signal(d, app->proc_data, app->proc_len) < 0 &&
+               d->sig_count < NR_MAX_SIGNALS) {
+                NRSignalEntry* s = &d->sigs[d->sig_count];
+                memset(s, 0, sizeof(NRSignalEntry));
+                s->raw_len = app->proc_len;
+                s->bit_count = app->proc_bits;
+                memcpy(s->raw_frame, app->proc_data, app->proc_len);
+                nr_signal_label(proto, app->proc_data, app->proc_len, s->label, sizeof(s->label));
+                d->sig_count++;
+                nr_autosave(app, d, s);
+                notification_message(app->notifications, &sequence_blink_green_10);
+            }
         }
         return;
     }
@@ -608,6 +614,81 @@ int32_t neighborhood_remote_app(void* p) {
     app->worker = subghz_worker_alloc();
 
     nr_load(app);
+
+    // Seed with known neighborhood devices (from 687 captures analysis)
+    // Only add if database is empty (first launch)
+    if(app->device_count == 0) {
+        // Dev 4: Honeywell 5800 alarm — 221 captures, dominant signal
+        NRDevice* d = &app->devices[app->device_count++];
+        memset(d, 0, sizeof(NRDevice));
+        d->proto = NRProtoHoneywell; d->te = 143; d->device_id = 0x5800;
+        d->hits = 221;
+        snprintf(d->name, NR_MAX_NAME, "Alarm System");
+
+        // Dev 1: Keeloq parking remote — 18 captures
+        d = &app->devices[app->device_count++];
+        memset(d, 0, sizeof(NRDevice));
+        d->proto = NRProtoKeeloq; d->te = 322; d->device_id = 0x2F9AE15;
+        d->hits = 18;
+        snprintf(d->name, NR_MAX_NAME, "Parking Fob");
+        d->sig_count = 2;
+        snprintf(d->sigs[0].label, 20, "Btn:S2 (main)");
+        snprintf(d->sigs[1].label, 20, "Btn:S3 (aux)");
+
+        // Dev 6: PT2262 remote — 14 captures, 2 buttons, REPLAYABLE
+        d = &app->devices[app->device_count++];
+        memset(d, 0, sizeof(NRDevice));
+        d->proto = NRProtoPT2262; d->te = 194; d->device_id = 0x01;
+        d->hits = 14;
+        snprintf(d->name, NR_MAX_NAME, "Remote 01");
+        // Button A: addr 01, cmd 22
+        d->sigs[0].raw_frame[0] = 0x00; d->sigs[0].raw_frame[1] = 0x44;
+        d->sigs[0].raw_frame[2] = 0x80; d->sigs[0].raw_len = 3;
+        d->sigs[0].bit_count = 24;
+        snprintf(d->sigs[0].label, 20, "Cmd:22 (Btn A)");
+        // Button B: addr 01, cmd 24
+        d->sigs[1].raw_frame[0] = 0x00; d->sigs[1].raw_frame[1] = 0x48;
+        d->sigs[1].raw_frame[2] = 0x80; d->sigs[1].raw_len = 3;
+        d->sigs[1].bit_count = 24;
+        snprintf(d->sigs[1].label, 20, "Cmd:24 (Btn B)");
+        d->sig_count = 2;
+
+        // Dev 9: EV1527 remotes — 74 captures
+        d = &app->devices[app->device_count++];
+        memset(d, 0, sizeof(NRDevice));
+        d->proto = NRProtoEV1527; d->te = 117; d->device_id = 0;
+        d->hits = 74;
+        snprintf(d->name, NR_MAX_NAME, "EV1527 Remotes");
+
+        // Dev 8a: FSK sensor — 24 captures, needs FM476
+        d = &app->devices[app->device_count++];
+        memset(d, 0, sizeof(NRDevice));
+        d->proto = NRProtoFSK; d->te = 65; d->device_id = 0xF5C0;
+        d->hits = 24;
+        snprintf(d->name, NR_MAX_NAME, "FSK Sensor");
+
+        // Dev 3b: Mixed OOK sensors — 77 captures
+        d = &app->devices[app->device_count++];
+        memset(d, 0, sizeof(NRDevice));
+        d->proto = NRProtoBinRAW; d->te = 98; d->device_id = 0xB109;
+        d->hits = 77;
+        snprintf(d->name, NR_MAX_NAME, "OOK Sensors");
+
+        // Dev 2: Unknown weather station — 2 captures
+        d = &app->devices[app->device_count++];
+        memset(d, 0, sizeof(NRDevice));
+        d->proto = NRProtoBinRAW; d->te = 81; d->device_id = 0xB108;
+        d->hits = 2;
+        snprintf(d->name, NR_MAX_NAME, "Weather Stn?");
+
+        // Dev 8b: Long preamble sensor — 56 captures
+        d = &app->devices[app->device_count++];
+        memset(d, 0, sizeof(NRDevice));
+        d->proto = NRProtoBinRAW; d->te = 73; d->device_id = 0xB107;
+        d->hits = 56;
+        snprintf(d->name, NR_MAX_NAME, "Sensor TE=73");
+    }
+
     app->view = NRViewDash;
 
     bool running = true;
