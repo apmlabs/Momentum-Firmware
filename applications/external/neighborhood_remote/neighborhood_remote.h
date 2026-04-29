@@ -13,17 +13,18 @@
 #define NR_SAVE_DIR      APP_DATA_PATH("neighborhood")
 #define NR_SAVE_FILE     APP_DATA_PATH("neighborhood/devices.txt")
 #define NR_AUTOSAVE_DIR  APP_DATA_PATH("neighborhood/autosave")
-#define NR_MAX_SIGNALS   32
+#define NR_MAX_DEVICES   16
+#define NR_MAX_SIGNALS   4   // per device (buttons/events)
 #define NR_MAX_NAME      16
-#define NR_HIT_COOLDOWN  40  // ticks (~2s at 50ms/tick) between counting same device
+#define NR_HIT_COOLDOWN  40  // ~2s at 50ms/tick
 
 typedef enum {
-    NRProtoHoneywell,  // # Manchester TE~143
-    NRProtoPT2262,     // > PWM TE~194 — REPLAYABLE
-    NRProtoEV1527,     // > PWM TE~117 — REPLAYABLE
-    NRProtoKeeloq,     // # PWM TE~250 (encrypted)
-    NRProtoFSK,        // ? FSK on AM
-    NRProtoBinRAW,     // ? Unknown
+    NRProtoHoneywell,  // #
+    NRProtoPT2262,     // >
+    NRProtoEV1527,     // >
+    NRProtoKeeloq,     // #
+    NRProtoFSK,        // ?
+    NRProtoBinRAW,     // ?
     NRProtoCount
 } NRProto;
 
@@ -33,38 +34,75 @@ static const char* nr_proto_icon[] = {
     "#", ">", ">", "#", "?", "?"};
 static const bool nr_proto_replayable[] = {
     false, true, true, false, false, false};
-
-// Protocol encyclopedia text (stored in flash)
 static const char* nr_proto_desc[] = {
-    "Honeywell 5800 alarm\nManchester TE=143us\n64-bit: FFFE+serial+\nevent+CRC\nEvents: open tamper\nlobat alarm heartbeat\nNOT replayable",
-    "PT2262/Princeton\nPWM encoding TE=194us\n24-bit: address+command\nCommon in remotes,\ndoorbells, switches\nREPLAYABLE",
-    "EV1527 learning code\nPWM encoding TE=117us\n25-bit: 20-bit addr +\n4-bit command\nCommon in remotes,\nsensors, alarms\nREPLAYABLE",
-    "Keeloq HCS301\nPWM encoding TE=250us\n66-bit: 32-bit hop +\n28-bit serial + btn\nRolling code encrypted\nNOT replayable",
-    "FSK modulated signal\nCaptured on AM = noise\nNeed FM476 to decode\nLikely weather sensor\nor building system",
-    "Unknown protocol\nBinRAW capture only\nTE and bit count shown\nMay decode with more\ncaptures or SDR",
+    "Honeywell 5800 alarm sensor.\n"
+    "Manchester encoding, TE=143us.\n"
+    "64-bit frame: FFFE preamble +\n"
+    "4-bit channel + 20-bit serial\n"
+    "+ 8-bit event + 16-bit CRC.\n"
+    "Events: open, tamper, low bat,\n"
+    "alarm, heartbeat.\n"
+    "NOT replayable (CRC protected).",
+
+    "PT2262 / Princeton remote.\n"
+    "PWM encoding, TE=194us.\n"
+    "24-bit frame: address + command.\n"
+    "Common in garage remotes,\n"
+    "doorbells, light switches.\n"
+    "Fixed code — REPLAYABLE.",
+
+    "EV1527 learning code remote.\n"
+    "PWM encoding, TE=117us.\n"
+    "25-bit: 20-bit address +\n"
+    "4-bit command.\n"
+    "Common in remotes, sensors,\n"
+    "alarm keypads.\n"
+    "Fixed code — REPLAYABLE.",
+
+    "Keeloq HCS301 rolling code.\n"
+    "PWM encoding, TE=250us.\n"
+    "66-bit: 32-bit encrypted hop +\n"
+    "28-bit serial + 4-bit button +\n"
+    "2-bit status.\n"
+    "Encrypted rolling code.\n"
+    "NOT replayable.",
+
+    "FSK modulated signal captured\n"
+    "on AM modulation = garbage.\n"
+    "Need to recapture on FM476\n"
+    "for proper decode.\n"
+    "Likely weather sensor or\n"
+    "building automation system.",
+
+    "Unknown protocol.\n"
+    "BinRAW capture — raw pulse\n"
+    "timing only, no decode.\n"
+    "TE and bit count shown.\n"
+    "May identify with more\n"
+    "captures or SDR analysis.",
 };
 
+// A signal = one button press or event type
 typedef struct {
-    NRProto  proto;
-    uint16_t te;
-    uint16_t bit_count;
-    uint32_t hits;
-    uint32_t last_seen;   // tick of last hit
-    uint8_t  data[8];     // decoded payload
-    char     info[40];    // human-readable decode
     uint8_t  raw_frame[32];
     uint8_t  raw_len;
-    char     name[NR_MAX_NAME]; // user-assigned name
-} NRSignal;
+    uint16_t bit_count;
+    char     label[20];    // "Button A", "Open", etc.
+} NRSignalEntry;
 
-typedef enum {
-    NRViewDash,
-    NRViewScan,
-    NRViewDetail,
-    NRViewInfo,
-    NRViewLibrary,
-} NRView;
+// A device = one physical remote/sensor with multiple signals
+typedef struct {
+    NRProto        proto;
+    uint16_t       te;
+    uint32_t       device_id;    // address/serial for grouping
+    uint32_t       hits;
+    uint32_t       last_seen;
+    char           name[NR_MAX_NAME];
+    NRSignalEntry  sigs[NR_MAX_SIGNALS];
+    uint8_t        sig_count;
+} NRDevice;
 
+typedef enum { NRViewDash, NRViewScan, NRViewDevice } NRView;
 typedef enum { NRSortHits, NRSortRecent } NRSortMode;
 
 typedef struct {
@@ -77,37 +115,34 @@ typedef struct {
     SubGhzWorker*         worker;
     bool                  rx_active;
 
-    NRSignal              signals[NR_MAX_SIGNALS];
-    uint8_t               signal_count;
-    uint8_t               sel;
-    uint8_t               lib_sel;       // library view selection
+    NRDevice              devices[NR_MAX_DEVICES];
+    uint8_t               device_count;
+    uint8_t               sel;          // scan list selection
+    uint8_t               dev_sel;      // device view: which device
+    uint8_t               sig_sel;      // device view: which signal/line
+    uint8_t               dev_scroll;   // device view: scroll offset
     uint32_t              tick;
-    uint8_t               scan_anim;     // scan animation frame
+    uint8_t               scan_anim;
 
     NRView                view;
     NRSortMode            sort;
-    int8_t                filter;        // -1=all, 0..5=specific proto
+    int8_t                filter;       // -1=all, 0..5=proto
 
-    // RX pulse decoder — double buffered
+    // RX double buffer
     uint32_t              rx_pulse;
     uint8_t               rx_bits[128];
     uint16_t              rx_bit_count;
     uint32_t              rx_te_sum;
     uint16_t              rx_te_n;
-
-    // Buffer A (ISR writes here)
     volatile bool         rx_frame_ready;
     uint16_t              rx_frame_bits;
     uint16_t              rx_frame_te;
     uint8_t               rx_frame_data[32];
     uint8_t               rx_frame_len;
-
-    // Buffer B (main loop copies here for processing)
     uint16_t              proc_bits;
     uint16_t              proc_te;
     uint8_t               proc_data[32];
     uint8_t               proc_len;
 
     uint16_t              autosave_seq;
-    uint8_t               info_scroll;   // scroll position in info view
 } NRApp;
