@@ -14,8 +14,8 @@ static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* d, uint8_t len) 
         if(ff > len / 3 && te < 70) return NRProtoFSK;
     }
     if(te >= 500 && te <= 750 && bits >= 30) return NRProtoNexusTH;
-    if(te >= 220 && te <= 360 && bits >= 50) return NRProtoKeeloq;
-    if(te >= 125 && te <= 165 && bits >= 30) return NRProtoHoneywell;
+    if(te >= 220 && te <= 360 && bits >= 50 && bits <= 70) return NRProtoKeeloq;
+    if(te >= 115 && te <= 175 && bits >= 30) return NRProtoHoneywell;
     if(te >= 70 && te <= 84 && bits >= 50) return NRProtoHoneywell; // half-bit Manchester
     if(te >= 175 && te <= 215 && bits >= 16) return NRProtoPT2262;
     if(te >= 105 && te <= 130 && bits >= 20 && bits <= 80) return NRProtoEV1527;
@@ -249,8 +249,8 @@ static void nr_seed(NRApp* a) {
         d->proto=P; d->te=TE; d->dev_id=ID; d->hits=HITS; d->seeded=true; \
         snprintf(d->name, NR_MAX_NAME, NAME); }
 
-    SEED(NRProtoHoneywell, 143, 0x5800, 1152, "Alarm System");
-    SEED(NRProtoKeeloq, 322, 0x2F9AE15, 23, "Parking Fob");
+    SEED(NRProtoHoneywell, 143, 0x5800, 1250, "Alarm System");
+    SEED(NRProtoKeeloq, 322, 0x2F9AE15, 24, "Parking Fob");
     a->devs[a->dev_count-1].sig_count = 2;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "S2 2F9AE1");
     snprintf(a->devs[a->dev_count-1].sigs[1].label, 20, "S3 2F9AE1");
@@ -262,9 +262,9 @@ static void nr_seed(NRApp* a) {
     r->sig_count = 2;
 
     SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor");
-    SEED(NRProtoBinRAW, 98, 0xB109, 294, "OOK Unknown 98");
-    SEED(NRProtoBinRAW, 81, 0xB108, 2, "Weather Stn?");
-    SEED(NRProtoNexusTH, 650, 0xE0E0, 14, "Weather E0");
+    SEED(NRProtoBinRAW, 98, 0xB109, 628, "OOK Unknown 98");
+    SEED(NRProtoBinRAW, 81, 0xB108, 9, "Weather Stn?");
+    SEED(NRProtoNexusTH, 650, 0xE0E0, 19, "Weather E0");
     a->devs[a->dev_count-1].sig_count = 1;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "18.6C 68%%");
     SEED(NRProtoBinRAW, 345, 0xB122, 1, "Manch TE=345");
@@ -377,6 +377,11 @@ static void nr_process(NRApp* a) {
     if(a->lock_proto >= 0 && p != (NRProto)a->lock_proto) return;
 
     uint32_t did = nr_dev_id(p, data, len, te);
+
+    // Filter noise: EV1527 addr 0 or power-of-2 only
+    if(p == NRProtoEV1527 && (did == 0 || (did & (did - 1)) == 0)) return;
+    // Filter noise: PT2262 addr 0 only (0x02 is a real remote!)
+    if(p == NRProtoPT2262 && did == 0) return;
     int8_t di = nr_find_dev(a, p, did);
 
     if(di >= 0) {
@@ -392,6 +397,14 @@ static void nr_process(NRApp* a) {
             d->sigs[0].raw_len = len;
             d->sigs[0].bits = bits;
             nr_autosave_sig(a, d, &d->sigs[0]);
+            return;
+        }
+        // Keeloq/Honeywell: update sigs[0] with latest capture (rolling code, events)
+        if((p == NRProtoKeeloq || p == NRProtoHoneywell) && d->sig_count > 0) {
+            nr_sig_label(p, data, len, d->sigs[0].label, sizeof(d->sigs[0].label));
+            memcpy(d->sigs[0].raw, data, len);
+            d->sigs[0].raw_len = len;
+            d->sigs[0].bits = bits;
             return;
         }
         // Store unique signals for replayable protocols (in-memory)
