@@ -789,15 +789,16 @@ static void nr_draw(Canvas* c, void* ctx) {
                 canvas_set_color(c, ColorWhite);
             }
             char age[6]; nr_age_str(age, sizeof(age), a->tick, d->last_seen);
+            char tag = d->seeded ? (d->confirmed ? '+' : ' ') : '*';
             if(d->proto == NRProtoNexusTH && d->sig_count > 0)
-                snprintf(buf, sizeof(buf), "~ %s %s %s",
-                    d->sigs[0].label, age, nr_rssi_icon(d->rssi));
+                snprintf(buf, sizeof(buf), "%c~ %s %s %s",
+                    tag, d->sigs[0].label, age, nr_rssi_icon(d->rssi));
             else if(d->proto == NRProtoHoneywell)
-                snprintf(buf, sizeof(buf), "# %s %s %s",
-                    d->name, age, nr_rssi_icon(d->rssi));
+                snprintf(buf, sizeof(buf), "%c# %s %s %s",
+                    tag, d->name, age, nr_rssi_icon(d->rssi));
             else
-                snprintf(buf, sizeof(buf), "%s %s %s %s",
-                    nr_picon[d->proto], d->name, age, nr_rssi_icon(d->rssi));
+                snprintf(buf, sizeof(buf), "%c%s %s %s %s",
+                    tag, nr_picon[d->proto], d->name, age, nr_rssi_icon(d->rssi));
             buf[42] = 0;
             canvas_draw_str(c, 0, y + 8, buf);
             canvas_set_color(c, ColorBlack);
