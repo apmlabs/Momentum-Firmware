@@ -124,7 +124,7 @@ static void nr_autosave_sig(NRApp* a, NRDev* d, NRSig* s) {
     storage_simply_mkdir(st, NR_AUTOSAVE_DIR);
     char path[80];
     snprintf(path, sizeof(path), "%s/%s_%04d.txt",
-        NR_AUTOSAVE_DIR, nr_pname[d->proto], a->autosave_seq++);
+        NR_AUTOSAVE_DIR, nr_pname[d->proto], a->autosave_seq);
     FlipperFormat* ff = flipper_format_file_alloc(st);
     if(flipper_format_file_open_always(ff, path)) {
         flipper_format_write_header_cstr(ff, "Neighborhood Signal", 1);
@@ -136,6 +136,31 @@ static void nr_autosave_sig(NRApp* a, NRDev* d, NRSig* s) {
         if(s->raw_len) flipper_format_write_hex(ff, "Data", s->raw, s->raw_len);
     }
     flipper_format_free(ff);
+    // Also save .sub BinRAW file
+    snprintf(path, sizeof(path), "%s/%s_%04d.sub",
+        NR_AUTOSAVE_DIR, nr_pname[d->proto], a->autosave_seq);
+    File* file = storage_file_alloc(st);
+    if(storage_file_open(file, path, FSAM_WRITE, FSOM_CREATE_ALWAYS)) {
+        FuriString* line = furi_string_alloc();
+        furi_string_printf(line,
+            "Filetype: Flipper SubGhz Key File\n"
+            "Version: 1\n"
+            "Frequency: 433920000\n"
+            "Preset: FuriHalSubGhzPresetOok650Async\n"
+            "Protocol: BinRAW\n"
+            "Bit: %u\n"
+            "TE: %u\n"
+            "Bit_RAW: %u\nData_RAW:",
+            s->bits, d->te, s->bits);
+        for(uint8_t i = 0; i < s->raw_len; i++)
+            furi_string_cat_printf(line, " %02X", s->raw[i]);
+        furi_string_cat(line, "\n");
+        storage_file_write(file, furi_string_get_cstr(line), furi_string_size(line));
+        furi_string_free(line);
+    }
+    storage_file_close(file);
+    storage_file_free(file);
+    a->autosave_seq++;
     furi_record_close(RECORD_STORAGE);
 }
 
@@ -362,9 +387,10 @@ static void nr_process(NRApp* a) {
             memcpy(d->sigs[0].raw, data, len);
             d->sigs[0].raw_len = len;
             d->sigs[0].bits = bits;
+            nr_autosave_sig(a, d, &d->sigs[0]);
             return;
         }
-        // Only store signals for replayable
+        // Store unique signals for replayable protocols (in-memory)
         if(nr_replayable[p] && nr_find_sig(d, data, len) < 0 && d->sig_count < NR_MAX_SIGS) {
             NRSig* s = &d->sigs[d->sig_count];
             memset(s, 0, sizeof(NRSig));
@@ -372,8 +398,14 @@ static void nr_process(NRApp* a) {
             memcpy(s->raw, data, len);
             nr_sig_label(p, data, len, s->label, sizeof(s->label));
             d->sig_count++;
-            nr_autosave_sig(a, d, s);
             notification_message(a->notif, &sequence_blink_green_10);
+        }
+        // Autosave all protocols except Honeywell (too spammy)
+        if(p != NRProtoHoneywell) {
+            NRSig tmp = {.raw_len = len, .bits = bits};
+            memcpy(tmp.raw, data, len);
+            nr_sig_label(p, data, len, tmp.label, sizeof(tmp.label));
+            nr_autosave_sig(a, d, &tmp);
         }
         return;
     }
@@ -397,7 +429,7 @@ static void nr_process(NRApp* a) {
     d->sig_count = 1;
     nr_dev_label(d);
     if(slot >= a->dev_count && a->dev_count < NR_MAX_DEVICES) a->dev_count++;
-    if(p != NRProtoNexusTH) nr_autosave_sig(a, d, s);
+    nr_autosave_sig(a, d, s);
     notification_message(a->notif, &sequence_blink_cyan_10);
 }
 
@@ -460,7 +492,8 @@ static void nr_draw(Canvas* c, void* ctx) {
         canvas_draw_str(c, 0, HDR_Y, buf);
         uint8_t live = 0;
         for(uint8_t i = 0; i < a->dev_count; i++)
-            if(!a->devs[i].seeded && a->devs[i].last_seen >= a->session_start) live++;
+            if((!a->devs[i].seeded && a->devs[i].last_seen >= a->session_start) ||
+               (a->devs[i].seeded && a->devs[i].confirmed && a->devs[i].last_seen >= a->session_start)) live++;
         snprintf(buf, sizeof(buf), "%d live", live);
         canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
@@ -546,7 +579,9 @@ static void nr_draw(Canvas* c, void* ctx) {
 
     } else if(a->view == NRViewKnown) {
         canvas_set_font(c, FontPrimary);
-        canvas_draw_str(c, 0, HDR_Y, "KNOWN DEVICES");
+        const char* ksc = a->rx_on ? ((a->tick / 5) % 2 ? "*" : " ") : "";
+        snprintf(buf, sizeof(buf), "%sKNOWN DEVICES", ksc);
+        canvas_draw_str(c, 0, HDR_Y, buf);
         snprintf(buf, sizeof(buf), "%d", a->dev_count);
         canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
@@ -575,11 +610,15 @@ static void nr_draw(Canvas* c, void* ctx) {
         if(a->dev_sel >= a->dev_count) { a->view = NRViewKnown; return; }
         NRDev* d = &a->devs[a->dev_sel];
         canvas_set_font(c, FontPrimary);
-        snprintf(buf, sizeof(buf), "%s %s", nr_picon[d->proto], d->name);
+        // Header: device name + scanning indicator
+        const char* scan_ch = (a->tick / 5) % 2 ? "*" : " ";
+        snprintf(buf, sizeof(buf), "%s%s %s", scan_ch, nr_picon[d->proto], d->name);
         canvas_draw_str(c, 0, HDR_Y, buf);
-        // Show live temp for NexusTH, otherwise hit count
+        // Right side: live temp for NexusTH, lock icon + hits for others
         if(d->proto == NRProtoNexusTH && d->sig_count > 0)
             snprintf(buf, sizeof(buf), "%s", d->sigs[0].label);
+        else if(a->lock_proto >= 0)
+            snprintf(buf, sizeof(buf), "[%s] %lux", nr_pname[a->lock_proto], (unsigned long)d->hits);
         else
             snprintf(buf, sizeof(buf), "%lux", (unsigned long)d->hits);
         canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
@@ -665,9 +704,9 @@ static void nr_draw(Canvas* c, void* ctx) {
         }
         canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
         if(nr_replayable[d->proto] && d->sig_count > 0)
-            canvas_draw_str(c, 0, FTR_Y, "OK:Send U/D:Scroll");
+            canvas_draw_str(c, 0, FTR_Y, "OK:Send LOK:Lock");
         else
-            canvas_draw_str(c, 0, FTR_Y, "U/D:Scroll");
+            canvas_draw_str(c, 0, FTR_Y, "LOK:Lock U/D:Scroll");
         canvas_draw_str_aligned(c, 127, FTR_Y, AlignRight, AlignBottom, "L/R Bk");
 
         if(a->tx_flash && (a->tick - a->tx_flash) < 30) {
@@ -878,30 +917,40 @@ int32_t neighborhood_remote_app(void* p) {
                     a->dev_sel = a->sel;
                     a->dev_scroll = 0;
                     a->view = NRViewDevice;
+                    a->lock_proto = a->devs[a->sel].proto; // auto-lock to device protocol
                     nr_rx_start(a);
                 }
 
             } else if(a->view == NRViewDevice) {
                 NRDev* d = a->dev_sel < a->dev_count ? &a->devs[a->dev_sel] : NULL;
                 if(ev.key == InputKeyBack) {
+                    a->lock_proto = -1; // clear lock on exit
                     nr_rx_stop(a);
                     a->view = NRViewKnown;
                     a->sel = a->dev_sel;
-                } else if(ev.key == InputKeyOk && d && d->sig_count > 0 && nr_replayable[d->proto]) {
-                    // Send first signal (or selected — for now first)
+                } else if(ev.key == InputKeyOk && ev.type == InputTypeShort &&
+                          d && d->sig_count > 0 && nr_replayable[d->proto]) {
                     uint8_t si = a->dev_scroll < d->sig_count ? a->dev_scroll : 0;
                     notification_message(a->notif, &sequence_blink_magenta_100);
                     nr_tx(a, d, &d->sigs[si]);
                     notification_message(a->notif, &sequence_blink_green_100);
                     a->tx_flash = a->tick;
+                } else if(ev.key == InputKeyOk && ev.type == InputTypeLong && d) {
+                    // Long OK: toggle protocol lock
+                    if(a->lock_proto == (int8_t)d->proto)
+                        a->lock_proto = -1; // unlock
+                    else
+                        a->lock_proto = d->proto; // re-lock
                 } else if(ev.key == InputKeyUp && a->dev_scroll > 0) {
                     a->dev_scroll--;
                 } else if(ev.key == InputKeyDown) {
-                    a->dev_scroll++;
+                    if(a->dev_scroll < 20) a->dev_scroll++;
                 } else if(ev.key == InputKeyLeft && a->dev_sel > 0) {
                     a->dev_sel--; a->dev_scroll = 0;
+                    a->lock_proto = a->devs[a->dev_sel].proto; // update lock
                 } else if(ev.key == InputKeyRight && a->dev_sel + 1 < a->dev_count) {
                     a->dev_sel++; a->dev_scroll = 0;
+                    a->lock_proto = a->devs[a->dev_sel].proto; // update lock
                 }
 
             } else if(a->view == NRViewSettings) {
