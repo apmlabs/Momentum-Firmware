@@ -369,6 +369,10 @@ static void nr_process(NRApp* a) {
 
     NRProto p = nr_classify(te, bits, data, len);
 
+    // Read RSSI while signal is fresh
+    int8_t rssi = -127;
+    if(a->rx_on) rssi = (int8_t)subghz_devices_get_rssi(a->radio);
+
     // Protocol lock: ignore non-matching
     if(a->lock_proto >= 0 && p != (NRProto)a->lock_proto) return;
 
@@ -378,7 +382,7 @@ static void nr_process(NRApp* a) {
     if(di >= 0) {
         NRDev* d = &a->devs[di];
         if((a->tick - d->last_seen) >= NR_HIT_COOLDOWN) {
-            d->hits++; d->last_seen = a->tick;
+            d->hits++; d->last_seen = a->tick; d->rssi = rssi;
         }
         if(d->seeded) d->confirmed = true;
         // NexusTH: update first signal label with latest temp reading
@@ -421,7 +425,7 @@ static void nr_process(NRApp* a) {
     NRDev* d = &a->devs[slot];
     memset(d, 0, sizeof(NRDev));
     d->proto = p; d->te = te; d->dev_id = did;
-    d->hits = 1; d->last_seen = a->tick;
+    d->hits = 1; d->last_seen = a->tick; d->rssi = rssi;
     NRSig* s = &d->sigs[0];
     s->raw_len = len; s->bits = bits;
     memcpy(s->raw, data, len);
@@ -434,6 +438,25 @@ static void nr_process(NRApp* a) {
 }
 
 // ============== Drawing ==============
+
+// Format age as compact string: "*" <2s, "5s", "2m", "1h", "--"
+static void nr_age_str(char* out, uint8_t sz, uint32_t tick, uint32_t last_seen) {
+    if(last_seen == 0) { snprintf(out, sz, "--"); return; }
+    uint32_t age = (tick - last_seen) / 20; // ticks to seconds (~50ms tick)
+    if(age < 2) snprintf(out, sz, "*");
+    else if(age < 60) snprintf(out, sz, "%us", (unsigned)age);
+    else if(age < 3600) snprintf(out, sz, "%um", (unsigned)(age/60));
+    else { unsigned h = age/3600; if(h > 99) h = 99; snprintf(out, sz, "%uh", h); }
+}
+
+// RSSI bars: 4 levels
+static const char* nr_rssi_icon(int8_t rssi) {
+    if(rssi > -60) return "||||";
+    if(rssi > -75) return "|||.";
+    if(rssi > -85) return "||..";
+    if(rssi > -95) return "|...";
+    return "....";
+}
 
 // Layout constants: screen is 128x64 (y: 0-63)
 // Header: y=0-12 (title at y=10, line at y=12)
@@ -458,13 +481,14 @@ static void nr_draw(Canvas* c, void* ctx) {
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
 
-        const char* items[] = {"Scan", "My Remotes", "Known Devices", "Settings"};
+        const char* items[] = {"Scan", "My Remotes", "Known Devices", "Sensors", "Settings"};
         uint8_t rc = 0;
         for(uint8_t i = 0; i < a->dev_count; i++)
             if(nr_replayable[a->devs[i].proto] && a->devs[i].sig_count > 0) rc++;
 
-        for(uint8_t i = 0; i < 4; i++) {
+        for(uint8_t i = 0; i < 5; i++) {
             uint8_t y = ROW_START + i * ROW_H;
+            if(y + ROW_H > FTR_LINE) break;
             if(i == a->menu_sel) {
                 canvas_draw_box(c, 0, y, 128, ROW_H);
                 canvas_set_color(c, ColorWhite);
@@ -475,6 +499,12 @@ static void nr_draw(Canvas* c, void* ctx) {
                 canvas_draw_str(c, 90, y + 8, buf);
             } else if(i == 2) {
                 snprintf(buf, sizeof(buf), "(%d)", a->dev_count);
+                canvas_draw_str(c, 90, y + 8, buf);
+            } else if(i == 3) {
+                uint8_t sc = 0;
+                for(uint8_t j = 0; j < a->dev_count; j++)
+                    if(nr_is_sensor[a->devs[j].proto]) sc++;
+                snprintf(buf, sizeof(buf), "(%d)", sc);
                 canvas_draw_str(c, 90, y + 8, buf);
             }
             canvas_set_color(c, ColorBlack);
@@ -514,12 +544,12 @@ static void nr_draw(Canvas* c, void* ctx) {
             uint32_t age = a->tick - d->last_seen;
             char ac = age < 100 ? '*' : age < 400 ? '.' : ' ';
             if(d->proto == NRProtoNexusTH && d->sig_count > 0)
-                snprintf(buf, sizeof(buf), "%c%3lu~ %s",
-                    ac, (unsigned long)d->hits, d->sigs[0].label);
+                snprintf(buf, sizeof(buf), "%c%s %s %s",
+                    ac, nr_rssi_icon(d->rssi), d->sigs[0].label,
+                    d->sig_count > 1 ? "+" : "");
             else
-                snprintf(buf, sizeof(buf), "%c%3lu%s %-8s%s",
-                    ac, (unsigned long)d->hits, nr_picon[d->proto], d->name,
-                    d->sig_count > 1 ? " +" : "");
+                snprintf(buf, sizeof(buf), "%c%s%s %s",
+                    ac, nr_rssi_icon(d->rssi), nr_picon[d->proto], d->name);
             buf[42] = 0;
             canvas_draw_str(c, 0, y + 8, buf);
             canvas_set_color(c, ColorBlack);
@@ -579,10 +609,9 @@ static void nr_draw(Canvas* c, void* ctx) {
 
     } else if(a->view == NRViewKnown) {
         canvas_set_font(c, FontPrimary);
-        const char* ksc = a->rx_on ? ((a->tick / 5) % 2 ? "*" : " ") : "";
-        snprintf(buf, sizeof(buf), "%sKNOWN DEVICES", ksc);
-        canvas_draw_str(c, 0, HDR_Y, buf);
-        snprintf(buf, sizeof(buf), "%d", a->dev_count);
+        canvas_draw_str(c, 0, HDR_Y, "KNOWN DEVICES");
+        const char* ksc = a->rx_on ? ((a->tick / 5) % 2 ? "*" : "") : "";
+        snprintf(buf, sizeof(buf), "%s %d", ksc, a->dev_count);
         canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
@@ -596,8 +625,10 @@ static void nr_draw(Canvas* c, void* ctx) {
                 canvas_set_color(c, ColorWhite);
             }
             char tag = d->seeded ? (d->confirmed ? '+' : ' ') : '*';
-            snprintf(buf, sizeof(buf), "%c%s %-9s %3lu",
-                tag, nr_picon[d->proto], d->name, (unsigned long)d->hits);
+            char age[6]; nr_age_str(age, sizeof(age), a->tick, d->last_seen);
+            snprintf(buf, sizeof(buf), "%c%s %-9s %3s %s",
+                tag, nr_picon[d->proto], d->name, age,
+                d->rssi > -127 ? nr_rssi_icon(d->rssi) : "");
             buf[42] = 0;
             canvas_draw_str(c, 0, y + 8, buf);
             canvas_set_color(c, ColorBlack);
@@ -610,17 +641,13 @@ static void nr_draw(Canvas* c, void* ctx) {
         if(a->dev_sel >= a->dev_count) { a->view = NRViewKnown; return; }
         NRDev* d = &a->devs[a->dev_sel];
         canvas_set_font(c, FontPrimary);
-        // Header: device name + scanning indicator
-        const char* scan_ch = (a->tick / 5) % 2 ? "*" : " ";
-        snprintf(buf, sizeof(buf), "%s%s %s", scan_ch, nr_picon[d->proto], d->name);
+        // Header: just device name + scan blink
+        snprintf(buf, sizeof(buf), "%s %s", nr_picon[d->proto], d->name);
         canvas_draw_str(c, 0, HDR_Y, buf);
-        // Right side: live temp for NexusTH, lock icon + hits for others
-        if(d->proto == NRProtoNexusTH && d->sig_count > 0)
-            snprintf(buf, sizeof(buf), "%s", d->sigs[0].label);
-        else if(a->lock_proto >= 0)
-            snprintf(buf, sizeof(buf), "[%s] %lux", nr_pname[a->lock_proto], (unsigned long)d->hits);
-        else
-            snprintf(buf, sizeof(buf), "%lux", (unsigned long)d->hits);
+        // Right: scan indicator + RSSI
+        char age[6]; nr_age_str(age, sizeof(age), a->tick, d->last_seen);
+        const char* blink = a->rx_on ? ((a->tick / 5) % 2 ? "*" : "") : "";
+        snprintf(buf, sizeof(buf), "%s %s %s", age, nr_rssi_icon(d->rssi), blink);
         canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
@@ -630,8 +657,18 @@ static void nr_draw(Canvas* c, void* ctx) {
         if(d->proto == NRProtoNexusTH) {
             if(line >= 0 && line < MAX_ROWS) {
                 uint8_t y = ROW_START + line * ROW_H;
-                snprintf(buf, sizeof(buf), " Hits:%lu TE=%u Ch1",
-                    (unsigned long)d->hits, d->te);
+                if(d->sig_count > 0)
+                    snprintf(buf, sizeof(buf), " >> %s", d->sigs[0].label);
+                else
+                    snprintf(buf, sizeof(buf), " Waiting for data...");
+                canvas_draw_str(c, 0, y + 8, buf);
+            }
+            line++;
+            if(line >= 0 && line < MAX_ROWS) {
+                uint8_t y = ROW_START + line * ROW_H;
+                char age[6]; nr_age_str(age, sizeof(age), a->tick, d->last_seen);
+                snprintf(buf, sizeof(buf), " %lu hits TE=%u %s ago",
+                    (unsigned long)d->hits, d->te, age);
                 canvas_draw_str(c, 0, y + 8, buf);
             }
             line++;
@@ -645,8 +682,9 @@ static void nr_draw(Canvas* c, void* ctx) {
             line++;
             if(line >= 0 && line < MAX_ROWS) {
                 uint8_t y = ROW_START + line * ROW_H;
-                snprintf(buf, sizeof(buf), " %u sigs %s",
-                    d->sig_count, d->confirmed ? "LIVE" : "seeded");
+                char age[6]; nr_age_str(age, sizeof(age), a->tick, d->last_seen);
+                snprintf(buf, sizeof(buf), " %s %s ago",
+                    d->confirmed ? "Active" : "Seeded", age);
                 canvas_draw_str(c, 0, y + 8, buf);
             }
             line++;
@@ -716,6 +754,45 @@ static void nr_draw(Canvas* c, void* ctx) {
             canvas_draw_str_aligned(c, 64, 34, AlignCenter, AlignBottom, "SENT!");
             canvas_set_color(c, ColorBlack);
         }
+
+    } else if(a->view == NRViewSensors) {
+        canvas_set_font(c, FontPrimary);
+        canvas_draw_str(c, 0, HDR_Y, "SENSORS");
+        const char* blink = a->rx_on ? ((a->tick / 5) % 2 ? "*" : "") : "";
+        canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, blink);
+        canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
+        canvas_set_font(c, FontSecondary);
+
+        uint8_t si[NR_MAX_DEVICES], sc = 0;
+        for(uint8_t i = 0; i < a->dev_count; i++)
+            if(nr_is_sensor[a->devs[i].proto]) si[sc++] = i;
+
+        uint8_t start = a->sel > 3 ? a->sel - 3 : 0;
+        for(uint8_t j = start; j < sc && (j - start) < MAX_ROWS; j++) {
+            NRDev* d = &a->devs[si[j]];
+            uint8_t y = ROW_START + (j - start) * ROW_H;
+            if(j == a->sel) {
+                canvas_draw_box(c, 0, y, 128, ROW_H);
+                canvas_set_color(c, ColorWhite);
+            }
+            char age[6]; nr_age_str(age, sizeof(age), a->tick, d->last_seen);
+            if(d->proto == NRProtoNexusTH && d->sig_count > 0)
+                snprintf(buf, sizeof(buf), "~ %s %s %s",
+                    d->sigs[0].label, age, nr_rssi_icon(d->rssi));
+            else if(d->proto == NRProtoHoneywell)
+                snprintf(buf, sizeof(buf), "# %s %s %s",
+                    d->name, age, nr_rssi_icon(d->rssi));
+            else
+                snprintf(buf, sizeof(buf), "%s %s %s %s",
+                    nr_picon[d->proto], d->name, age, nr_rssi_icon(d->rssi));
+            buf[42] = 0;
+            canvas_draw_str(c, 0, y + 8, buf);
+            canvas_set_color(c, ColorBlack);
+        }
+        if(sc == 0) canvas_draw_str(c, 10, 32, "No sensors found");
+
+        canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
+        canvas_draw_str(c, 0, FTR_Y, "OK:Detail LOK:Lock Bk");
 
     } else if(a->view == NRViewSettings) {
         canvas_set_font(c, FontPrimary);
@@ -815,7 +892,7 @@ int32_t neighborhood_remote_app(void* p) {
                     running = false;
                 } else if(ev.key == InputKeyUp && a->menu_sel > 0) {
                     a->menu_sel--;
-                } else if(ev.key == InputKeyDown && a->menu_sel < 3) {
+                } else if(ev.key == InputKeyDown && a->menu_sel < 4) {
                     a->menu_sel++;
                 } else if(ev.key == InputKeyOk) {
                     a->sel = 0;
@@ -829,6 +906,10 @@ int32_t neighborhood_remote_app(void* p) {
                         a->view = NRViewKnown;
                         nr_rx_start(a);
                     } else if(a->menu_sel == 3) {
+                        a->view = NRViewSensors;
+                        a->sel = 0;
+                        nr_rx_start(a);
+                    } else if(a->menu_sel == 4) {
                         a->view = NRViewSettings;
                     }
                 }
@@ -951,6 +1032,33 @@ int32_t neighborhood_remote_app(void* p) {
                 } else if(ev.key == InputKeyRight && a->dev_sel + 1 < a->dev_count) {
                     a->dev_sel++; a->dev_scroll = 0;
                     a->lock_proto = a->devs[a->dev_sel].proto; // update lock
+                }
+
+            } else if(a->view == NRViewSensors) {
+                // Count sensors
+                uint8_t si[NR_MAX_DEVICES], sc = 0;
+                for(uint8_t i = 0; i < a->dev_count; i++)
+                    if(nr_is_sensor[a->devs[i].proto]) si[sc++] = i;
+
+                if(ev.key == InputKeyBack) {
+                    a->lock_proto = -1;
+                    nr_rx_stop(a);
+                    a->view = NRViewMenu;
+                } else if(ev.key == InputKeyUp && a->sel > 0) {
+                    a->sel--;
+                } else if(ev.key == InputKeyDown && a->sel + 1 < sc) {
+                    a->sel++;
+                } else if(ev.key == InputKeyOk && ev.type == InputTypeShort && a->sel < sc) {
+                    a->dev_sel = si[a->sel];
+                    a->dev_scroll = 0;
+                    a->view = NRViewDevice;
+                    a->lock_proto = a->devs[si[a->sel]].proto;
+                } else if(ev.key == InputKeyOk && ev.type == InputTypeLong && a->sel < sc) {
+                    NRProto sp = a->devs[si[a->sel]].proto;
+                    if(a->lock_proto == (int8_t)sp)
+                        a->lock_proto = -1;
+                    else
+                        a->lock_proto = sp;
                 }
 
             } else if(a->view == NRViewSettings) {

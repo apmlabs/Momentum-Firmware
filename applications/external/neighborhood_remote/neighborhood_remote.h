@@ -26,6 +26,7 @@ typedef enum {
 static const char* nr_pname[] = {"Honeywell","PT2262","EV1527","Keeloq","FSK","NexusTH","BinRAW"};
 static const char* nr_picon[] = {"#",">",">","#","?","~","?"};
 static const bool nr_replayable[] = {false,true,true,false,false,false,false};
+static const bool nr_is_sensor[] = {true,false,false,false,true,true,true};
 static const char* nr_pdesc[] = {
     "Honeywell-family 5800EU alarm.\nManchester TE=143us 64-bit.\nFFFE+ch+serial+event+CRC.\nEvent: open tamper alarm\nbattery heartbeat.\n12+ zones. NOT replayable.",
     "PT2262/Princeton remote.\nPWM TE=194us 24-bit.\nAddress + command.\nGarage, doorbell, switch.\nFixed code. REPLAYABLE.",
@@ -49,17 +50,18 @@ typedef struct {
     uint32_t dev_id;
     uint32_t hits;
     uint32_t last_seen;
+    int8_t   rssi;      // last RSSI in dBm
     char     name[NR_MAX_NAME];
     NRSig    sigs[NR_MAX_SIGS];
     uint8_t  sig_count;
-    bool     seeded;    // hardcoded known device
-    bool     confirmed; // seeded device seen live
-    bool     saved;     // dismissed from scan (still tracks hits)
+    bool     seeded;
+    bool     confirmed;
+    bool     saved;
 } NRDev;
 
 typedef enum {
     NRViewMenu, NRViewScan, NRViewRemotes,
-    NRViewKnown, NRViewDevice, NRViewSettings
+    NRViewKnown, NRViewDevice, NRViewSensors, NRViewSettings
 } NRView;
 
 typedef enum { NRSortHits, NRSortRecent } NRSort;
@@ -75,18 +77,18 @@ typedef struct {
 
     NRDev    devs[NR_MAX_DEVICES];
     uint8_t  dev_count;
-    uint8_t  sel;        // current list selection
-    uint8_t  dev_sel;    // device detail: which device
-    uint8_t  dev_scroll; // device detail: scroll
-    uint8_t  menu_sel;   // main menu selection
+    uint8_t  sel;
+    uint8_t  dev_sel;
+    uint8_t  dev_scroll;
+    uint8_t  menu_sel;
     uint32_t tick;
     uint32_t session_start;
     uint8_t  scan_anim;
 
     NRView   view;
     NRSort   sort;
-    int8_t   lock_proto; // -1=all, 0..5=locked protocol
-    bool     autosave;   // autosave to SD on capture
+    int8_t   lock_proto;
+    bool     autosave;
 
     // RX double buffer
     uint32_t rx_pulse;
@@ -99,9 +101,9 @@ typedef struct {
     uint16_t rx_fte;
     uint8_t  rx_fdata[32];
     uint8_t  rx_flen;
-    uint8_t  rx_last[32]; // previous frame for repeat validation
+    uint8_t  rx_last[32];
     uint8_t  rx_last_len;
     uint16_t rx_last_te;
-    uint32_t tx_flash; // tick when last TX happened (for on-screen feedback)
+    uint32_t tx_flash;
     uint16_t autosave_seq;
 } NRApp;
