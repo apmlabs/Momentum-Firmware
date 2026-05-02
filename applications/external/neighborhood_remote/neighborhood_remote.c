@@ -261,6 +261,10 @@ static void nr_seed(NRApp* a) {
     r->sigs[0] = (NRSig){{0xFF,0xFE,0x4F,0xFF,0xE0},5,40,"Cmd:E0 (Btn A)"};
     r->sigs[1] = (NRSig){{0x00,0x44,0x80},3,24,"Cmd:22 (Btn B)"};
     r->sig_count = 2;
+    SEED(NRProtoPT2262, 190, 0x08, 4, "Remote 08", "May 2");
+    SEED(NRProtoPT2262, 185, 0x28, 3, "Remote 28", "May 2");
+    SEED(NRProtoPT2262, 190, 0x06, 3, "Remote 06", "May 2");
+    SEED(NRProtoPT2262, 185, 0x87, 4, "Remote 87", "May 2");
 
     SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30");
     SEED(NRProtoBinRAW, 98, 0xB109, 676, "OOK Unknown 98", "May 2");
@@ -649,8 +653,10 @@ static void nr_draw(Canvas* c, void* ctx) {
             char age[6]; nr_age_str(age, sizeof(age), a->tick, d->last_seen);
             const char* when = (d->last_seen == 0 && d->last_seen_date[0]) ?
                 d->last_seen_date : age;
-            snprintf(buf, sizeof(buf), "%c%s %-9s %lu %s",
-                tag, nr_picon[d->proto], d->name, (unsigned long)d->hits, when);
+            const char* dname = (d->proto == NRProtoNexusTH && d->sig_count > 0 && d->confirmed)
+                ? d->sigs[0].label : d->name;
+            snprintf(buf, sizeof(buf), "%c%s %s %lu %s",
+                tag, nr_picon[d->proto], dname, (unsigned long)d->hits, when);
             buf[42] = 0;
             canvas_draw_str(c, 0, y + 8, buf);
             canvas_set_color(c, ColorBlack);
@@ -663,8 +669,10 @@ static void nr_draw(Canvas* c, void* ctx) {
         if(a->dev_sel >= a->dev_count) { a->view = NRViewKnown; return; }
         NRDev* d = &a->devs[a->dev_sel];
         canvas_set_font(c, FontPrimary);
-        // Header: just device name + scan blink
-        snprintf(buf, sizeof(buf), "%s %s", nr_picon[d->proto], d->name);
+        // Header: device name (or live temp for NexusTH)
+        const char* hname = (d->proto == NRProtoNexusTH && d->sig_count > 0 && d->confirmed)
+            ? d->sigs[0].label : d->name;
+        snprintf(buf, sizeof(buf), "%s %s", nr_picon[d->proto], hname);
         canvas_draw_str(c, 0, HDR_Y, buf);
         // Right: scan indicator + RSSI or last seen date
         char age[6]; nr_age_str(age, sizeof(age), a->tick, d->last_seen);
@@ -804,7 +812,7 @@ static void nr_draw(Canvas* c, void* ctx) {
             char tag = d->seeded ? (d->confirmed ? '+' : ' ') : '*';
             const char* when = (d->last_seen == 0 && d->last_seen_date[0]) ?
                 d->last_seen_date : age;
-            if(d->proto == NRProtoNexusTH && d->sig_count > 0)
+            if(d->proto == NRProtoNexusTH && d->sig_count > 0 && d->confirmed)
                 snprintf(buf, sizeof(buf), "%c~ %s %lu %s",
                     tag, d->sigs[0].label, (unsigned long)d->hits, when);
             else if(d->proto == NRProtoHoneywell)
