@@ -33,6 +33,8 @@ static uint32_t nr_dev_id(NRProto p, uint8_t* d, uint8_t len, uint16_t te) {
     if(p == NRProtoHoneywell) return 0x5800;
     if(p == NRProtoFSK) return 0xF5C0;
     if(p == NRProtoNexusTH && len >= 1) return 0xE000 | d[0];
+    // Group OOK meter variants (TE 90-109) into single device
+    if(p == NRProtoBinRAW && te >= 90 && te <= 109) return 0xB109;
     return 0xB100 | ((te / 10) & 0xFF);
 }
 
@@ -76,7 +78,10 @@ static void nr_sig_label(NRProto p, uint8_t* d, uint8_t len, char* out, uint8_t 
         uint16_t raw = ((uint16_t)(d[1] & 0x0F) << 8) | d[2];
         int16_t temp = (raw > 2048) ? (int16_t)(raw - 4096) : (int16_t)raw;
         uint8_t humi = ((d[3] & 0x0F) << 4) | (d[4] >> 4);
-        snprintf(out, sz, "%d.%dC %d%%", temp / 10, (temp < 0 ? -temp : temp) % 10, humi);
+        if(temp > -400 && temp < 600 && humi <= 100)
+            snprintf(out, sz, "%d.%dC %d%%", temp / 10, (temp < 0 ? -temp : temp) % 10, humi);
+        else
+            snprintf(out, sz, "bad frame");
     } else
         snprintf(out, sz, "TE=%u %db", len > 0 ? d[0] : 0, len * 8);
 }
@@ -267,9 +272,8 @@ static void nr_seed(NRApp* a) {
     SEED(NRProtoPT2262, 185, 0x87, 4, "Remote 87", "May 2");
 
     SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30");
-    SEED(NRProtoBinRAW, 98, 0xB109, 676, "OOK Unknown 98", "May 2");
-    SEED(NRProtoBinRAW, 81, 0xB108, 23, "Weather Stn?", "Apr 30");
-    SEED(NRProtoNexusTH, 650, 0xE0E0, 21, "Weather E0", "May 2");
+    SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "May 2");
+    SEED(NRProtoNexusTH, 650, 0xE0E0, 29, "Weather E0", "May 2");
     a->devs[a->dev_count-1].sig_count = 1;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "16.5C");
     SEED(NRProtoBinRAW, 345, 0xB122, 10, "Bell Ctrl", "May 2");
@@ -395,8 +399,12 @@ static void nr_process(NRApp* a) {
             d->hits++; d->last_seen = a->tick; d->rssi = rssi;
         }
         if(d->seeded) d->confirmed = true;
-        // NexusTH: update first signal label with latest temp reading
-        if(p == NRProtoNexusTH && d->sig_count > 0) {
+        // NexusTH: update first signal label with latest temp reading (reject bad frames)
+        if(p == NRProtoNexusTH && d->sig_count > 0 && len >= 5) {
+            uint16_t raw = ((uint16_t)(data[1] & 0x0F) << 8) | data[2];
+            int16_t temp = (raw > 2048) ? (int16_t)(raw - 4096) : (int16_t)raw;
+            uint8_t humi = ((data[3] & 0x0F) << 4) | (data[4] >> 4);
+            if(temp < -400 || temp > 600 || humi > 100) return; // reject garbage
             nr_sig_label(p, data, len, d->sigs[0].label, sizeof(d->sigs[0].label));
             memcpy(d->sigs[0].raw, data, len);
             d->sigs[0].raw_len = len;
