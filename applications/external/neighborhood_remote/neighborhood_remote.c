@@ -15,7 +15,7 @@ static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* d, uint8_t len) 
     }
     if(te >= 500 && te <= 750 && bits >= 30) return NRProtoNexusTH;
     if(te >= 220 && te <= 360 && bits >= 50 && bits <= 70) return NRProtoKeeloq;
-    if(te >= 115 && te <= 175 && bits >= 30) return NRProtoHoneywell;
+    if(te >= 110 && te <= 175 && bits >= 30) return NRProtoHoneywell;
     if(te >= 70 && te <= 84 && bits >= 50) return NRProtoHoneywell; // half-bit Manchester
     if(te >= 175 && te <= 215 && bits >= 16) return NRProtoPT2262;
     if(te >= 105 && te <= 130 && bits >= 20 && bits <= 80) return NRProtoEV1527;
@@ -244,30 +244,31 @@ static void nr_load(NRApp* a) {
 
 static void nr_seed(NRApp* a) {
     if(a->dev_count > 0) return; // already have data
-    #define SEED(P,TE,ID,HITS,NAME) { \
+    #define SEED(P,TE,ID,HITS,NAME,DATE) { \
         NRDev* d = &a->devs[a->dev_count++]; memset(d,0,sizeof(NRDev)); \
         d->proto=P; d->te=TE; d->dev_id=ID; d->hits=HITS; d->seeded=true; \
-        snprintf(d->name, NR_MAX_NAME, NAME); }
+        d->useful=true; snprintf(d->name, NR_MAX_NAME, NAME); \
+        snprintf(d->last_seen_date, 12, DATE); }
 
-    SEED(NRProtoHoneywell, 143, 0x5800, 1250, "Alarm System");
-    SEED(NRProtoKeeloq, 322, 0x2F9AE15, 24, "Parking Fob");
+    SEED(NRProtoHoneywell, 143, 0x5800, 1633, "Alarm System", "May 2");
+    SEED(NRProtoKeeloq, 322, 0x2F9AE15, 24, "Parking Fob", "Apr 27");
     a->devs[a->dev_count-1].sig_count = 2;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "S2 2F9AE1");
     snprintf(a->devs[a->dev_count-1].sigs[1].label, 20, "S3 2F9AE1");
 
-    SEED(NRProtoPT2262, 194, 0x4F, 52, "Remote 4F");
+    SEED(NRProtoPT2262, 194, 0x4F, 53, "Remote 4F", "May 2");
     NRDev* r = &a->devs[a->dev_count-1];
     r->sigs[0] = (NRSig){{0xFF,0xFE,0x4F,0xFF,0xE0},5,40,"Cmd:E0 (Btn A)"};
     r->sigs[1] = (NRSig){{0x00,0x44,0x80},3,24,"Cmd:22 (Btn B)"};
     r->sig_count = 2;
 
-    SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor");
-    SEED(NRProtoBinRAW, 98, 0xB109, 628, "OOK Unknown 98");
-    SEED(NRProtoBinRAW, 81, 0xB108, 9, "Weather Stn?");
-    SEED(NRProtoNexusTH, 650, 0xE0E0, 19, "Weather E0");
+    SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30");
+    SEED(NRProtoBinRAW, 98, 0xB109, 676, "OOK Unknown 98", "May 2");
+    SEED(NRProtoBinRAW, 81, 0xB108, 23, "Weather Stn?", "Apr 30");
+    SEED(NRProtoNexusTH, 650, 0xE0E0, 21, "Weather E0", "May 2");
     a->devs[a->dev_count-1].sig_count = 1;
-    snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "18.6C 68%%");
-    SEED(NRProtoBinRAW, 345, 0xB122, 1, "Manch TE=345");
+    snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "16.5C");
+    SEED(NRProtoBinRAW, 345, 0xB122, 10, "Bell Ctrl", "May 2");
     #undef SEED
 }
 
@@ -444,6 +445,7 @@ static void nr_process(NRApp* a) {
     memcpy(s->raw, data, len);
     nr_sig_label(p, data, len, s->label, sizeof(s->label));
     d->sig_count = 1;
+    d->useful = (p != NRProtoBinRAW); // known protocols are always useful
     nr_dev_label(d);
     if(slot >= a->dev_count && a->dev_count < NR_MAX_DEVICES) a->dev_count++;
     nr_autosave_sig(a, d, s);
@@ -535,8 +537,9 @@ static void nr_draw(Canvas* c, void* ctx) {
         canvas_draw_str(c, 0, HDR_Y, buf);
         uint8_t live = 0;
         for(uint8_t i = 0; i < a->dev_count; i++)
-            if((!a->devs[i].seeded && a->devs[i].last_seen >= a->session_start) ||
-               (a->devs[i].seeded && a->devs[i].confirmed && a->devs[i].last_seen >= a->session_start)) live++;
+            if(a->devs[i].useful &&
+               ((!a->devs[i].seeded && a->devs[i].last_seen >= a->session_start) ||
+               (a->devs[i].seeded && a->devs[i].confirmed && a->devs[i].last_seen >= a->session_start))) live++;
         snprintf(buf, sizeof(buf), "%d live", live);
         canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
@@ -547,7 +550,7 @@ static void nr_draw(Canvas* c, void* ctx) {
             NRDev* d = &a->devs[i];
             bool is_live = (!d->seeded && d->last_seen >= a->session_start) ||
                            (d->seeded && d->confirmed && d->last_seen >= a->session_start);
-            if(!is_live) continue;
+            if(!is_live || !d->useful) continue;
             if(vis < a->sel) { vis++; continue; }
             uint8_t y = ROW_START + row * ROW_H;
             if(vis == a->sel) {
@@ -639,8 +642,10 @@ static void nr_draw(Canvas* c, void* ctx) {
             }
             char tag = d->seeded ? (d->confirmed ? '+' : ' ') : '*';
             char age[6]; nr_age_str(age, sizeof(age), a->tick, d->last_seen);
-            snprintf(buf, sizeof(buf), "%c%s %-9s %3s %s",
-                tag, nr_picon[d->proto], d->name, age,
+            const char* when = (d->last_seen == 0 && d->last_seen_date[0]) ?
+                d->last_seen_date : age;
+            snprintf(buf, sizeof(buf), "%c%s %-9s %s %s",
+                tag, nr_picon[d->proto], d->name, when,
                 d->rssi > -127 ? nr_rssi_icon(d->rssi) : "");
             buf[42] = 0;
             canvas_draw_str(c, 0, y + 8, buf);
@@ -657,10 +662,13 @@ static void nr_draw(Canvas* c, void* ctx) {
         // Header: just device name + scan blink
         snprintf(buf, sizeof(buf), "%s %s", nr_picon[d->proto], d->name);
         canvas_draw_str(c, 0, HDR_Y, buf);
-        // Right: scan indicator + RSSI
+        // Right: scan indicator + RSSI or last seen date
         char age[6]; nr_age_str(age, sizeof(age), a->tick, d->last_seen);
         const char* blink = a->rx_on ? ((a->tick / 5) % 2 ? "*" : "") : "";
-        snprintf(buf, sizeof(buf), "%s %s %s", age, nr_rssi_icon(d->rssi), blink);
+        if(d->last_seen == 0 && d->last_seen_date[0])
+            snprintf(buf, sizeof(buf), "%s %s", d->last_seen_date, blink);
+        else
+            snprintf(buf, sizeof(buf), "%s %s %s", age, nr_rssi_icon(d->rssi), blink);
         canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
@@ -790,15 +798,17 @@ static void nr_draw(Canvas* c, void* ctx) {
             }
             char age[6]; nr_age_str(age, sizeof(age), a->tick, d->last_seen);
             char tag = d->seeded ? (d->confirmed ? '+' : ' ') : '*';
+            const char* when = (d->last_seen == 0 && d->last_seen_date[0]) ?
+                d->last_seen_date : age;
             if(d->proto == NRProtoNexusTH && d->sig_count > 0)
                 snprintf(buf, sizeof(buf), "%c~ %s %s %s",
-                    tag, d->sigs[0].label, age, nr_rssi_icon(d->rssi));
+                    tag, d->sigs[0].label, when, nr_rssi_icon(d->rssi));
             else if(d->proto == NRProtoHoneywell)
                 snprintf(buf, sizeof(buf), "%c# %s %s %s",
-                    tag, d->name, age, nr_rssi_icon(d->rssi));
+                    tag, d->name, when, nr_rssi_icon(d->rssi));
             else
                 snprintf(buf, sizeof(buf), "%c%s %s %s %s",
-                    tag, nr_picon[d->proto], d->name, age, nr_rssi_icon(d->rssi));
+                    tag, nr_picon[d->proto], d->name, when, nr_rssi_icon(d->rssi));
             buf[42] = 0;
             canvas_draw_str(c, 0, y + 8, buf);
             canvas_set_color(c, ColorBlack);

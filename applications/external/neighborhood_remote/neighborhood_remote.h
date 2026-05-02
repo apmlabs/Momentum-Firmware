@@ -52,11 +52,13 @@ typedef struct {
     uint32_t last_seen;
     int8_t   rssi;      // last RSSI in dBm
     char     name[NR_MAX_NAME];
+    char     last_seen_date[12]; // "2026-05-02" for seeded devices
     NRSig    sigs[NR_MAX_SIGS];
     uint8_t  sig_count;
     bool     seeded;
     bool     confirmed;
     bool     saved;
+    bool     useful;    // show in scan view (has meaningful decoded info)
 } NRDev;
 
 typedef enum {
