@@ -597,9 +597,14 @@ static void nr_draw(Canvas* c, void* ctx) {
                 canvas_draw_str(c, 0, ROW_START + 8, "<");
                 canvas_draw_str_aligned(c, 127, ROW_START + 8, AlignRight, AlignBottom, ">");
             }
-            canvas_draw_line(c, 0, ROW_START + ROW_H, 127, ROW_START + ROW_H);
+            char age[6]; nr_age_str(age, sizeof(age), a->tick, d->last_seen);
+            const char* when = (d->last_seen == 0 && d->last_seen_date[0]) ?
+                d->last_seen_date : age;
+            snprintf(buf, sizeof(buf), "%lux  %s", (unsigned long)d->hits, when);
+            canvas_draw_str_aligned(c, 64, ROW_START + ROW_H + 7, AlignCenter, AlignBottom, buf);
+            canvas_draw_line(c, 0, ROW_START + ROW_H + 8, 127, ROW_START + ROW_H + 8);
             for(uint8_t s = 0; s < d->sig_count; s++) {
-                uint8_t y = ROW_START + ROW_H + 2 + s * ROW_H;
+                uint8_t y = ROW_START + ROW_H + 10 + s * ROW_H;
                 if(y + ROW_H > FTR_LINE) break;
                 if(s == a->dev_scroll) {
                     canvas_draw_box(c, 0, y, 128, ROW_H);
@@ -644,9 +649,8 @@ static void nr_draw(Canvas* c, void* ctx) {
             char age[6]; nr_age_str(age, sizeof(age), a->tick, d->last_seen);
             const char* when = (d->last_seen == 0 && d->last_seen_date[0]) ?
                 d->last_seen_date : age;
-            snprintf(buf, sizeof(buf), "%c%s %-9s %s %s",
-                tag, nr_picon[d->proto], d->name, when,
-                d->rssi > -127 ? nr_rssi_icon(d->rssi) : "");
+            snprintf(buf, sizeof(buf), "%c%s %-9s %lu %s",
+                tag, nr_picon[d->proto], d->name, (unsigned long)d->hits, when);
             buf[42] = 0;
             canvas_draw_str(c, 0, y + 8, buf);
             canvas_set_color(c, ColorBlack);
@@ -801,14 +805,14 @@ static void nr_draw(Canvas* c, void* ctx) {
             const char* when = (d->last_seen == 0 && d->last_seen_date[0]) ?
                 d->last_seen_date : age;
             if(d->proto == NRProtoNexusTH && d->sig_count > 0)
-                snprintf(buf, sizeof(buf), "%c~ %s %s %s",
-                    tag, d->sigs[0].label, when, nr_rssi_icon(d->rssi));
+                snprintf(buf, sizeof(buf), "%c~ %s %lu %s",
+                    tag, d->sigs[0].label, (unsigned long)d->hits, when);
             else if(d->proto == NRProtoHoneywell)
-                snprintf(buf, sizeof(buf), "%c# %s %s %s",
-                    tag, d->name, when, nr_rssi_icon(d->rssi));
+                snprintf(buf, sizeof(buf), "%c# %s %lu %s",
+                    tag, d->name, (unsigned long)d->hits, when);
             else
-                snprintf(buf, sizeof(buf), "%c%s %s %s %s",
-                    tag, nr_picon[d->proto], d->name, when, nr_rssi_icon(d->rssi));
+                snprintf(buf, sizeof(buf), "%c%s %s %lu %s",
+                    tag, nr_picon[d->proto], d->name, (unsigned long)d->hits, when);
             buf[42] = 0;
             canvas_draw_str(c, 0, y + 8, buf);
             canvas_set_color(c, ColorBlack);
