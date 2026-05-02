@@ -318,17 +318,20 @@ static void dooya_scan_transmit(DooyaApp* app) {
 }
 
 static uint16_t dooya_spiral_id(uint16_t center, uint32_t step) {
+    // Byte 1 constrained to 0x80-0xBF (top 2 bits = 10, manufacturer prefix)
+    // So scan space is 0x8000-0xBFFF = 16384 values
     int32_t offset = (step + 1) / 2;
     if(step & 1) offset = -offset;
     int32_t val = (int32_t)center + offset;
-    if(val < 0) val += 65536;
-    if(val > 0xFFFF) val -= 65536;
+    // Wrap within 0x8000-0xBFFF
+    int32_t range = 0x4000; // 16384
+    val = ((val - 0x8000) % range + range) % range + 0x8000;
     return (uint16_t)val;
 }
 
 static bool dooya_scan_advance(DooyaApp* app) {
     app->scan_step++;
-    if(app->scan_step >= 65536) return false;
+    if(app->scan_step >= 16384) return false;
     app->scan_id16 = dooya_spiral_id(app->scan_center, app->scan_step);
     return true;
 }
@@ -347,7 +350,7 @@ static void dooya_draw_scan(Canvas* canvas, DooyaApp* app) {
     snprintf(buf, sizeof(buf), "ID:C0%04X Cmd:0x%02X", app->scan_id16, CMD_BYTES[app->scan_btn]);
     canvas_draw_str_aligned(canvas, 64, 26, AlignCenter, AlignTop, buf);
 
-    snprintf(buf, sizeof(buf), "%lu / 65536  (%lu%%)", (uint32_t)app->scan_step, (uint32_t)app->scan_step * 100 / 65536);
+    snprintf(buf, sizeof(buf), "%lu / 16384  (%lu%%)", (uint32_t)app->scan_step, (uint32_t)app->scan_step * 100 / 16384);
     canvas_draw_str_aligned(canvas, 64, 38, AlignCenter, AlignTop, buf);
 
     if(app->transmitting) {
@@ -633,7 +636,9 @@ int32_t dooya_remote_app(void* p) {
                             sum += id16; cnt++;
                         }
                     }
-                    app->scan_center = cnt > 0 ? (uint16_t)(sum / cnt) : 0;
+                    app->scan_center = cnt > 0 ? (uint16_t)(sum / cnt) : 0x9FFF;
+                    if(app->scan_center < 0x8000) app->scan_center = 0x8000;
+                    if(app->scan_center > 0xBFFF) app->scan_center = 0xBFFF;
                     app->scan_id16 = app->scan_center;
                     app->scan_step = 0;
                     app->scan_ch = 1;
