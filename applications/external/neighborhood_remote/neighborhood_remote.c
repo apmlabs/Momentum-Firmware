@@ -15,9 +15,9 @@ static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* d, uint8_t len) 
     }
     if(te >= 500 && te <= 750 && bits >= 30) return NRProtoNexusTH;
     if(te >= 220 && te <= 360 && bits >= 50 && bits <= 70) return NRProtoKeeloq;
-    if(te >= 110 && te <= 175 && bits >= 30) return NRProtoHoneywell;
+    if(te >= 110 && te <= 200 && bits >= 30) return NRProtoHoneywell;
     if(te >= 70 && te <= 84 && bits >= 50) return NRProtoHoneywell; // half-bit Manchester
-    if(te >= 175 && te <= 215 && bits >= 16) return NRProtoPT2262;
+    if(te >= 175 && te <= 215 && bits >= 16 && bits <= 50) return NRProtoPT2262;
     if(te >= 105 && te <= 130 && bits >= 20 && bits <= 80) return NRProtoEV1527;
     return NRProtoBinRAW;
 }
@@ -266,10 +266,6 @@ static void nr_seed(NRApp* a) {
     r->sigs[0] = (NRSig){{0xFF,0xFE,0x4F,0xFF,0xE0},5,40,"Cmd:E0 (Btn A)"};
     r->sigs[1] = (NRSig){{0x00,0x44,0x80},3,24,"Cmd:22 (Btn B)"};
     r->sig_count = 2;
-    SEED(NRProtoPT2262, 190, 0x08, 4, "Remote 08", "May 2");
-    SEED(NRProtoPT2262, 185, 0x28, 3, "Remote 28", "May 2");
-    SEED(NRProtoPT2262, 190, 0x06, 3, "Remote 06", "May 2");
-    SEED(NRProtoPT2262, 185, 0x87, 4, "Remote 87", "May 2");
 
     SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30");
     SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "May 2");
