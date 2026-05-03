@@ -540,8 +540,9 @@ static void nr_draw(Canvas* c, void* ctx) {
         for(uint8_t i = 0; i < a->dev_count; i++)
             if(nr_replayable[a->devs[i].proto] && a->devs[i].sig_count > 0) rc++;
 
-        for(uint8_t i = 0; i < 5; i++) {
-            uint8_t y = ROW_START + i * ROW_H;
+        uint8_t mstart = a->menu_sel > 3 ? a->menu_sel - 3 : 0;
+        for(uint8_t i = mstart; i < 5; i++) {
+            uint8_t y = ROW_START + (i - mstart) * ROW_H;
             if(y + ROW_H > FTR_LINE) break;
             if(i == a->menu_sel) {
                 canvas_draw_box(c, 0, y, 128, ROW_H);
