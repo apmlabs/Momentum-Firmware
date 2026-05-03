@@ -5,6 +5,10 @@
 #include <input/input.h>
 #include <notification/notification_messages.h>
 #include <lib/subghz/subghz_worker.h>
+#include <lib/subghz/receiver.h>
+#include <lib/subghz/environment.h>
+#include <lib/subghz/protocols/protocol_items.h>
+#include <lib/subghz/protocols/base.h>
 #include <lib/subghz/devices/devices.h>
 #include <lib/subghz/devices/cc1101_int/cc1101_int_interconnect.h>
 #include <storage/storage.h>
@@ -75,6 +79,8 @@ typedef struct {
     NotificationApp* notif;
     const SubGhzDevice* radio;
     SubGhzWorker* worker;
+    SubGhzEnvironment* environment;
+    SubGhzReceiver* receiver;
     bool rx_on;
 
     NRDev    devs[NR_MAX_DEVICES];
@@ -108,4 +114,9 @@ typedef struct {
     uint16_t rx_last_te;
     uint32_t tx_flash;
     uint16_t autosave_seq;
+
+    // Firmware protocol decoder result (lock-free handoff from ISR)
+    volatile bool dec_ready;
+    char dec_proto[16];
+    char dec_str[128];
 } NRApp;

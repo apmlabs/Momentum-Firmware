@@ -14,8 +14,8 @@ static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* d, uint8_t len) 
         if(ff > len / 3 && te < 70) return NRProtoFSK;
     }
     if(te >= 500 && te <= 750 && bits >= 30) return NRProtoNexusTH;
-    if(te >= 220 && te <= 360 && bits >= 50 && bits <= 70) return NRProtoKeeloq;
-    if(te >= 110 && te <= 200 && bits >= 30) return NRProtoHoneywell;
+    if(te >= 220 && te <= 360 && bits >= 64 && bits <= 68) return NRProtoKeeloq;
+    if(te >= 110 && te <= 210 && bits >= 30) return NRProtoHoneywell;
     if(te >= 70 && te <= 84 && bits >= 50) return NRProtoHoneywell; // half-bit Manchester
     if(te >= 175 && te <= 215 && bits >= 16 && bits <= 50) return NRProtoPT2262;
     if(te >= 105 && te <= 130 && bits >= 20 && bits <= 80) return NRProtoEV1527;
@@ -128,6 +128,7 @@ static void nr_autosave_sig(NRApp* a, NRDev* d, NRSig* s) {
     storage_simply_mkdir(st, NR_SAVE_DIR);
     storage_simply_mkdir(st, NR_AUTOSAVE_DIR);
     char path[80];
+    // Save .txt with our decoded info + firmware decode string
     snprintf(path, sizeof(path), "%s/%s_%04d.txt",
         NR_AUTOSAVE_DIR, nr_pname[d->proto], a->autosave_seq);
     FlipperFormat* ff = flipper_format_file_alloc(st);
@@ -139,9 +140,14 @@ static void nr_autosave_sig(NRApp* a, NRDev* d, NRSig* s) {
         uint32_t v[2] = {d->te, s->bits};
         flipper_format_write_uint32(ff, "Info", v, 2);
         if(s->raw_len) flipper_format_write_hex(ff, "Data", s->raw, s->raw_len);
+        // Append firmware protocol decode if available
+        if(a->dec_proto[0]) {
+            flipper_format_write_string_cstr(ff, "FW_Proto", a->dec_proto);
+            flipper_format_write_string_cstr(ff, "FW_Decode", a->dec_str);
+        }
     }
     flipper_format_free(ff);
-    // Also save .sub BinRAW file
+    // Save .sub — BinRAW fallback (always, for replay/archive)
     snprintf(path, sizeof(path), "%s/%s_%04d.sub",
         NR_AUTOSAVE_DIR, nr_pname[d->proto], a->autosave_seq);
     File* file = storage_file_alloc(st);
@@ -278,8 +284,23 @@ static void nr_seed(NRApp* a) {
 
 // ============== RX / Radio / TX ==============
 
+// Firmware protocol decode callback — fires from worker thread
+static void nr_decode_cb(SubGhzReceiver* rx, SubGhzProtocolDecoderBase* db, void* ctx) {
+    UNUSED(rx);
+    NRApp* a = ctx;
+    if(a->dec_ready) return; // drop if previous not processed
+    strncpy(a->dec_proto, db->protocol->name, sizeof(a->dec_proto) - 1);
+    FuriString* text = furi_string_alloc();
+    subghz_protocol_decoder_base_get_string(db, text);
+    strncpy(a->dec_str, furi_string_get_cstr(text), sizeof(a->dec_str) - 1);
+    furi_string_free(text);
+    a->dec_ready = true;
+}
+
 static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
     NRApp* a = ctx;
+    // Feed firmware protocol decoders
+    subghz_receiver_decode(a->receiver, level, duration);
     if(level) { a->rx_pulse = duration; return; }
     uint32_t h = a->rx_pulse, l = duration;
     if(l > 5000) {
@@ -326,6 +347,8 @@ static void nr_rx_start(NRApp* a) {
     subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
     subghz_devices_set_frequency(a->radio, 433920000);
     a->rx_bit_count = 0; a->rx_te_sum = 0; a->rx_te_n = 0; a->rx_ready = false;
+    a->dec_ready = false;
+    subghz_receiver_reset(a->receiver);
     subghz_worker_set_pair_callback(a->worker, (SubGhzWorkerPairCallback)nr_rx_cb);
     subghz_worker_set_context(a->worker, a);
     subghz_devices_start_async_rx(a->radio, subghz_worker_rx_callback, a->worker);
@@ -401,11 +424,13 @@ static void nr_process(NRApp* a) {
             int16_t temp = (raw > 2048) ? (int16_t)(raw - 4096) : (int16_t)raw;
             uint8_t humi = ((data[3] & 0x0F) << 4) | (data[4] >> 4);
             if(temp < -400 || temp > 600 || humi > 100) return; // reject garbage
+            d->useful = true; // good frame promotes device to useful
             nr_sig_label(p, data, len, d->sigs[0].label, sizeof(d->sigs[0].label));
             memcpy(d->sigs[0].raw, data, len);
             d->sigs[0].raw_len = len;
             d->sigs[0].bits = bits;
             nr_autosave_sig(a, d, &d->sigs[0]);
+            a->dec_ready = false; a->dec_proto[0] = 0;
             return;
         }
         // Keeloq/Honeywell: update sigs[0] with latest capture (rolling code, events)
@@ -432,6 +457,7 @@ static void nr_process(NRApp* a) {
             memcpy(tmp.raw, data, len);
             nr_sig_label(p, data, len, tmp.label, sizeof(tmp.label));
             nr_autosave_sig(a, d, &tmp);
+            a->dec_ready = false; a->dec_proto[0] = 0;
         }
         return;
     }
@@ -453,10 +479,15 @@ static void nr_process(NRApp* a) {
     memcpy(s->raw, data, len);
     nr_sig_label(p, data, len, s->label, sizeof(s->label));
     d->sig_count = 1;
-    d->useful = (p != NRProtoBinRAW); // known protocols are always useful
+    d->useful = (p != NRProtoBinRAW);
+    // NexusTH with bad frames (sanity filter rejected) are not useful
+    if(p == NRProtoNexusTH && strstr(s->label, "bad frame")) d->useful = false;
     nr_dev_label(d);
     if(slot >= a->dev_count && a->dev_count < NR_MAX_DEVICES) a->dev_count++;
     nr_autosave_sig(a, d, s);
+    a->dec_ready = false;
+    a->dec_proto[0] = 0;
+    a->dec_str[0] = 0;
     notification_message(a->notif, &sequence_blink_cyan_10);
 }
 
@@ -640,16 +671,27 @@ static void nr_draw(Canvas* c, void* ctx) {
         canvas_set_font(c, FontPrimary);
         canvas_draw_str(c, 0, HDR_Y, "KNOWN DEVICES");
         const char* ksc = a->rx_on ? ((a->tick / 5) % 2 ? "*" : "") : "";
-        snprintf(buf, sizeof(buf), "%s %d", ksc, a->dev_count);
+        // Count useful devices
+        uint8_t useful_count = 0;
+        for(uint8_t i = 0; i < a->dev_count; i++)
+            if(a->devs[i].useful) useful_count++;
+        snprintf(buf, sizeof(buf), "%s %d", ksc, useful_count);
         canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
 
+        // Build visible index → device index mapping
+        uint8_t vis_idx[NR_MAX_DEVICES];
+        uint8_t vis_count = 0;
+        for(uint8_t i = 0; i < a->dev_count; i++)
+            if(a->devs[i].useful) vis_idx[vis_count++] = i;
+
+        if(a->sel >= vis_count && vis_count > 0) a->sel = vis_count - 1;
         uint8_t start = a->sel > 3 ? a->sel - 3 : 0;
-        for(uint8_t i = start; i < a->dev_count && (i - start) < MAX_ROWS; i++) {
-            NRDev* d = &a->devs[i];
-            uint8_t y = ROW_START + (i - start) * ROW_H;
-            if(i == a->sel) {
+        for(uint8_t vi = start; vi < vis_count && (vi - start) < MAX_ROWS; vi++) {
+            NRDev* d = &a->devs[vis_idx[vi]];
+            uint8_t y = ROW_START + (vi - start) * ROW_H;
+            if(vi == a->sel) {
                 canvas_draw_box(c, 0, y, 128, ROW_H);
                 canvas_set_color(c, ColorWhite);
             }
@@ -802,7 +844,7 @@ static void nr_draw(Canvas* c, void* ctx) {
 
         uint8_t si[NR_MAX_DEVICES], sc = 0;
         for(uint8_t i = 0; i < a->dev_count; i++)
-            if(nr_is_sensor[a->devs[i].proto]) si[sc++] = i;
+            if(nr_is_sensor[a->devs[i].proto] && a->devs[i].useful) si[sc++] = i;
 
         uint8_t start = a->sel > 3 ? a->sel - 3 : 0;
         for(uint8_t j = start; j < sc && (j - start) < MAX_ROWS; j++) {
@@ -915,6 +957,13 @@ int32_t neighborhood_remote_app(void* p) {
     subghz_devices_begin(a->radio);
     subghz_devices_reset(a->radio);
     a->worker = subghz_worker_alloc();
+
+    // Firmware protocol decoder chain
+    a->environment = subghz_environment_alloc();
+    subghz_environment_set_protocol_registry(a->environment, (void*)&subghz_protocol_registry);
+    a->receiver = subghz_receiver_alloc_init(a->environment);
+    subghz_receiver_set_filter(a->receiver, SubGhzProtocolFlag_Decodable);
+    subghz_receiver_set_rx_callback(a->receiver, nr_decode_cb, a);
 
     nr_load(a);
     nr_seed(a);
@@ -1032,14 +1081,21 @@ int32_t neighborhood_remote_app(void* p) {
                     a->view = NRViewMenu;
                 } else if(ev.key == InputKeyUp && a->sel > 0) {
                     a->sel--;
-                } else if(ev.key == InputKeyDown && a->sel + 1 < a->dev_count) {
-                    a->sel++;
-                } else if(ev.key == InputKeyOk && a->sel < a->dev_count) {
-                    a->dev_sel = a->sel;
-                    a->dev_scroll = 0;
-                    a->view = NRViewDevice;
-                    a->lock_proto = a->devs[a->sel].proto; // auto-lock to device protocol
-                    nr_rx_start(a);
+                } else {
+                    // Count useful devices for bounds
+                    uint8_t uc = 0;
+                    uint8_t ui[NR_MAX_DEVICES];
+                    for(uint8_t i = 0; i < a->dev_count; i++)
+                        if(a->devs[i].useful) ui[uc++] = i;
+                    if(ev.key == InputKeyDown && a->sel + 1 < uc) {
+                        a->sel++;
+                    } else if(ev.key == InputKeyOk && a->sel < uc) {
+                        a->dev_sel = ui[a->sel];
+                        a->dev_scroll = 0;
+                        a->view = NRViewDevice;
+                        a->lock_proto = a->devs[ui[a->sel]].proto;
+                        nr_rx_start(a);
+                    }
                 }
 
             } else if(a->view == NRViewDevice) {
@@ -1142,6 +1198,8 @@ tick:
     nr_save(a);
     nr_rx_stop(a);
     subghz_worker_free(a->worker);
+    subghz_receiver_free(a->receiver);
+    subghz_environment_free(a->environment);
     subghz_devices_end(a->radio);
     subghz_devices_deinit();
     gui_remove_view_port(a->gui, a->vp);
