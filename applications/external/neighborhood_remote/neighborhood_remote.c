@@ -182,7 +182,7 @@ static void nr_save(NRApp* a) {
     storage_simply_mkdir(st, NR_SAVE_DIR);
     FlipperFormat* ff = flipper_format_file_alloc(st);
     if(flipper_format_file_open_always(ff, NR_SAVE_FILE)) {
-        flipper_format_write_header_cstr(ff, "Neighborhood DB", 3);
+        flipper_format_write_header_cstr(ff, "Neighborhood DB", 4);
         uint32_t cnt = a->dev_count;
         flipper_format_write_uint32(ff, "Count", &cnt, 1);
         for(uint8_t i = 0; i < a->dev_count; i++) {
@@ -190,6 +190,8 @@ static void nr_save(NRApp* a) {
             uint32_t h[6] = {d->proto, d->te, d->dev_id, d->hits, d->sig_count, d->seeded};
             flipper_format_write_uint32(ff, "Dev", h, 6);
             flipper_format_write_string_cstr(ff, "Name", d->name);
+            flipper_format_write_string_cstr(ff, "Date",
+                d->last_seen_date[0] ? d->last_seen_date : "--");
             for(uint8_t s = 0; s < d->sig_count; s++) {
                 flipper_format_write_string_cstr(ff, "SL", d->sigs[s].label);
                 uint32_t sb[2] = {d->sigs[s].bits, d->sigs[s].raw_len};
@@ -210,7 +212,7 @@ static void nr_load(NRApp* a) {
     if(flipper_format_file_open_existing(ff, NR_SAVE_FILE)) {
         uint32_t ver = 0;
         FuriString* t = furi_string_alloc();
-        if(flipper_format_read_header(ff, t, &ver) && ver == 3) {
+        if(flipper_format_read_header(ff, t, &ver) && (ver == 3 || ver == 4)) {
             uint32_t cnt = 0;
             flipper_format_read_uint32(ff, "Count", &cnt, 1);
             if(cnt > NR_MAX_DEVICES) cnt = NR_MAX_DEVICES;
@@ -226,6 +228,11 @@ static void nr_load(NRApp* a) {
                 d->seeded = h[5];
                 if(flipper_format_read_string(ff, "Name", s))
                     snprintf(d->name, NR_MAX_NAME, "%s", furi_string_get_cstr(s));
+                if(ver >= 4 && flipper_format_read_string(ff, "Date", s)) {
+                    const char* ds = furi_string_get_cstr(s);
+                    if(strcmp(ds, "--") != 0)
+                        snprintf(d->last_seen_date, 12, "%s", ds);
+                }
                 for(uint8_t j = 0; j < sc; j++) {
                     if(!flipper_format_read_string(ff, "SL", s)) break;
                     snprintf(d->sigs[j].label, 20, "%s", furi_string_get_cstr(s));
