@@ -116,6 +116,14 @@ static int8_t nr_find_dev(NRApp* a, NRProto p, uint32_t id) {
     return -1;
 }
 
+// Can this device be replayed? PT2262/EV1527 always, plus CAME-style 868 MHz
+static bool nr_can_replay(NRDev* d) {
+    if(nr_replayable[d->proto]) return true;
+    // CAME 12-bit on 868 MHz: stored as BinRAW but has known fixed encoding
+    if(d->freq == 868350000 && d->sig_count > 0 && d->sigs[0].bits == 12) return true;
+    return false;
+}
+
 static int8_t nr_find_sig(NRDev* d, uint8_t* data, uint8_t len) {
     for(uint8_t i = 0; i < d->sig_count; i++)
         if(d->sigs[i].raw_len == len && memcmp(d->sigs[i].raw, data, len) == 0) return i;
@@ -293,8 +301,9 @@ static void nr_seed(NRApp* a) {
 
     // 868 MHz devices
     SEED(NRProtoBinRAW, 320, 0x09EC, 19, "Garage", "May 4", 868350000);
-    a->devs[a->dev_count-1].sig_count = 1;
-    snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "CAME 0x9EC");
+    { NRDev* g = &a->devs[a->dev_count-1];
+      g->sigs[0] = (NRSig){{0x9E,0xC0},2,12,"CAME 0x9EC"};
+      g->sig_count = 1; }
     #undef SEED
 }
 
@@ -383,20 +392,36 @@ static void nr_rx_stop(NRApp* a) {
 }
 
 static void nr_tx(NRApp* a, NRDev* d, NRSig* s) {
-    if(!nr_replayable[d->proto] || !s->raw_len) return;
+    if(!s->raw_len) return;
     bool was = a->rx_on; if(was) nr_rx_stop(a);
     subghz_devices_idle(a->radio);
     subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
     subghz_devices_set_frequency(a->radio, d->freq ? d->freq : 433920000);
-    uint16_t te = d->te, te3 = te * 3;
+    uint16_t te = d->te;
+    // Detect CAME-style encoding: TE ~320, 12 bits, on 868 MHz
+    bool is_came = (d->freq == 868350000 && s->bits == 12 && te >= 280 && te <= 360);
     for(int r = 0; r < 6; r++) {
         subghz_devices_set_tx(a->radio);
-        furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(te);
-        furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(te * 31);
-        for(uint16_t i = 0; i < s->bits && i < 256; i++) {
-            uint8_t b = (s->raw[i/8] >> (7-(i%8))) & 1;
-            furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(b ? te3 : te);
-            furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(b ? te : te3);
+        if(is_came) {
+            // CAME: header = LOW 47*TE, then HIGH TE
+            furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(te * 47);
+            furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(te);
+            for(uint16_t i = 0; i < s->bits; i++) {
+                uint8_t b = (s->raw[i/8] >> (7-(i%8))) & 1;
+                // CAME: 1=LOW long+HIGH short, 0=LOW short+HIGH long
+                furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(b ? te*2 : te);
+                furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(b ? te : te*2);
+            }
+        } else {
+            // PT2262/EV1527: sync = HIGH TE, LOW 31*TE
+            furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(te);
+            furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(te * 31);
+            uint16_t te3 = te * 3;
+            for(uint16_t i = 0; i < s->bits && i < 256; i++) {
+                uint8_t b = (s->raw[i/8] >> (7-(i%8))) & 1;
+                furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(b ? te3 : te);
+                furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(b ? te : te3);
+            }
         }
         furi_hal_gpio_write(&gpio_cc1101_g0, false);
         subghz_devices_idle(a->radio); furi_delay_ms(8);
@@ -556,8 +581,7 @@ static void nr_draw(Canvas* c, void* ctx) {
         const char* items[] = {"Scan", "My Remotes", "Known Devices", "Sensors", "Settings"};
         uint8_t rc = 0;
         for(uint8_t i = 0; i < a->dev_count; i++)
-            if(nr_replayable[a->devs[i].proto] && a->devs[i].sig_count > 0) rc++;
-
+            if(nr_can_replay(&a->devs[i])) rc++;
         uint8_t mstart = a->menu_sel > 3 ? a->menu_sel - 3 : 0;
         for(uint8_t i = mstart; i < 5; i++) {
             uint8_t y = ROW_START + (i - mstart) * ROW_H;
@@ -647,7 +671,7 @@ static void nr_draw(Canvas* c, void* ctx) {
 
         uint8_t rc = 0, ri = 255;
         for(uint8_t i = 0; i < a->dev_count; i++) {
-            if(!nr_replayable[a->devs[i].proto] || a->devs[i].sig_count == 0) continue;
+            if(!nr_can_replay(&a->devs[i])) continue;
             if(rc == a->sel) ri = i;
             rc++;
         }
@@ -820,7 +844,7 @@ static void nr_draw(Canvas* c, void* ctx) {
             if(line >= 0 && line < MAX_ROWS) {
                 uint8_t y = ROW_START + line * ROW_H;
                 snprintf(buf, sizeof(buf), " %s %s",
-                    nr_replayable[d->proto] ? ">" : " ", d->sigs[s].label);
+                    nr_can_replay(d) ? ">" : " ", d->sigs[s].label);
                 canvas_draw_str(c, 0, y + 8, buf);
             }
             line++;
@@ -843,7 +867,7 @@ static void nr_draw(Canvas* c, void* ctx) {
             p = *nl ? nl + 1 : nl;
         }
         canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
-        if(nr_replayable[d->proto] && d->sig_count > 0)
+        if(nr_can_replay(d))
             canvas_draw_str(c, 0, FTR_Y, "OK:Send LOK:Lock");
         else
             canvas_draw_str(c, 0, FTR_Y, "LOK:Lock U/D:Scroll");
@@ -1057,25 +1081,25 @@ int32_t neighborhood_remote_app(void* p) {
                         if(a->sel > 0) a->sel--;
                     }
                 } else if(ev.key == InputKeyLeft || ev.key == InputKeyRight) {
-                    // L/R: cycle protocol lock directly
+                    // L/R: cycle frequency mode
                     if(ev.key == InputKeyRight) {
-                        a->lock_proto++;
-                        if(a->lock_proto >= (int8_t)NRProtoCount) a->lock_proto = -1;
+                        a->freq_mode = (a->freq_mode + 1) % 3;
                     } else {
-                        a->lock_proto--;
-                        if(a->lock_proto < -1) a->lock_proto = NRProtoCount - 1;
+                        a->freq_mode = a->freq_mode == 0 ? 2 : a->freq_mode - 1;
                     }
+                    nr_rx_stop(a);
+                    nr_rx_start(a);
                 }
 
             } else if(a->view == NRViewRemotes) {
                 // Count replayable devices
                 uint8_t rc = 0;
                 for(uint8_t i = 0; i < a->dev_count; i++)
-                    if(nr_replayable[a->devs[i].proto] && a->devs[i].sig_count > 0) rc++;
+                    if(nr_can_replay(&a->devs[i])) rc++;
                 // Find current device
                 uint8_t ri = 255, c2 = 0;
                 for(uint8_t i = 0; i < a->dev_count; i++) {
-                    if(!nr_replayable[a->devs[i].proto] || a->devs[i].sig_count == 0) continue;
+                    if(!nr_can_replay(&a->devs[i])) continue;
                     if(c2 == a->sel) { ri = i; break; }
                     c2++;
                 }
@@ -1131,7 +1155,7 @@ int32_t neighborhood_remote_app(void* p) {
                     a->view = NRViewKnown;
                     a->sel = a->dev_sel;
                 } else if(ev.key == InputKeyOk && ev.type == InputTypeShort &&
-                          d && d->sig_count > 0 && nr_replayable[d->proto]) {
+                          d && d->sig_count > 0 && nr_can_replay(d)) {
                     uint8_t si = a->dev_scroll < d->sig_count ? a->dev_scroll : 0;
                     notification_message(a->notif, &sequence_blink_magenta_100);
                     nr_tx(a, d, &d->sigs[si]);
