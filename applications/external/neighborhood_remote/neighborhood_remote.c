@@ -368,8 +368,9 @@ static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
     uint32_t sh = h < l ? h : l;
     if(sh < 800) { a->rx_te_sum += sh; a->rx_te_n++; }
     if(a->rx_bit_count < 128) {
-        uint32_t te = a->rx_te_n > 0 ? a->rx_te_sum / a->rx_te_n : 200;
-        a->rx_bits[a->rx_bit_count++] = (sh > 400) ? (l > te * 4) : (h > te * 2) ? 1 : 0;
+        // Universal bit decision: compare pulse vs gap duration
+        // Works for all PWM ratios (1:2 CAME, 1:3 PT2262, gap-based NexusTH)
+        a->rx_bits[a->rx_bit_count++] = (h >= l) ? 1 : 0;
     }
 }
 
@@ -464,6 +465,58 @@ static void nr_came_tx_code(NRApp* a, uint16_t code) {
 // ============== Process frame ==============
 
 static void nr_process(NRApp* a) {
+    // Process firmware protocol decode (higher priority than raw accumulator)
+    if(a->dec_ready) {
+        // Extract key from CAME decode string: "Key:0x000009EC"
+        if(strncmp(a->dec_proto, "CAME", 4) == 0) {
+            char* kp = strstr(a->dec_str, "Key:0x");
+            if(kp) {
+                uint32_t key = strtoul(kp + 6, NULL, 16);
+                uint8_t nbits = 12; // CAME 12-bit default
+                char* bp = strstr(a->dec_str, "bit");
+                if(bp && bp > a->dec_str) {
+                    // parse "12bit" or "24bit" before "bit"
+                    char* np = bp - 1;
+                    while(np > a->dec_str && *(np-1) >= '0' && *(np-1) <= '9') np--;
+                    nbits = atoi(np);
+                    if(nbits == 0) nbits = 12;
+                }
+                // Build proper device entry from firmware decode
+                uint8_t raw[4]; uint8_t raw_len;
+                if(nbits <= 16) {
+                    raw[0] = (key >> 8) & 0xFF; raw[1] = key & 0xFF; raw_len = 2;
+                } else {
+                    raw[0] = (key >> 16) & 0xFF; raw[1] = (key >> 8) & 0xFF;
+                    raw[2] = key & 0xFF; raw_len = 3;
+                }
+                uint32_t did = key & 0xFFFF;
+                int8_t di = nr_find_dev(a, NRProtoBinRAW, did);
+                if(di < 0) di = nr_find_dev(a, NRProtoBinRAW, 0x09EC); // match garage seed
+                if(di >= 0) {
+                    NRDev* d = &a->devs[di];
+                    if((a->tick - d->last_seen) >= NR_HIT_COOLDOWN) {
+                        d->hits++; d->last_seen = a->tick;
+                    }
+                    if(d->seeded) d->confirmed = true;
+                    // Update signal with correct decoded data
+                    if(d->sig_count > 0) {
+                        memcpy(d->sigs[0].raw, raw, raw_len);
+                        d->sigs[0].raw_len = raw_len;
+                        d->sigs[0].bits = nbits;
+                        snprintf(d->sigs[0].label, 20, "CAME 0x%lX", (unsigned long)key);
+                    }
+                    NRSig tmp = {.raw_len = raw_len, .bits = nbits};
+                    memcpy(tmp.raw, raw, raw_len);
+                    snprintf(tmp.label, 20, "CAME 0x%lX", (unsigned long)key);
+                    nr_autosave_sig(a, d, &tmp);
+                }
+                a->dec_ready = false; a->dec_proto[0] = 0; a->dec_str[0] = 0;
+                return; // handled via firmware decode, skip raw processing
+            }
+        }
+        // For other firmware decodes, just note it for autosave annotation (handled below)
+    }
+
     if(!a->rx_ready) return;
     uint16_t te = a->rx_fte, bits = a->rx_fbits;
     uint8_t len = a->rx_flen, data[32];
@@ -1072,7 +1125,7 @@ int32_t neighborhood_remote_app(void* p) {
     InputEvent ev;
     while(running) {
         if(furi_message_queue_get(a->eq, &ev, 50) == FuriStatusOk) {
-            if(ev.type != InputTypeShort && ev.type != InputTypeLong) goto tick;
+            if(ev.type != InputTypeShort && ev.type != InputTypeLong && ev.type != InputTypeRepeat) goto tick;
 
             if(a->view == NRViewMenu) {
                 if(ev.key == InputKeyBack) {
