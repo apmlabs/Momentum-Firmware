@@ -488,24 +488,25 @@ static bool sc_signal_present(SpectrumCheckApp* app, float rssi) {
 static void sc_tick_locked(SpectrumCheckApp* app) {
     if(!app->rx_active || app->current_freq != app->locked_freq) {
         sc_set_freq_mod(app, app->locked_freq, sc_try_mods[app->locked_mod_idx % SC_TRY_MOD_COUNT]);
-        app->hopper_timeout = 40; // 2s initial dwell
+        app->hopper_timeout = 80; // 4s initial dwell — give user time to press remote
         return;
     }
     float rssi = subghz_devices_get_rssi(app->radio_device);
     sc_update_noise_floor(app, rssi);
 
     if(sc_signal_present(app, rssi)) {
-        app->hopper_timeout = 40; // Reset: 2s from last signal presence
+        app->hopper_timeout = 80; // Reset: 4s from last signal presence
+        sc_hit_add(app, app->locked_freq, rssi, NULL);
         return;
     }
     if(app->hopper_timeout > 0) {
         app->hopper_timeout--;
         return;
     }
-    // 2s of silence — try next modulation
+    // 4s of silence — try next modulation
     app->locked_mod_idx++;
     sc_set_freq_mod(app, app->locked_freq, sc_try_mods[app->locked_mod_idx % SC_TRY_MOD_COUNT]);
-    app->hopper_timeout = 40;
+    app->hopper_timeout = 80;
 }
 
 static void sc_tick_camp(SpectrumCheckApp* app) {
@@ -805,9 +806,9 @@ static void sc_draw_camp(Canvas* canvas, SpectrumCheckApp* app) {
             snprintf(buf, sizeof(buf), "Decoded: %s", app->camp_last_proto);
             canvas_draw_str(canvas, 0, 46, buf);
         } else {
-            canvas_draw_str(canvas, 0, 46, "Waiting for signal...");
+            canvas_draw_str(canvas, 0, 46, "Press remote/button now...");
         }
-        canvas_draw_str(canvas, 0, 56, "L/R:modulation");
+        canvas_draw_str(canvas, 0, 56, "L/R:mod OK:unlock");
     }
 }
 
@@ -1000,7 +1001,11 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
                 }
             }
         } else if(ev->type == InputTypeShort) {
-            if(app->current_view == SCViewDecoder) {
+            if(app->current_view == SCViewCamp) {
+                // OK in camp: unlock and go back to freq analyzer
+                app->radio_state = SCRadioHopping;
+                app->current_view = SCViewFreqAnalyzer;
+            } else if(app->current_view == SCViewDecoder) {
                 // OK short: scroll decoded text
                 if(app->signal_count > 0) app->decoder_scroll++;
             } else if(app->current_view == SCViewSpectrum || app->current_view == SCViewFreqAnalyzer) {
@@ -1016,7 +1021,12 @@ static void sc_handle_input(SpectrumCheckApp* app, InputEvent* ev) {
                         app->locked_freq = freq;
                         app->locked_mod_idx = 0;
                         app->radio_state = SCRadioLocked;
-                        app->hopper_timeout = 40;
+                        app->hopper_timeout = 80;
+                        // Auto-switch to camp for clear "press remote now" UX
+                        app->camp_mod_idx = 0;
+                        app->camp_start_tick = 0;
+                        app->camp_last_proto[0] = 0;
+                        app->current_view = SCViewCamp;
                     }
                 }
             }

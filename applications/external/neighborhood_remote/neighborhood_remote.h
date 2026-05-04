@@ -52,6 +52,7 @@ typedef struct {
     NRProto  proto;
     uint16_t te;
     uint32_t dev_id;
+    uint32_t freq;      // 433920000 or 868350000
     uint32_t hits;
     uint32_t last_seen;
     int8_t   rssi;      // last RSSI in dBm
@@ -71,6 +72,10 @@ typedef enum {
 } NRView;
 
 typedef enum { NRSortHits, NRSortRecent } NRSort;
+typedef enum { NRFreq433, NRFreq868, NRFreqAuto } NRFreqMode;
+
+static const uint32_t nr_freq_vals[] = {433920000, 868350000};
+static const char* nr_freq_names[] = {"433.92", "868.35", "Auto"};
 
 typedef struct {
     Gui* gui;
@@ -97,6 +102,9 @@ typedef struct {
     NRSort   sort;
     int8_t   lock_proto;
     bool     autosave;
+    NRFreqMode freq_mode;
+    uint32_t rx_freq;       // current RX frequency
+    uint32_t auto_switch;   // tick of last auto freq switch
 
     // RX double buffer
     uint32_t rx_pulse;

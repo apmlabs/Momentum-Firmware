@@ -156,13 +156,13 @@ static void nr_autosave_sig(NRApp* a, NRDev* d, NRSig* s) {
         furi_string_printf(line,
             "Filetype: Flipper SubGhz Key File\n"
             "Version: 1\n"
-            "Frequency: 433920000\n"
+            "Frequency: %lu\n"
             "Preset: FuriHalSubGhzPresetOok650Async\n"
             "Protocol: BinRAW\n"
             "Bit: %u\n"
             "TE: %u\n"
             "Bit_RAW: %u\nData_RAW:",
-            s->bits, d->te, s->bits);
+            (unsigned long)(d->freq ? d->freq : a->rx_freq), s->bits, d->te, s->bits);
         for(uint8_t i = 0; i < s->raw_len; i++)
             furi_string_cat_printf(line, " %02X", s->raw[i]);
         furi_string_cat(line, "\n");
@@ -266,30 +266,35 @@ static void nr_load(NRApp* a) {
 
 static void nr_seed(NRApp* a) {
     if(a->dev_count > 0) return; // already have data
-    #define SEED(P,TE,ID,HITS,NAME,DATE) { \
+    #define SEED(P,TE,ID,HITS,NAME,DATE,FREQ) { \
         NRDev* d = &a->devs[a->dev_count++]; memset(d,0,sizeof(NRDev)); \
         d->proto=P; d->te=TE; d->dev_id=ID; d->hits=HITS; d->seeded=true; \
-        d->useful=true; snprintf(d->name, NR_MAX_NAME, NAME); \
+        d->useful=true; d->freq=FREQ; snprintf(d->name, NR_MAX_NAME, NAME); \
         snprintf(d->last_seen_date, 12, DATE); }
 
-    SEED(NRProtoHoneywell, 143, 0x5800, 1633, "Alarm System", "May 2");
-    SEED(NRProtoKeeloq, 322, 0x2F9AE15, 24, "Parking Fob", "Apr 27");
+    SEED(NRProtoHoneywell, 143, 0x5800, 1633, "Alarm System", "May 2", 433920000);
+    SEED(NRProtoKeeloq, 322, 0x2F9AE15, 24, "Parking Fob", "Apr 27", 433920000);
     a->devs[a->dev_count-1].sig_count = 2;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "S2 2F9AE1");
     snprintf(a->devs[a->dev_count-1].sigs[1].label, 20, "S3 2F9AE1");
 
-    SEED(NRProtoPT2262, 194, 0x4F, 53, "Remote 4F", "May 2");
+    SEED(NRProtoPT2262, 194, 0x4F, 53, "Remote 4F", "May 2", 433920000);
     NRDev* r = &a->devs[a->dev_count-1];
     r->sigs[0] = (NRSig){{0xFF,0xFE,0x4F,0xFF,0xE0},5,40,"Cmd:E0 (Btn A)"};
     r->sigs[1] = (NRSig){{0x00,0x44,0x80},3,24,"Cmd:22 (Btn B)"};
     r->sig_count = 2;
 
-    SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30");
-    SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "May 2");
-    SEED(NRProtoNexusTH, 650, 0xE0E0, 29, "Weather E0", "May 2");
+    SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30", 433920000);
+    SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "May 2", 433920000);
+    SEED(NRProtoNexusTH, 650, 0xE0E0, 29, "Weather E0", "May 2", 433920000);
     a->devs[a->dev_count-1].sig_count = 1;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "16.5C");
-    SEED(NRProtoBinRAW, 345, 0xB122, 10, "Bell Ctrl", "May 2");
+    SEED(NRProtoBinRAW, 345, 0xB122, 10, "Bell Ctrl", "May 2", 433920000);
+
+    // 868 MHz devices
+    SEED(NRProtoBinRAW, 320, 0x09EC, 19, "Garage", "May 4", 868350000);
+    a->devs[a->dev_count-1].sig_count = 1;
+    snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "CAME 0x9EC");
     #undef SEED
 }
 
@@ -356,7 +361,9 @@ static void nr_rx_start(NRApp* a) {
     if(a->rx_on) return;
     subghz_devices_idle(a->radio);
     subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
-    subghz_devices_set_frequency(a->radio, 433920000);
+    uint32_t freq = (a->freq_mode == NRFreq868) ? 868350000 : 433920000;
+    a->rx_freq = freq;
+    subghz_devices_set_frequency(a->radio, freq);
     a->rx_bit_count = 0; a->rx_te_sum = 0; a->rx_te_n = 0; a->rx_ready = false;
     a->dec_ready = false;
     subghz_receiver_reset(a->receiver);
@@ -380,7 +387,7 @@ static void nr_tx(NRApp* a, NRDev* d, NRSig* s) {
     bool was = a->rx_on; if(was) nr_rx_stop(a);
     subghz_devices_idle(a->radio);
     subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
-    subghz_devices_set_frequency(a->radio, 433920000);
+    subghz_devices_set_frequency(a->radio, d->freq ? d->freq : 433920000);
     uint16_t te = d->te, te3 = te * 3;
     for(int r = 0; r < 6; r++) {
         subghz_devices_set_tx(a->radio);
@@ -483,7 +490,7 @@ static void nr_process(NRApp* a) {
     }
     NRDev* d = &a->devs[slot];
     memset(d, 0, sizeof(NRDev));
-    d->proto = p; d->te = te; d->dev_id = did;
+    d->proto = p; d->te = te; d->dev_id = did; d->freq = a->rx_freq;
     d->hits = 1; d->last_seen = a->tick; d->rssi = rssi;
     NRSig* s = &d->sigs[0];
     s->raw_len = len; s->bits = bits;
@@ -594,7 +601,8 @@ static void nr_draw(Canvas* c, void* ctx) {
             if(a->devs[i].useful &&
                ((!a->devs[i].seeded && a->devs[i].last_seen >= a->session_start) ||
                (a->devs[i].seeded && a->devs[i].confirmed && a->devs[i].last_seen >= a->session_start))) live++;
-        snprintf(buf, sizeof(buf), "%d live", live);
+        const char* fq = (a->rx_freq == 868350000) ? "868" : "433";
+        snprintf(buf, sizeof(buf), "%s %d", fq, live);
         canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
@@ -897,16 +905,18 @@ static void nr_draw(Canvas* c, void* ctx) {
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
 
-        for(uint8_t i = 0; i < 3; i++) {
+        for(uint8_t i = 0; i < 4; i++) {
             uint8_t y = ROW_START + i * ROW_H;
             if(a->sel == i) {
                 canvas_draw_box(c, 0, y, 128, ROW_H);
                 canvas_set_color(c, ColorWhite);
             }
             if(i == 0)
+                snprintf(buf, sizeof(buf), "Freq: [%s MHz]", nr_freq_names[a->freq_mode]);
+            else if(i == 1)
                 snprintf(buf, sizeof(buf), "Protocol Lock: [%s]",
                     a->lock_proto < 0 ? "ALL" : nr_pname[a->lock_proto]);
-            else if(i == 1)
+            else if(i == 2)
                 snprintf(buf, sizeof(buf), "Autosave: [%s]", a->autosave ? "ON" : "OFF");
             else
                 snprintf(buf, sizeof(buf), "Clear Live Data");
@@ -1177,16 +1187,23 @@ int32_t neighborhood_remote_app(void* p) {
                     a->view = NRViewMenu;
                 } else if(ev.key == InputKeyUp && a->sel > 0) {
                     a->sel--;
-                } else if(ev.key == InputKeyDown && a->sel < 2) {
+                } else if(ev.key == InputKeyDown && a->sel < 3) {
                     a->sel++;
                 } else if(ev.key == InputKeyOk) {
                     if(a->sel == 0) {
+                        // Cycle frequency mode
+                        a->freq_mode = (a->freq_mode + 1) % 3;
+                        if(a->rx_on) {
+                            nr_rx_stop(a);
+                            nr_rx_start(a);
+                        }
+                    } else if(a->sel == 1) {
                         // Cycle protocol lock
                         a->lock_proto++;
                         if(a->lock_proto >= (int8_t)NRProtoCount) a->lock_proto = -1;
-                    } else if(a->sel == 1) {
+                    } else if(a->sel == 2) {
                         a->autosave = !a->autosave;
-                    } else if(a->sel == 2 && ev.type == InputTypeLong) {
+                    } else if(a->sel == 3 && ev.type == InputTypeLong) {
                         // Clear live data (keep seeded)
                         uint8_t w = 0;
                         for(uint8_t i = 0; i < a->dev_count; i++) {
@@ -1205,6 +1222,25 @@ int32_t neighborhood_remote_app(void* p) {
 
 tick:
         a->tick++;
+        // Auto freq mode: alternate 433/868 every 10 ticks (500ms)
+        if(a->freq_mode == NRFreqAuto && a->rx_on && (a->tick - a->auto_switch) >= 10) {
+            a->auto_switch = a->tick;
+            uint32_t next = (a->rx_freq == 433920000) ? 868350000 : 433920000;
+            nr_rx_stop(a);
+            a->rx_freq = next;
+            // rx_start uses freq_mode, override for auto
+            subghz_devices_idle(a->radio);
+            subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
+            subghz_devices_set_frequency(a->radio, next);
+            a->rx_bit_count = 0; a->rx_te_sum = 0; a->rx_te_n = 0; a->rx_ready = false;
+            a->dec_ready = false;
+            subghz_receiver_reset(a->receiver);
+            subghz_worker_set_pair_callback(a->worker, (SubGhzWorkerPairCallback)nr_rx_cb);
+            subghz_worker_set_context(a->worker, a);
+            subghz_devices_start_async_rx(a->radio, subghz_worker_rx_callback, a->worker);
+            subghz_worker_start(a->worker);
+            a->rx_on = true;
+        }
         nr_process(a);
         if(a->view == NRViewScan && (a->tick % 8) == 0) a->scan_anim++;
         view_port_update(a->vp);
