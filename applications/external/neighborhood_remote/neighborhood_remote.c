@@ -242,6 +242,10 @@ static void nr_load(NRApp* a) {
                     }
                     d->sig_count++;
                 }
+                // Restore useful flag based on protocol (not saved in file)
+                d->useful = (d->proto != NRProtoBinRAW);
+                if(d->proto == NRProtoNexusTH && d->sig_count > 0 &&
+                   strstr(d->sigs[0].label, "bad frame")) d->useful = false;
                 a->dev_count++;
             }
             furi_string_free(s);
@@ -553,12 +557,15 @@ static void nr_draw(Canvas* c, void* ctx) {
                 snprintf(buf, sizeof(buf), "(%d)", rc);
                 canvas_draw_str(c, 90, y + 8, buf);
             } else if(i == 2) {
-                snprintf(buf, sizeof(buf), "(%d)", a->dev_count);
+                uint8_t uc = 0;
+                for(uint8_t j = 0; j < a->dev_count; j++)
+                    if(a->devs[j].useful) uc++;
+                snprintf(buf, sizeof(buf), "(%d)", uc);
                 canvas_draw_str(c, 90, y + 8, buf);
             } else if(i == 3) {
                 uint8_t sc = 0;
                 for(uint8_t j = 0; j < a->dev_count; j++)
-                    if(nr_is_sensor[a->devs[j].proto]) sc++;
+                    if(nr_is_sensor[a->devs[j].proto] && a->devs[j].useful) sc++;
                 snprintf(buf, sizeof(buf), "(%d)", sc);
                 canvas_draw_str(c, 90, y + 8, buf);
             }
