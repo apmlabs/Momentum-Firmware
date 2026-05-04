@@ -68,7 +68,8 @@ typedef struct {
 
 typedef enum {
     NRViewMenu, NRViewScan, NRViewRemotes,
-    NRViewKnown, NRViewDevice, NRViewSensors, NRViewSettings
+    NRViewKnown, NRViewDevice, NRViewSensors, NRViewSettings,
+    NRViewCameScan
 } NRView;
 
 typedef enum { NRSortHits, NRSortRecent } NRSort;
@@ -122,6 +123,11 @@ typedef struct {
     uint16_t rx_last_te;
     uint32_t tx_flash;
     uint16_t autosave_seq;
+
+    // CAME scan state
+    uint16_t came_code;      // current 12-bit code (0-4095)
+    bool     came_running;   // auto-scan active
+    bool     came_tx;        // currently transmitting
 
     // Firmware protocol decoder result (lock-free handoff from ISR)
     volatile bool dec_ready;

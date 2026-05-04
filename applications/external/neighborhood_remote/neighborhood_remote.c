@@ -190,7 +190,7 @@ static void nr_save(NRApp* a) {
     storage_simply_mkdir(st, NR_SAVE_DIR);
     FlipperFormat* ff = flipper_format_file_alloc(st);
     if(flipper_format_file_open_always(ff, NR_SAVE_FILE)) {
-        flipper_format_write_header_cstr(ff, "Neighborhood DB", 4);
+        flipper_format_write_header_cstr(ff, "Neighborhood DB", 5);
         uint32_t cnt = a->dev_count;
         flipper_format_write_uint32(ff, "Count", &cnt, 1);
         for(uint8_t i = 0; i < a->dev_count; i++) {
@@ -200,6 +200,8 @@ static void nr_save(NRApp* a) {
             flipper_format_write_string_cstr(ff, "Name", d->name);
             flipper_format_write_string_cstr(ff, "Date",
                 d->last_seen_date[0] ? d->last_seen_date : "--");
+            uint32_t fq = d->freq;
+            flipper_format_write_uint32(ff, "Freq", &fq, 1);
             for(uint8_t s = 0; s < d->sig_count; s++) {
                 flipper_format_write_string_cstr(ff, "SL", d->sigs[s].label);
                 uint32_t sb[2] = {d->sigs[s].bits, d->sigs[s].raw_len};
@@ -220,7 +222,7 @@ static void nr_load(NRApp* a) {
     if(flipper_format_file_open_existing(ff, NR_SAVE_FILE)) {
         uint32_t ver = 0;
         FuriString* t = furi_string_alloc();
-        if(flipper_format_read_header(ff, t, &ver) && (ver == 3 || ver == 4)) {
+        if(flipper_format_read_header(ff, t, &ver) && (ver >= 3 && ver <= 5)) {
             uint32_t cnt = 0;
             flipper_format_read_uint32(ff, "Count", &cnt, 1);
             if(cnt > NR_MAX_DEVICES) cnt = NR_MAX_DEVICES;
@@ -241,6 +243,11 @@ static void nr_load(NRApp* a) {
                     if(strcmp(ds, "--") != 0)
                         snprintf(d->last_seen_date, 12, "%s", ds);
                 }
+                if(ver >= 5) {
+                    uint32_t fq = 0;
+                    if(flipper_format_read_uint32(ff, "Freq", &fq, 1)) d->freq = fq;
+                }
+                if(!d->freq) d->freq = 433920000;
                 for(uint8_t j = 0; j < sc; j++) {
                     if(!flipper_format_read_string(ff, "SL", s)) break;
                     snprintf(d->sigs[j].label, 20, "%s", furi_string_get_cstr(s));
@@ -429,6 +436,31 @@ static void nr_tx(NRApp* a, NRDev* d, NRSig* s) {
     if(was) nr_rx_start(a);
 }
 
+// ============== CAME Scan ==============
+static void nr_came_tx_code(NRApp* a, uint16_t code) {
+    a->came_tx = true;
+    bool was = a->rx_on; if(was) nr_rx_stop(a);
+    subghz_devices_idle(a->radio);
+    subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
+    subghz_devices_set_frequency(a->radio, 868350000);
+    uint16_t te = 320;
+    for(int r = 0; r < 3; r++) {
+        subghz_devices_set_tx(a->radio);
+        // CAME header: LOW 47*TE, HIGH TE
+        furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(te * 47);
+        furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(te);
+        for(int8_t i = 11; i >= 0; i--) {
+            uint8_t b = (code >> i) & 1;
+            furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(b ? te*2 : te);
+            furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(b ? te : te*2);
+        }
+        furi_hal_gpio_write(&gpio_cc1101_g0, false);
+        subghz_devices_idle(a->radio); furi_delay_ms(8);
+    }
+    if(was) nr_rx_start(a);
+    a->came_tx = false;
+}
+
 // ============== Process frame ==============
 
 static void nr_process(NRApp* a) {
@@ -578,12 +610,12 @@ static void nr_draw(Canvas* c, void* ctx) {
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
 
-        const char* items[] = {"Scan", "My Remotes", "Known Devices", "Sensors", "Settings"};
+        const char* items[] = {"Scan", "My Remotes", "Known Devices", "Sensors", "Settings", "CAME Scan"};
         uint8_t rc = 0;
         for(uint8_t i = 0; i < a->dev_count; i++)
             if(nr_can_replay(&a->devs[i])) rc++;
         uint8_t mstart = a->menu_sel > 3 ? a->menu_sel - 3 : 0;
-        for(uint8_t i = mstart; i < 5; i++) {
+        for(uint8_t i = mstart; i < 6; i++) {
             uint8_t y = ROW_START + (i - mstart) * ROW_H;
             if(y + ROW_H > FTR_LINE) break;
             if(i == a->menu_sel) {
@@ -949,6 +981,23 @@ static void nr_draw(Canvas* c, void* ctx) {
         }
         canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
         canvas_draw_str(c, 0, FTR_Y, "OK:Change  Bk:Menu");
+    } else if(a->view == NRViewCameScan) {
+        canvas_set_font(c, FontPrimary);
+        canvas_draw_str(c, 0, HDR_Y, "CAME 868 SCAN");
+        canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
+        canvas_set_font(c, FontSecondary);
+        snprintf(buf, sizeof(buf), "Code: 0x%03X (%u/4096)", a->came_code, a->came_code + 1);
+        canvas_draw_str(c, 2, 22, buf);
+        snprintf(buf, sizeof(buf), "Progress: %lu%%", (unsigned long)a->came_code * 100 / 4096);
+        canvas_draw_str(c, 2, 33, buf);
+        if(a->came_tx)
+            canvas_draw_str(c, 2, 44, ">>> TX <<<");
+        else if(a->came_running)
+            canvas_draw_str(c, 2, 44, "Scanning... OK:Pause");
+        else
+            canvas_draw_str(c, 2, 44, "OK:Send  Hold OK:Auto");
+        canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
+        canvas_draw_str(c, 0, FTR_Y, "U/D:Step  Bk:Exit");
     }
 }
 
@@ -1030,7 +1079,7 @@ int32_t neighborhood_remote_app(void* p) {
                     running = false;
                 } else if(ev.key == InputKeyUp && a->menu_sel > 0) {
                     a->menu_sel--;
-                } else if(ev.key == InputKeyDown && a->menu_sel < 4) {
+                } else if(ev.key == InputKeyDown && a->menu_sel < 5) {
                     a->menu_sel++;
                 } else if(ev.key == InputKeyOk) {
                     a->sel = 0;
@@ -1049,6 +1098,8 @@ int32_t neighborhood_remote_app(void* p) {
                         nr_rx_start(a);
                     } else if(a->menu_sel == 4) {
                         a->view = NRViewSettings;
+                    } else if(a->menu_sel == 5) {
+                        a->view = NRViewCameScan;
                     }
                 }
 
@@ -1241,6 +1292,30 @@ int32_t neighborhood_remote_app(void* p) {
                         notification_message(a->notif, &sequence_blink_yellow_100);
                     }
                 }
+            } else if(a->view == NRViewCameScan) {
+                if(ev.key == InputKeyBack) {
+                    a->came_running = false;
+                    a->view = NRViewMenu;
+                } else if(ev.key == InputKeyOk && ev.type == InputTypeLong) {
+                    a->came_running = !a->came_running;
+                } else if(ev.key == InputKeyOk && ev.type == InputTypeShort) {
+                    if(a->came_running) {
+                        a->came_running = false;
+                    } else {
+                        nr_came_tx_code(a, a->came_code);
+                        view_port_update(a->vp);
+                    }
+                } else if(!a->came_running) {
+                    if(ev.key == InputKeyUp) {
+                        uint16_t step = (ev.type == InputTypeLong) ? 100 :
+                                        (ev.type == InputTypeRepeat) ? 10 : 1;
+                        a->came_code = (a->came_code + step) & 0xFFF;
+                    } else if(ev.key == InputKeyDown) {
+                        uint16_t step = (ev.type == InputTypeLong) ? 100 :
+                                        (ev.type == InputTypeRepeat) ? 10 : 1;
+                        a->came_code = (a->came_code - step) & 0xFFF;
+                    }
+                }
             }
         }
 
@@ -1264,6 +1339,13 @@ tick:
             subghz_devices_start_async_rx(a->radio, subghz_worker_rx_callback, a->worker);
             subghz_worker_start(a->worker);
             a->rx_on = true;
+        }
+        // CAME auto-scan: TX current code and advance
+        if(a->view == NRViewCameScan && a->came_running && !a->came_tx) {
+            nr_came_tx_code(a, a->came_code);
+            a->came_code = (a->came_code + 1) & 0xFFF;
+            if(a->came_code == 0) a->came_running = false; // wrapped = done
+            view_port_update(a->vp);
         }
         nr_process(a);
         if(a->view == NRViewScan && (a->tick % 8) == 0) a->scan_anim++;
