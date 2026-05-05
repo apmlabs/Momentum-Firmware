@@ -207,16 +207,22 @@ static void nr_seed(NRApp* a) {
         "80 00 00 00 88 88 88 88 8E 88 8E 88 E8 88 88 88", 194, 9001);
     }
 
-    // Neighbor Gate — Princeton TE=311, 2 buttons, strong RSSI
-    SEED(NRProtoPT2262, 311, 0x87, 2, "Neighbor Gate", "May 5", 433920000, "Princeton");
+    // Neighbor Gate — Princeton TE=311, 4 buttons (3 captured + 1 computed), strong RSSI
+    SEED(NRProtoPT2262, 311, 0x87, 4, "Neighbor Gate", "May 5", 433920000, "Princeton");
     { NRDev* r = &a->devs[a->dev_count-1];
-      snprintf(r->sigs[0].label, 20, "Btn 1");
+      snprintf(r->sigs[0].label, 20, "Open");
       r->sigs[0].file_seq = 9002; r->sigs[0].has_file = true;
-      snprintf(r->sigs[1].label, 20, "Btn 2");
+      snprintf(r->sigs[1].label, 20, "Close");
       r->sigs[1].file_seq = 9003; r->sigs[1].has_file = true;
-      r->sig_count = 2;
+      snprintf(r->sigs[2].label, 20, "Pedestrian");
+      r->sigs[2].file_seq = 9004; r->sigs[2].has_file = true;
+      snprintf(r->sigs[3].label, 20, "Light");
+      r->sigs[3].file_seq = 9005; r->sigs[3].has_file = true;
+      r->sig_count = 4;
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 9C B8 71", 311, 9002);
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 9C B8 72", 311, 9003);
+      nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 9C B8 74", 311, 9004);
+      nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 9C B8 78", 311, 9005);
     }
 
     SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30", 433920000, "");
@@ -230,9 +236,9 @@ static void nr_seed(NRApp* a) {
     SEED(NRProtoBinRAW, 320, 0x09EC, 19, "Garage", "May 4", 868350000, "CAME");
     { NRDev* g = &a->devs[a->dev_count-1];
       snprintf(g->sigs[0].label, 20, "CAME 0x9EC");
-      g->sigs[0].file_seq = 9001; g->sigs[0].has_file = true;
+      g->sigs[0].file_seq = 9006; g->sigs[0].has_file = true;
       g->sig_count = 1;
-      nr_seed_sub(a, "CAME", 868350000, 12, "00 00 00 00 00 00 09 EC", 0, 9001);
+      nr_seed_sub(a, "CAME", 868350000, 12, "00 00 00 00 00 00 09 EC", 0, 9006);
     }
 
     // Dooya Windows — 3 remotes, STOP command each, with .sub files
