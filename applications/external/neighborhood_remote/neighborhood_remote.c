@@ -201,11 +201,22 @@ static void nr_seed(NRApp* a) {
       snprintf(r->sigs[1].label, 20, "Btn B");
       r->sigs[1].file_seq = 9001; r->sigs[1].has_file = true;
       r->sig_count = 2;
-      // BinRAW waveform: sync(1T HIGH + 31T LOW) + data bits (1110=1, 1000=0)
       nr_seed_sub(a, "BinRAW", 433920000, 192,
         "80 00 00 00 EE EE EE EE EE EE EE E8 8E 88 EE EE EE EE EE EE EE E8 88 88", 194, 9000);
       nr_seed_sub(a, "BinRAW", 433920000, 128,
         "80 00 00 00 88 88 88 88 8E 88 8E 88 E8 88 88 88", 194, 9001);
+    }
+
+    // Neighbor Gate — Princeton TE=311, 2 buttons, strong RSSI
+    SEED(NRProtoPT2262, 311, 0x87, 2, "Neighbor Gate", "May 5", 433920000, "Princeton");
+    { NRDev* r = &a->devs[a->dev_count-1];
+      snprintf(r->sigs[0].label, 20, "Btn 1");
+      r->sigs[0].file_seq = 9002; r->sigs[0].has_file = true;
+      snprintf(r->sigs[1].label, 20, "Btn 2");
+      r->sigs[1].file_seq = 9003; r->sigs[1].has_file = true;
+      r->sig_count = 2;
+      nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 9C B8 71", 311, 9002);
+      nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 9C B8 72", 311, 9003);
     }
 
     SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30", 433920000, "");
