@@ -701,15 +701,12 @@ static void nr_draw(Canvas* c, void* ctx) {
                 canvas_draw_str(c, 0, ROW_START + 8, "<");
                 canvas_draw_str_aligned(c, 127, ROW_START + 8, AlignRight, AlignBottom, ">");
             }
-            char age[6]; nr_age_str(age, sizeof(age), a->tick, d->last_seen);
-            const char* when = (d->last_seen == 0 && d->last_seen_date[0]) ?
-                d->last_seen_date : age;
-            snprintf(buf, sizeof(buf), "%lux  %s", (unsigned long)d->hits, when);
-            canvas_draw_str_aligned(c, 64, ROW_START + ROW_H + 7, AlignCenter, AlignBottom, buf);
-            canvas_draw_line(c, 0, ROW_START + ROW_H + 8, 127, ROW_START + ROW_H + 8);
-            for(uint8_t s = 0; s < d->sig_count; s++) {
-                uint8_t y = ROW_START + ROW_H + 10 + s * ROW_H;
-                if(y + ROW_H > FTR_LINE) break;
+            // Signal list with scroll (3 visible rows below device name)
+            uint8_t sig_rows = 3; // rows available for signals
+            uint8_t sig_start = 0;
+            if(a->dev_scroll >= sig_rows) sig_start = a->dev_scroll - sig_rows + 1;
+            for(uint8_t s = sig_start; s < d->sig_count && (s - sig_start) < sig_rows; s++) {
+                uint8_t y = ROW_START + ROW_H + 2 + (s - sig_start) * ROW_H;
                 if(s == a->dev_scroll) {
                     canvas_draw_box(c, 0, y, 128, ROW_H);
                     canvas_set_color(c, ColorWhite);
@@ -796,7 +793,15 @@ static void nr_draw(Canvas* c, void* ctx) {
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
 
-        int8_t line = -(int8_t)a->dev_scroll;
+        // For replayable devices, auto-scroll to keep selected signal visible
+        // Info line takes 1 row, so signals start at row 1. MAX_ROWS=4 means rows 0-3 visible.
+        // Signal s is at row (1 + s). Visible if (1 + s - scroll) < MAX_ROWS && (1 + s - scroll) >= 0
+        uint8_t dev_scroll_offset = 0;
+        if(nr_can_replay(d) && d->sig_count > 0) {
+            uint8_t sel_row = 1 + a->dev_scroll; // row of selected signal (0-based from info line)
+            if(sel_row >= MAX_ROWS) dev_scroll_offset = sel_row - MAX_ROWS + 1;
+        }
+        int8_t line = nr_can_replay(d) ? -(int8_t)dev_scroll_offset : -(int8_t)a->dev_scroll;
         // Protocol-specific info line
         if(d->proto == NRProtoNexusTH) {
             if(line >= 0 && line < MAX_ROWS) {
