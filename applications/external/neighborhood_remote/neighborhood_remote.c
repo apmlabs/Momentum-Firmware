@@ -309,7 +309,7 @@ static void nr_seed(NRApp* a) {
       int16_t raw[450];
       uint16_t n;
       n = nr_dooya_encode_raw(raw, 0xA3C0AD0101000B7AULL, 3); nr_seed_raw_sub(a, 433920000, raw, n, 9020);
-      n = nr_dooya_encode_raw(raw, 0xA3C0AD01010023B2ULL, 3); nr_seed_raw_sub(a, 433920000, raw, n, 9021);
+      n = nr_dooya_encode_raw(raw, 0xA3C0AD0101002392ULL, 3); nr_seed_raw_sub(a, 433920000, raw, n, 9021);
       n = nr_dooya_encode_raw(raw, 0xA3C0AD01010043B2ULL, 3); nr_seed_raw_sub(a, 433920000, raw, n, 9022);
     }
     SEED(NRProtoBinRAW, 366, 0xC09EBD, 0, "Window 3", "May 5", 433920000, "Dooya");
@@ -320,9 +320,9 @@ static void nr_seed(NRApp* a) {
       d->sig_count = 3;
       int16_t raw[450];
       uint16_t n;
-      n = nr_dooya_encode_raw(raw, 0xA3C09EBD01000B27ULL, 3); nr_seed_raw_sub(a, 433920000, raw, n, 9030);
-      n = nr_dooya_encode_raw(raw, 0xA3C09EBD0100233FULL, 3); nr_seed_raw_sub(a, 433920000, raw, n, 9031);
-      n = nr_dooya_encode_raw(raw, 0xA3C09EBD0100435FULL, 3); nr_seed_raw_sub(a, 433920000, raw, n, 9032);
+      n = nr_dooya_encode_raw(raw, 0xA3C09EBD01000B27ULL, 5); nr_seed_raw_sub(a, 433920000, raw, n, 9030);
+      n = nr_dooya_encode_raw(raw, 0xA3C09EBD0100233FULL, 5); nr_seed_raw_sub(a, 433920000, raw, n, 9031);
+      n = nr_dooya_encode_raw(raw, 0xA3C09EBD0100435FULL, 5); nr_seed_raw_sub(a, 433920000, raw, n, 9032);
     }
     #undef SEED
     a->autosave_seq = 100; // start live captures at 100 to avoid seed file conflicts
