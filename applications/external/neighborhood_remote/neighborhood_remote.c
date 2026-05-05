@@ -47,7 +47,7 @@ static void nr_save(NRApp* a) {
     storage_simply_mkdir(st, NR_SAVE_DIR);
     FlipperFormat* ff = flipper_format_file_alloc(st);
     if(flipper_format_file_open_always(ff, NR_SAVE_FILE)) {
-        flipper_format_write_header_cstr(ff, "Neighborhood DB", 6);
+        flipper_format_write_header_cstr(ff, "Neighborhood DB", 7);
         uint32_t cnt = a->dev_count;
         flipper_format_write_uint32(ff, "Count", &cnt, 1);
         for(uint8_t i = 0; i < a->dev_count; i++) {
@@ -61,6 +61,8 @@ static void nr_save(NRApp* a) {
             flipper_format_write_uint32(ff, "Freq", &fq, 1);
             flipper_format_write_string_cstr(ff, "FWProto",
                 d->fw_proto[0] ? d->fw_proto : "--");
+            uint32_t rssi_val = (uint32_t)(int32_t)d->rssi; // store as signed via cast
+            flipper_format_write_uint32(ff, "RSSI", &rssi_val, 1);
             for(uint8_t s = 0; s < d->sig_count; s++) {
                 flipper_format_write_string_cstr(ff, "SL", d->sigs[s].label);
                 uint32_t sf[2] = {d->sigs[s].file_seq, d->sigs[s].has_file};
@@ -79,7 +81,7 @@ static void nr_load(NRApp* a) {
     if(flipper_format_file_open_existing(ff, NR_SAVE_FILE)) {
         uint32_t ver = 0;
         FuriString* t = furi_string_alloc();
-        if(flipper_format_read_header(ff, t, &ver) && ver >= 3 && ver <= 6) {
+        if(flipper_format_read_header(ff, t, &ver) && ver == 7) {
             uint32_t cnt = 0;
             flipper_format_read_uint32(ff, "Count", &cnt, 1);
             if(cnt > NR_MAX_DEVICES) cnt = NR_MAX_DEVICES;
@@ -95,39 +97,29 @@ static void nr_load(NRApp* a) {
                 d->seeded = h[5];
                 if(flipper_format_read_string(ff, "Name", s))
                     snprintf(d->name, NR_MAX_NAME, "%s", furi_string_get_cstr(s));
-                if(ver >= 4 && flipper_format_read_string(ff, "Date", s)) {
+                if(flipper_format_read_string(ff, "Date", s)) {
                     const char* ds = furi_string_get_cstr(s);
                     if(strcmp(ds, "--") != 0)
                         snprintf(d->last_seen_date, 12, "%s", ds);
                 }
-                if(ver >= 5) {
-                    uint32_t fq = 0;
-                    if(flipper_format_read_uint32(ff, "Freq", &fq, 1)) d->freq = fq;
-                }
+                { uint32_t fq = 0;
+                  if(flipper_format_read_uint32(ff, "Freq", &fq, 1)) d->freq = fq; }
                 if(!d->freq) d->freq = 433920000;
-                if(ver >= 6 && flipper_format_read_string(ff, "FWProto", s)) {
+                if(flipper_format_read_string(ff, "FWProto", s)) {
                     const char* fp = furi_string_get_cstr(s);
                     if(strcmp(fp, "--") != 0)
                         snprintf(d->fw_proto, 16, "%s", fp);
                 }
+                { uint32_t rssi_val = 0;
+                  if(flipper_format_read_uint32(ff, "RSSI", &rssi_val, 1))
+                      d->rssi = (int8_t)(int32_t)rssi_val; }
                 for(uint8_t j = 0; j < sc; j++) {
                     if(!flipper_format_read_string(ff, "SL", s)) break;
                     snprintf(d->sigs[j].label, 20, "%s", furi_string_get_cstr(s));
-                    if(ver >= 6) {
-                        uint32_t sf[2] = {0, 0};
-                        if(flipper_format_read_uint32(ff, "SF", sf, 2)) {
-                            d->sigs[j].file_seq = sf[0];
-                            d->sigs[j].has_file = sf[1];
-                        }
-                    } else {
-                        // Old format: skip SB/SD fields
-                        uint32_t sb[2] = {0, 0};
-                        flipper_format_read_uint32(ff, "SB", sb, 2);
-                        if(sb[1] > 0) {
-                            uint8_t dd[32] = {0};
-                            flipper_format_read_hex(ff, "SD", dd, sb[1] > 32 ? 32 : sb[1]);
-                        }
-                        d->sigs[j].has_file = false;
+                    uint32_t sf[2] = {0, 0};
+                    if(flipper_format_read_uint32(ff, "SF", sf, 2)) {
+                        d->sigs[j].file_seq = sf[0];
+                        d->sigs[j].has_file = sf[1];
                     }
                     d->sig_count++;
                 }
