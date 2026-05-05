@@ -591,7 +591,7 @@ static void nr_draw(Canvas* c, void* ctx) {
             } else if(i == 3) {
                 uint8_t sc = 0;
                 for(uint8_t j = 0; j < a->dev_count; j++)
-                    if(nr_is_sensor[a->devs[j].proto] && a->devs[j].useful) sc++;
+                    if(nr_is_sensor[a->devs[j].proto] && a->devs[j].useful && !nr_can_replay(&a->devs[j])) sc++;
                 snprintf(buf, sizeof(buf), "(%d)", sc);
                 canvas_draw_str(c, 90, y + 8, buf);
             }
@@ -831,9 +831,15 @@ static void nr_draw(Canvas* c, void* ctx) {
         for(uint8_t s = 0; s < d->sig_count; s++) {
             if(line >= 0 && line < MAX_ROWS) {
                 uint8_t y = ROW_START + line * ROW_H;
+                bool sel = nr_can_replay(d) && (s == a->dev_scroll);
+                if(sel) {
+                    canvas_draw_box(c, 0, y, 128, ROW_H);
+                    canvas_set_color(c, ColorWhite);
+                }
                 snprintf(buf, sizeof(buf), " %s %s",
-                    nr_can_replay(d) ? ">" : " ", d->sigs[s].label);
+                    (d->sigs[s].has_file) ? ">" : " ", d->sigs[s].label);
                 canvas_draw_str(c, 0, y + 8, buf);
+                if(sel) canvas_set_color(c, ColorBlack);
             }
             line++;
         }
@@ -842,7 +848,7 @@ static void nr_draw(Canvas* c, void* ctx) {
             canvas_draw_line(c, 0, y, 127, y);
         }
         line++;
-        const char* desc = nr_pdesc[d->proto];
+        const char* desc = d->fw_proto[0] ? d->fw_proto : nr_pdesc[d->proto];
         const char* p = desc;
         while(*p) {
             const char* nl = p; while(*nl && *nl != '\n') nl++;
@@ -855,7 +861,9 @@ static void nr_draw(Canvas* c, void* ctx) {
             p = *nl ? nl + 1 : nl;
         }
         canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
-        if(nr_can_replay(d))
+        if(nr_can_replay(d) && d->sig_count > 1)
+            canvas_draw_str(c, 0, FTR_Y, "OK:Send U/D:Btn Bk");
+        else if(nr_can_replay(d))
             canvas_draw_str(c, 0, FTR_Y, "OK:Send LOK:Lock");
         else
             canvas_draw_str(c, 0, FTR_Y, "LOK:Lock U/D:Scroll");
@@ -879,7 +887,7 @@ static void nr_draw(Canvas* c, void* ctx) {
 
         uint8_t si[NR_MAX_DEVICES], sc = 0;
         for(uint8_t i = 0; i < a->dev_count; i++)
-            if(nr_is_sensor[a->devs[i].proto] && a->devs[i].useful) si[sc++] = i;
+            if(nr_is_sensor[a->devs[i].proto] && a->devs[i].useful && !nr_can_replay(&a->devs[i])) si[sc++] = i;
 
         uint8_t start = a->sel > 3 ? a->sel - 3 : 0;
         for(uint8_t j = start; j < sc && (j - start) < MAX_ROWS; j++) {
@@ -1160,7 +1168,7 @@ int32_t neighborhood_remote_app(void* p) {
                     a->lock_proto = -1;
                     nr_rx_stop(a);
                     // Return to Sensors if device is a sensor, else Known Devices
-                    a->view = (d && nr_is_sensor[d->proto]) ? NRViewSensors : NRViewKnown;
+                    a->view = (d && nr_is_sensor[d->proto] && !nr_can_replay(d)) ? NRViewSensors : NRViewKnown;
                     a->sel = a->dev_sel;
                 } else if(ev.key == InputKeyOk && ev.type == InputTypeShort &&
                           d && d->sig_count > 0 && nr_can_replay(d)) {
@@ -1175,10 +1183,19 @@ int32_t neighborhood_remote_app(void* p) {
                         a->lock_proto = -1; // unlock
                     else
                         a->lock_proto = d->proto; // re-lock
-                } else if(ev.key == InputKeyUp && a->dev_scroll > 0) {
-                    a->dev_scroll--;
+                } else if(ev.key == InputKeyUp) {
+                    if(nr_can_replay(d) && d->sig_count > 1) {
+                        // Cycle signal selection for replayable devices
+                        a->dev_scroll = a->dev_scroll > 0 ? a->dev_scroll - 1 : d->sig_count - 1;
+                    } else if(a->dev_scroll > 0) {
+                        a->dev_scroll--;
+                    }
                 } else if(ev.key == InputKeyDown) {
-                    if(a->dev_scroll < 20) a->dev_scroll++;
+                    if(nr_can_replay(d) && d->sig_count > 1) {
+                        a->dev_scroll = (a->dev_scroll + 1) % d->sig_count;
+                    } else if(a->dev_scroll < 20) {
+                        a->dev_scroll++;
+                    }
                 } else if(ev.key == InputKeyLeft && a->dev_sel > 0) {
                     a->dev_sel--; a->dev_scroll = 0;
                     a->lock_proto = a->devs[a->dev_sel].proto; // update lock
@@ -1191,7 +1208,7 @@ int32_t neighborhood_remote_app(void* p) {
                 // Count sensors
                 uint8_t si[NR_MAX_DEVICES], sc = 0;
                 for(uint8_t i = 0; i < a->dev_count; i++)
-                    if(nr_is_sensor[a->devs[i].proto]) si[sc++] = i;
+                    if(nr_is_sensor[a->devs[i].proto] && !nr_can_replay(&a->devs[i])) si[sc++] = i;
 
                 if(ev.key == InputKeyBack) {
                     a->lock_proto = -1;
