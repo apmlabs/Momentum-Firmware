@@ -34,20 +34,9 @@ static int8_t nr_find_dev(NRApp* a, NRProto p, uint32_t id) {
 // Can this device be replayed via firmware transmitter?
 static bool nr_can_replay(NRDev* d) {
     if(d->sig_count == 0) return false;
-    if(!d->sigs[0].has_file) return false;
-    // Static protocols with encoders
-    if(d->proto == NRProtoPT2262 || d->proto == NRProtoEV1527) return true;
-    // CAME on 868 MHz
-    if(d->freq == 868350000 && d->fw_proto[0]) return true;
-    // Any protocol the firmware can encode (check fw_proto name)
-    if(d->fw_proto[0]) {
-        // These firmware protocols have TX encoders
-        const char* tx_protos[] = {"Princeton","CAME","Dooya","NiceFlo","GateTX",
-            "Linear","SMC5326","Holtek_HT12X","BETT","Clemsa","Ansonic",
-            "DoorHan","Marantec","Phoenix_V2","Honeywell_WDB",NULL};
-        for(int i = 0; tx_protos[i]; i++)
-            if(strcmp(d->fw_proto, tx_protos[i]) == 0) return true;
-    }
+    // Need at least one signal with a .sub file
+    for(uint8_t i = 0; i < d->sig_count; i++)
+        if(d->sigs[i].has_file) return true;
     return false;
 }
 
@@ -142,7 +131,7 @@ static void nr_load(NRApp* a) {
                     }
                     d->sig_count++;
                 }
-                d->useful = (d->proto != NRProtoBinRAW);
+                d->useful = (d->proto != NRProtoBinRAW) || d->fw_proto[0];
                 if(d->proto == NRProtoNexusTH && d->sig_count > 0 &&
                    strstr(d->sigs[0].label, "bad") != NULL) d->useful = false;
                 a->dev_count++;
@@ -152,6 +141,34 @@ static void nr_load(NRApp* a) {
         furi_string_free(t);
     }
     flipper_format_free(ff);
+    furi_record_close(RECORD_STORAGE);
+}
+
+// Write a .sub file for a seeded signal
+static void nr_seed_sub(NRApp* a, const char* proto, uint32_t freq, uint8_t bits,
+                        const char* key_hex, uint16_t te, uint16_t seq) {
+    UNUSED(a);
+    Storage* st = furi_record_open(RECORD_STORAGE);
+    storage_simply_mkdir(st, NR_SAVE_DIR);
+    storage_simply_mkdir(st, NR_AUTOSAVE_DIR);
+    char path[80];
+    snprintf(path, sizeof(path), "%s/%04d.sub", NR_AUTOSAVE_DIR, seq);
+    File* file = storage_file_alloc(st);
+    if(storage_file_open(file, path, FSAM_WRITE, FSOM_CREATE_ALWAYS)) {
+        FuriString* s = furi_string_alloc();
+        furi_string_printf(s,
+            "Filetype: Flipper SubGhz Key File\nVersion: 1\n"
+            "Frequency: %lu\nPreset: FuriHalSubGhzPresetOok650Async\n"
+            "Protocol: %s\nBit: %u\nKey: %s\n",
+            (unsigned long)freq, proto, bits, key_hex);
+        if(te && strcmp(proto, "Princeton") == 0) {
+            furi_string_cat_printf(s, "TE: %u\nGuard_time: 31\n", te);
+        }
+        storage_file_write(file, furi_string_get_cstr(s), furi_string_size(s));
+        furi_string_free(s);
+    }
+    storage_file_close(file);
+    storage_file_free(file);
     furi_record_close(RECORD_STORAGE);
 }
 
@@ -169,11 +186,14 @@ static void nr_seed(NRApp* a) {
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "S2 2F9AE1");
     snprintf(a->devs[a->dev_count-1].sigs[1].label, 20, "S3 2F9AE1");
 
+    // Remote 4F — Princeton, 2 buttons with .sub files for replay
     SEED(NRProtoPT2262, 194, 0x4F, 53, "Remote 4F", "May 2", 433920000, "Princeton");
-    NRDev* r = &a->devs[a->dev_count-1];
-    snprintf(r->sigs[0].label, 20, "Cmd:E0 (Btn A)");
-    snprintf(r->sigs[1].label, 20, "Cmd:22 (Btn B)");
-    r->sig_count = 2;
+    { NRDev* r = &a->devs[a->dev_count-1];
+      snprintf(r->sigs[0].label, 20, "Btn B");
+      r->sigs[0].file_seq = 9000; r->sigs[0].has_file = true;
+      r->sig_count = 1;
+      nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 00 44 80", 194, 9000);
+    }
 
     SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30", 433920000, "");
     SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "May 2", 433920000, "BinRAW");
@@ -182,11 +202,48 @@ static void nr_seed(NRApp* a) {
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "16.5C");
     SEED(NRProtoBinRAW, 345, 0xB122, 10, "Bell Ctrl", "May 2", 433920000, "");
 
+    // Garage — CAME 12-bit 868 MHz with .sub file
     SEED(NRProtoBinRAW, 320, 0x09EC, 19, "Garage", "May 4", 868350000, "CAME");
     { NRDev* g = &a->devs[a->dev_count-1];
       snprintf(g->sigs[0].label, 20, "CAME 0x9EC");
-      g->sig_count = 1; }
+      g->sigs[0].file_seq = 9001; g->sigs[0].has_file = true;
+      g->sig_count = 1;
+      nr_seed_sub(a, "CAME", 868350000, 12, "00 00 00 00 00 00 09 EC", 0, 9001);
+    }
+
+    // Dooya Windows — 3 remotes, STOP command each, with .sub files
+    SEED(NRProtoBinRAW, 366, 0xC0A16C, 0, "Window 1", "May 5", 433920000, "Dooya");
+    { NRDev* d = &a->devs[a->dev_count-1];
+      snprintf(d->sigs[0].label, 20, "UP"); d->sigs[0].file_seq = 9010; d->sigs[0].has_file = true;
+      snprintf(d->sigs[1].label, 20, "STOP"); d->sigs[1].file_seq = 9011; d->sigs[1].has_file = true;
+      snprintf(d->sigs[2].label, 20, "DOWN"); d->sigs[2].file_seq = 9012; d->sigs[2].has_file = true;
+      d->sig_count = 3;
+      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 A1 6C 01 00 0B D9", 0, 9010);
+      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 A1 6C 01 00 23 F1", 0, 9011);
+      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 A1 6C 01 00 43 11", 0, 9012);
+    }
+    SEED(NRProtoBinRAW, 366, 0xC0AD01, 0, "Window 2", "May 5", 433920000, "Dooya");
+    { NRDev* d = &a->devs[a->dev_count-1];
+      snprintf(d->sigs[0].label, 20, "UP"); d->sigs[0].file_seq = 9020; d->sigs[0].has_file = true;
+      snprintf(d->sigs[1].label, 20, "STOP"); d->sigs[1].file_seq = 9021; d->sigs[1].has_file = true;
+      snprintf(d->sigs[2].label, 20, "DOWN"); d->sigs[2].file_seq = 9022; d->sigs[2].has_file = true;
+      d->sig_count = 3;
+      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 AD 01 01 00 0B 7A", 0, 9020);
+      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 AD 01 01 00 23 92", 0, 9021);
+      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 AD 01 01 00 43 B2", 0, 9022);
+    }
+    SEED(NRProtoBinRAW, 366, 0xC09EBD, 0, "Window 3", "May 5", 433920000, "Dooya");
+    { NRDev* d = &a->devs[a->dev_count-1];
+      snprintf(d->sigs[0].label, 20, "UP"); d->sigs[0].file_seq = 9030; d->sigs[0].has_file = true;
+      snprintf(d->sigs[1].label, 20, "STOP"); d->sigs[1].file_seq = 9031; d->sigs[1].has_file = true;
+      snprintf(d->sigs[2].label, 20, "DOWN"); d->sigs[2].file_seq = 9032; d->sigs[2].has_file = true;
+      d->sig_count = 3;
+      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 9E BD 01 00 0B 27", 0, 9030);
+      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 9E BD 01 00 23 3F", 0, 9031);
+      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 9E BD 01 00 43 5F", 0, 9032);
+    }
     #undef SEED
+    a->autosave_seq = 100; // start live captures at 100 to avoid seed file conflicts
 }
 
 // ============== RX / Radio / TX ==============
@@ -344,8 +401,7 @@ static void nr_decode_cb(SubGhzReceiver* rx, SubGhzProtocolDecoderBase* db, void
         storage_simply_mkdir(st, NR_SAVE_DIR);
         storage_simply_mkdir(st, NR_AUTOSAVE_DIR);
         char path[80];
-        snprintf(path, sizeof(path), "%s/%s_%04d.sub",
-            NR_AUTOSAVE_DIR, nr_pname[proto], a->autosave_seq);
+        snprintf(path, sizeof(path), "%s/%04d.sub", NR_AUTOSAVE_DIR, a->autosave_seq);
         FlipperFormat* ff = flipper_format_file_alloc(st);
         if(flipper_format_file_open_always(ff, path)) {
             SubGhzRadioPreset preset = {
@@ -408,8 +464,7 @@ static void nr_tx(NRApp* a, NRDev* d, NRSig* s) {
     bool was = a->rx_on; if(was) nr_rx_stop(a);
 
     char path[80];
-    snprintf(path, sizeof(path), "%s/%s_%04d.sub",
-        NR_AUTOSAVE_DIR, nr_pname[d->proto], s->file_seq);
+    snprintf(path, sizeof(path), "%s/%04d.sub", NR_AUTOSAVE_DIR, s->file_seq);
 
     Storage* st = furi_record_open(RECORD_STORAGE);
     FlipperFormat* ff = flipper_format_file_alloc(st);
@@ -1102,9 +1157,10 @@ int32_t neighborhood_remote_app(void* p) {
             } else if(a->view == NRViewDevice) {
                 NRDev* d = a->dev_sel < a->dev_count ? &a->devs[a->dev_sel] : NULL;
                 if(ev.key == InputKeyBack) {
-                    a->lock_proto = -1; // clear lock on exit
+                    a->lock_proto = -1;
                     nr_rx_stop(a);
-                    a->view = NRViewKnown;
+                    // Return to Sensors if device is a sensor, else Known Devices
+                    a->view = (d && nr_is_sensor[d->proto]) ? NRViewSensors : NRViewKnown;
                     a->sel = a->dev_sel;
                 } else if(ev.key == InputKeyOk && ev.type == InputTypeShort &&
                           d && d->sig_count > 0 && nr_can_replay(d)) {
