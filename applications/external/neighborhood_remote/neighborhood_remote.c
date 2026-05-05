@@ -5,98 +5,15 @@
 #include "neighborhood_remote.h"
 #define TAG "Neighborhood"
 
-// ============== Classification ==============
-
-static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* d, uint8_t len) {
-    if(len >= 3) {
-        uint8_t ff = 0;
-        for(uint8_t i = 0; i < len; i++) if(d[i] == 0xFF) ff++;
-        if(ff > len / 3 && te < 70) return NRProtoFSK;
-    }
-    if(te >= 500 && te <= 750 && bits >= 30) return NRProtoNexusTH;
-    if(te >= 220 && te <= 360 && bits >= 64 && bits <= 68) return NRProtoKeeloq;
-    if(te >= 110 && te <= 210 && bits >= 30) return NRProtoHoneywell;
-    if(te >= 70 && te <= 84 && bits >= 50) return NRProtoHoneywell; // half-bit Manchester
-    if(te >= 175 && te <= 215 && bits >= 16 && bits <= 50) return NRProtoPT2262;
-    if(te >= 105 && te <= 130 && bits >= 20 && bits <= 80) return NRProtoEV1527;
-    return NRProtoBinRAW;
-}
-
-static uint32_t nr_dev_id(NRProto p, uint8_t* d, uint8_t len, uint16_t te) {
-    if(p == NRProtoPT2262 && len >= 3) return d[len - 3];
-    if(p == NRProtoEV1527 && len >= 3)
-        return (((uint32_t)d[0]<<16)|((uint32_t)d[1]<<8)|d[2]) >> 4;
-    if(p == NRProtoKeeloq && len >= 8) {
-        uint32_t sn = (((uint32_t)d[4]&0xF)<<24)|((uint32_t)d[5]<<16)|((uint32_t)d[6]<<8)|d[7];
-        return sn >> 4;
-    }
-    if(p == NRProtoHoneywell) return 0x5800;
-    if(p == NRProtoFSK) return 0xF5C0;
-    if(p == NRProtoNexusTH && len >= 1) return 0xE000 | d[0];
-    // Group OOK meter variants (TE 90-109) into single device
-    if(p == NRProtoBinRAW && te >= 90 && te <= 109) return 0xB109;
-    return 0xB100 | ((te / 10) & 0xFF);
-}
-
-static void nr_sig_label(NRProto p, uint8_t* d, uint8_t len, char* out, uint8_t sz) {
-    if(p == NRProtoPT2262 && len >= 3)
-        snprintf(out, sz, "Cmd:%02X", (unsigned)d[len-1]);
-    else if(p == NRProtoEV1527 && len >= 3) {
-        uint8_t cmd = d[2] & 0xF;
-        const char* hint = cmd == 0xF ? "Alrm" : cmd == 0xE ? "Door" :
-            cmd == 0x8 ? "PIR" : cmd == 0x2 ? "BtnB" :
-            cmd == 0x4 ? "BtnC" : cmd == 0x1 ? "BtnA" : "Sens";
-        uint32_t addr = (((uint32_t)d[0]<<16)|((uint32_t)d[1]<<8)|d[2]) >> 4;
-        snprintf(out, sz, "%05lX %s", (unsigned long)addr, hint);
-    } else if(p == NRProtoKeeloq && len >= 8) {
-        uint32_t sn = (((uint32_t)d[4]&0xF)<<24)|((uint32_t)d[5]<<16)|
-                      ((uint32_t)d[6]<<8)|d[7];
-        snprintf(out, sz, "S%u %06lX", (unsigned)(d[7]&0xF), (unsigned long)(sn>>4));
-    } else if(p == NRProtoHoneywell && len >= 4) {
-        // Manchester decode first 64 raw bits → 32 decoded bits
-        uint8_t dec[4] = {0};
-        uint8_t di = 0;
-        for(uint8_t i = 0; i < len * 8 - 1 && di < 32; i += 2) {
-            uint8_t b0 = (d[i/8] >> (7-(i%8))) & 1;
-            uint8_t b1 = (d[(i+1)/8] >> (7-((i+1)%8))) & 1;
-            if(b0 != b1) { // valid Manchester
-                if(b0 == 0) dec[di/8] |= (1 << (7-(di%8))); // 01→1
-                di++;
-            }
-        }
-        if(di >= 24) {
-            // Decoded: [preamble...][channel:4][serial:20][event:8]
-            // Find FFFE preamble or just show last meaningful bytes
-            uint8_t ev = dec[3]; // event byte if we got enough
-            const char* st = (ev & 0x80) ? "OPEN" : (ev & 0x04) ? "hb" :
-                (ev & 0x40) ? "TAMP" : (ev & 0x08) ? "LOBAT" : "ok";
-            snprintf(out, sz, "%s %02X", st, ev);
-        } else {
-            snprintf(out, sz, "Evt %ub", len * 8);
-        }
-    } else if(p == NRProtoNexusTH && len >= 5) {
-        uint16_t raw = ((uint16_t)(d[1] & 0x0F) << 8) | d[2];
-        int16_t temp = (raw > 2048) ? (int16_t)(raw - 4096) : (int16_t)raw;
-        uint8_t humi = ((d[3] & 0x0F) << 4) | (d[4] >> 4);
-        if(temp > -400 && temp < 600 && humi <= 100)
-            snprintf(out, sz, "%d.%dC %d%%", temp / 10, (temp < 0 ? -temp : temp) % 10, humi);
-        else
-            snprintf(out, sz, "bad frame");
-    } else
-        snprintf(out, sz, "TE=%u %db", len > 0 ? d[0] : 0, len * 8);
-}
+// ============== Device ops ==============
 
 static void nr_dev_label(NRDev* d) {
     if(d->name[0]) return;
     if(d->proto == NRProtoPT2262)
         snprintf(d->name, NR_MAX_NAME, "Remote %02X", (unsigned)(d->dev_id & 0xFF));
-    else if(d->proto == NRProtoEV1527) {
-        // Name by device type from first signal's cmd nibble
-        uint8_t cmd = (d->sig_count > 0) ? (d->sigs[0].raw[2] & 0xF) : 0;
-        const char* prefix = (cmd == 0xF || cmd == 0x8) ? "PIR" :
-            (cmd == 0xE) ? "Door" : (cmd == 0x2 || cmd == 0x4 || cmd == 0x1) ? "Rmt" : "Sens";
-        snprintf(d->name, NR_MAX_NAME, "%s %05lX", prefix, (unsigned long)(d->dev_id & 0xFFFFF));
-    } else if(d->proto == NRProtoKeeloq)
+    else if(d->proto == NRProtoEV1527)
+        snprintf(d->name, NR_MAX_NAME, "Sens %05lX", (unsigned long)(d->dev_id & 0xFFFFF));
+    else if(d->proto == NRProtoKeeloq)
         snprintf(d->name, NR_MAX_NAME, "Fob %07lX", (unsigned long)(d->dev_id & 0xFFFFFFF));
     else if(d->proto == NRProtoHoneywell)
         snprintf(d->name, NR_MAX_NAME, "Alarm System");
@@ -105,10 +22,8 @@ static void nr_dev_label(NRDev* d) {
     else if(d->proto == NRProtoNexusTH)
         snprintf(d->name, NR_MAX_NAME, "Weather %02X", (unsigned)(d->dev_id & 0xFF));
     else
-        snprintf(d->name, NR_MAX_NAME, "Dev TE=%u", d->te);
+        snprintf(d->name, NR_MAX_NAME, "Dev %04lX", (unsigned long)(d->dev_id & 0xFFFF));
 }
-
-// ============== Device ops ==============
 
 static int8_t nr_find_dev(NRApp* a, NRProto p, uint32_t id) {
     for(uint8_t i = 0; i < a->dev_count; i++)
@@ -116,71 +31,24 @@ static int8_t nr_find_dev(NRApp* a, NRProto p, uint32_t id) {
     return -1;
 }
 
-// Can this device be replayed? PT2262/EV1527 always, plus CAME-style 868 MHz
+// Can this device be replayed via firmware transmitter?
 static bool nr_can_replay(NRDev* d) {
-    if(nr_replayable[d->proto]) return true;
-    // CAME 12-bit on 868 MHz: stored as BinRAW but has known fixed encoding
-    if(d->freq == 868350000 && d->sig_count > 0 && d->sigs[0].bits == 12) return true;
+    if(d->sig_count == 0) return false;
+    if(!d->sigs[0].has_file) return false;
+    // Static protocols with encoders
+    if(d->proto == NRProtoPT2262 || d->proto == NRProtoEV1527) return true;
+    // CAME on 868 MHz
+    if(d->freq == 868350000 && d->fw_proto[0]) return true;
+    // Any protocol the firmware can encode (check fw_proto name)
+    if(d->fw_proto[0]) {
+        // These firmware protocols have TX encoders
+        const char* tx_protos[] = {"Princeton","CAME","Dooya","NiceFlo","GateTX",
+            "Linear","SMC5326","Holtek_HT12X","BETT","Clemsa","Ansonic",
+            "DoorHan","Marantec","Phoenix_V2","Honeywell_WDB",NULL};
+        for(int i = 0; tx_protos[i]; i++)
+            if(strcmp(d->fw_proto, tx_protos[i]) == 0) return true;
+    }
     return false;
-}
-
-static int8_t nr_find_sig(NRDev* d, uint8_t* data, uint8_t len) {
-    for(uint8_t i = 0; i < d->sig_count; i++)
-        if(d->sigs[i].raw_len == len && memcmp(d->sigs[i].raw, data, len) == 0) return i;
-    return -1;
-}
-
-static void nr_autosave_sig(NRApp* a, NRDev* d, NRSig* s) {
-    if(!a->autosave) return;
-    Storage* st = furi_record_open(RECORD_STORAGE);
-    storage_simply_mkdir(st, NR_SAVE_DIR);
-    storage_simply_mkdir(st, NR_AUTOSAVE_DIR);
-    char path[80];
-    // Save .txt with our decoded info + firmware decode string
-    snprintf(path, sizeof(path), "%s/%s_%04d.txt",
-        NR_AUTOSAVE_DIR, nr_pname[d->proto], a->autosave_seq);
-    FlipperFormat* ff = flipper_format_file_alloc(st);
-    if(flipper_format_file_open_always(ff, path)) {
-        flipper_format_write_header_cstr(ff, "Neighborhood Signal", 1);
-        flipper_format_write_string_cstr(ff, "Proto", nr_pname[d->proto]);
-        flipper_format_write_string_cstr(ff, "Device", d->name);
-        flipper_format_write_string_cstr(ff, "Signal", s->label);
-        uint32_t v[2] = {d->te, s->bits};
-        flipper_format_write_uint32(ff, "Info", v, 2);
-        if(s->raw_len) flipper_format_write_hex(ff, "Data", s->raw, s->raw_len);
-        // Append firmware protocol decode if available
-        if(a->dec_proto[0]) {
-            flipper_format_write_string_cstr(ff, "FW_Proto", a->dec_proto);
-            flipper_format_write_string_cstr(ff, "FW_Decode", a->dec_str);
-        }
-    }
-    flipper_format_free(ff);
-    // Save .sub — BinRAW fallback (always, for replay/archive)
-    snprintf(path, sizeof(path), "%s/%s_%04d.sub",
-        NR_AUTOSAVE_DIR, nr_pname[d->proto], a->autosave_seq);
-    File* file = storage_file_alloc(st);
-    if(storage_file_open(file, path, FSAM_WRITE, FSOM_CREATE_ALWAYS)) {
-        FuriString* line = furi_string_alloc();
-        furi_string_printf(line,
-            "Filetype: Flipper SubGhz Key File\n"
-            "Version: 1\n"
-            "Frequency: %lu\n"
-            "Preset: FuriHalSubGhzPresetOok650Async\n"
-            "Protocol: BinRAW\n"
-            "Bit: %u\n"
-            "TE: %u\n"
-            "Bit_RAW: %u\nData_RAW:",
-            (unsigned long)(d->freq ? d->freq : a->rx_freq), s->bits, d->te, s->bits);
-        for(uint8_t i = 0; i < s->raw_len; i++)
-            furi_string_cat_printf(line, " %02X", s->raw[i]);
-        furi_string_cat(line, "\n");
-        storage_file_write(file, furi_string_get_cstr(line), furi_string_size(line));
-        furi_string_free(line);
-    }
-    storage_file_close(file);
-    storage_file_free(file);
-    a->autosave_seq++;
-    furi_record_close(RECORD_STORAGE);
 }
 
 // ============== Save/Load DB ==============
@@ -190,7 +58,7 @@ static void nr_save(NRApp* a) {
     storage_simply_mkdir(st, NR_SAVE_DIR);
     FlipperFormat* ff = flipper_format_file_alloc(st);
     if(flipper_format_file_open_always(ff, NR_SAVE_FILE)) {
-        flipper_format_write_header_cstr(ff, "Neighborhood DB", 5);
+        flipper_format_write_header_cstr(ff, "Neighborhood DB", 6);
         uint32_t cnt = a->dev_count;
         flipper_format_write_uint32(ff, "Count", &cnt, 1);
         for(uint8_t i = 0; i < a->dev_count; i++) {
@@ -202,12 +70,12 @@ static void nr_save(NRApp* a) {
                 d->last_seen_date[0] ? d->last_seen_date : "--");
             uint32_t fq = d->freq;
             flipper_format_write_uint32(ff, "Freq", &fq, 1);
+            flipper_format_write_string_cstr(ff, "FWProto",
+                d->fw_proto[0] ? d->fw_proto : "--");
             for(uint8_t s = 0; s < d->sig_count; s++) {
                 flipper_format_write_string_cstr(ff, "SL", d->sigs[s].label);
-                uint32_t sb[2] = {d->sigs[s].bits, d->sigs[s].raw_len};
-                flipper_format_write_uint32(ff, "SB", sb, 2);
-                if(d->sigs[s].raw_len > 0)
-                    flipper_format_write_hex(ff, "SD", d->sigs[s].raw, d->sigs[s].raw_len);
+                uint32_t sf[2] = {d->sigs[s].file_seq, d->sigs[s].has_file};
+                flipper_format_write_uint32(ff, "SF", sf, 2);
             }
         }
     }
@@ -222,7 +90,7 @@ static void nr_load(NRApp* a) {
     if(flipper_format_file_open_existing(ff, NR_SAVE_FILE)) {
         uint32_t ver = 0;
         FuriString* t = furi_string_alloc();
-        if(flipper_format_read_header(ff, t, &ver) && (ver >= 3 && ver <= 5)) {
+        if(flipper_format_read_header(ff, t, &ver) && ver >= 3 && ver <= 6) {
             uint32_t cnt = 0;
             flipper_format_read_uint32(ff, "Count", &cnt, 1);
             if(cnt > NR_MAX_DEVICES) cnt = NR_MAX_DEVICES;
@@ -248,31 +116,39 @@ static void nr_load(NRApp* a) {
                     if(flipper_format_read_uint32(ff, "Freq", &fq, 1)) d->freq = fq;
                 }
                 if(!d->freq) d->freq = 433920000;
+                if(ver >= 6 && flipper_format_read_string(ff, "FWProto", s)) {
+                    const char* fp = furi_string_get_cstr(s);
+                    if(strcmp(fp, "--") != 0)
+                        snprintf(d->fw_proto, 16, "%s", fp);
+                }
                 for(uint8_t j = 0; j < sc; j++) {
                     if(!flipper_format_read_string(ff, "SL", s)) break;
                     snprintf(d->sigs[j].label, 20, "%s", furi_string_get_cstr(s));
-                    uint32_t sb[2] = {0, 0};
-                    if(!flipper_format_read_uint32(ff, "SB", sb, 2)) break;
-                    d->sigs[j].bits = sb[0];
-                    uint8_t rl = sb[1]; if(rl > 32) rl = 32;
-                    if(rl > 0) {
-                        uint8_t dd[32] = {0};
-                        if(flipper_format_read_hex(ff, "SD", dd, rl)) {
-                            memcpy(d->sigs[j].raw, dd, rl);
-                            d->sigs[j].raw_len = rl;
+                    if(ver >= 6) {
+                        uint32_t sf[2] = {0, 0};
+                        if(flipper_format_read_uint32(ff, "SF", sf, 2)) {
+                            d->sigs[j].file_seq = sf[0];
+                            d->sigs[j].has_file = sf[1];
                         }
+                    } else {
+                        // Old format: skip SB/SD fields
+                        uint32_t sb[2] = {0, 0};
+                        flipper_format_read_uint32(ff, "SB", sb, 2);
+                        if(sb[1] > 0) {
+                            uint8_t dd[32] = {0};
+                            flipper_format_read_hex(ff, "SD", dd, sb[1] > 32 ? 32 : sb[1]);
+                        }
+                        d->sigs[j].has_file = false;
                     }
                     d->sig_count++;
                 }
-                // Restore useful flag based on protocol (not saved in file)
                 d->useful = (d->proto != NRProtoBinRAW);
                 if(d->proto == NRProtoNexusTH && d->sig_count > 0 &&
-                   strstr(d->sigs[0].label, "bad frame")) d->useful = false;
+                   strstr(d->sigs[0].label, "bad") != NULL) d->useful = false;
                 a->dev_count++;
             }
             furi_string_free(s);
         }
-        // If ver != 3, old format — ignore, seed will populate
         furi_string_free(t);
     }
     flipper_format_free(ff);
@@ -280,98 +156,227 @@ static void nr_load(NRApp* a) {
 }
 
 static void nr_seed(NRApp* a) {
-    if(a->dev_count > 0) return; // already have data
-    #define SEED(P,TE,ID,HITS,NAME,DATE,FREQ) { \
+    if(a->dev_count > 0) return;
+    #define SEED(P,TE,ID,HITS,NAME,DATE,FREQ,FWPROTO) { \
         NRDev* d = &a->devs[a->dev_count++]; memset(d,0,sizeof(NRDev)); \
         d->proto=P; d->te=TE; d->dev_id=ID; d->hits=HITS; d->seeded=true; \
         d->useful=true; d->freq=FREQ; snprintf(d->name, NR_MAX_NAME, NAME); \
-        snprintf(d->last_seen_date, 12, DATE); }
+        snprintf(d->last_seen_date, 12, DATE); if(FWPROTO[0]) snprintf(d->fw_proto, 16, "%s", FWPROTO); }
 
-    SEED(NRProtoHoneywell, 143, 0x5800, 1633, "Alarm System", "May 2", 433920000);
-    SEED(NRProtoKeeloq, 322, 0x2F9AE15, 24, "Parking Fob", "Apr 27", 433920000);
+    SEED(NRProtoHoneywell, 143, 0x5800, 1633, "Alarm System", "May 2", 433920000, "Honeywell");
+    SEED(NRProtoKeeloq, 322, 0x2F9AE15, 24, "Parking Fob", "Apr 27", 433920000, "KeeLoq");
     a->devs[a->dev_count-1].sig_count = 2;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "S2 2F9AE1");
     snprintf(a->devs[a->dev_count-1].sigs[1].label, 20, "S3 2F9AE1");
 
-    SEED(NRProtoPT2262, 194, 0x4F, 53, "Remote 4F", "May 2", 433920000);
+    SEED(NRProtoPT2262, 194, 0x4F, 53, "Remote 4F", "May 2", 433920000, "Princeton");
     NRDev* r = &a->devs[a->dev_count-1];
-    r->sigs[0] = (NRSig){{0xFF,0xFE,0x4F,0xFF,0xE0},5,40,"Cmd:E0 (Btn A)"};
-    r->sigs[1] = (NRSig){{0x00,0x44,0x80},3,24,"Cmd:22 (Btn B)"};
+    snprintf(r->sigs[0].label, 20, "Cmd:E0 (Btn A)");
+    snprintf(r->sigs[1].label, 20, "Cmd:22 (Btn B)");
     r->sig_count = 2;
 
-    SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30", 433920000);
-    SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "May 2", 433920000);
-    SEED(NRProtoNexusTH, 650, 0xE0E0, 29, "Weather E0", "May 2", 433920000);
+    SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30", 433920000, "");
+    SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "May 2", 433920000, "BinRAW");
+    SEED(NRProtoNexusTH, 650, 0xE0E0, 29, "Weather E0", "May 2", 433920000, "NexusTH");
     a->devs[a->dev_count-1].sig_count = 1;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "16.5C");
-    SEED(NRProtoBinRAW, 345, 0xB122, 10, "Bell Ctrl", "May 2", 433920000);
+    SEED(NRProtoBinRAW, 345, 0xB122, 10, "Bell Ctrl", "May 2", 433920000, "");
 
-    // 868 MHz devices
-    SEED(NRProtoBinRAW, 320, 0x09EC, 19, "Garage", "May 4", 868350000);
+    SEED(NRProtoBinRAW, 320, 0x09EC, 19, "Garage", "May 4", 868350000, "CAME");
     { NRDev* g = &a->devs[a->dev_count-1];
-      g->sigs[0] = (NRSig){{0x9E,0xC0},2,12,"CAME 0x9EC"};
+      snprintf(g->sigs[0].label, 20, "CAME 0x9EC");
       g->sig_count = 1; }
     #undef SEED
 }
 
 // ============== RX / Radio / TX ==============
 
-// Firmware protocol decode callback — fires from worker thread
+// Map firmware protocol name to our NRProto enum
+static NRProto nr_map_proto(const char* name) {
+    if(strcmp(name, "Princeton") == 0) return NRProtoPT2262;
+    if(strcmp(name, "KeeLoq") == 0) return NRProtoKeeloq;
+    if(strcmp(name, "Honeywell") == 0 || strcmp(name, "Honeywell_WDB") == 0) return NRProtoHoneywell;
+    if(strstr(name, "Nexus") != NULL) return NRProtoNexusTH;
+    if(strcmp(name, "SMC5326") == 0 || strcmp(name, "GateTX") == 0 ||
+       strcmp(name, "Linear") == 0 || strcmp(name, "NiceFlo") == 0) return NRProtoEV1527;
+    return NRProtoBinRAW;
+}
+
+// Extract device ID from firmware decode string
+static uint32_t nr_extract_id(const char* proto, const char* ds, uint16_t* te_out) {
+    if(strcmp(proto, "Princeton") == 0) {
+        char* kp = strstr(ds, "Key:0x");
+        char* tp = strstr(ds, "TE:");
+        if(te_out && tp) *te_out = atoi(tp + 3);
+        if(kp) { uint32_t k = strtoul(kp + 6, NULL, 16); return (k >> 4) & 0xFF; }
+    } else if(strcmp(proto, "KeeLoq") == 0) {
+        char* sp = strstr(ds, "Sn:0x");
+        if(te_out) *te_out = 300;
+        if(sp) return strtoul(sp + 5, NULL, 16) & 0xFFFFFFF;
+    } else if(strcmp(proto, "Honeywell") == 0 || strcmp(proto, "Honeywell_WDB") == 0) {
+        if(te_out) *te_out = 143;
+        return 0x5800;
+    } else if(strstr(proto, "Nexus") != NULL) {
+        char* ip = strstr(ds, "Id:");
+        if(te_out) *te_out = 500;
+        if(ip) return 0xE000 | (strtoul(ip + 3, NULL, 16) & 0xFF);
+        return 0xE000;
+    } else if(strncmp(proto, "CAME", 4) == 0) {
+        char* kp = strstr(ds, "Key:0x");
+        if(te_out) *te_out = 320;
+        if(kp) return strtoul(kp + 6, NULL, 16) & 0xFFFF;
+    } else if(strcmp(proto, "Dooya") == 0) {
+        char* kp = strstr(ds, "Key:0x");
+        if(te_out) *te_out = 366;
+        if(kp) { uint64_t k = strtoull(kp + 6, NULL, 16); return (k >> 24) & 0xFFFFFF; }
+    } else if(strcmp(proto, "BinRAW") == 0) {
+        char* tp = strstr(ds, "TE:");
+        uint16_t te = tp ? atoi(tp + 3) : 100;
+        if(te_out) *te_out = te;
+        if(te >= 90 && te <= 109) return 0xB109;
+        return 0xB100 | ((te / 10) & 0xFF);
+    }
+    if(te_out) *te_out = 200;
+    return 0xB100;
+}
+
+// Extract signal label from firmware decode string
+static void nr_extract_label(const char* proto, const char* ds, char* out, uint8_t sz) {
+    if(strcmp(proto, "Princeton") == 0) {
+        char* kp = strstr(ds, "Key:0x");
+        if(kp) { uint32_t k = strtoul(kp + 6, NULL, 16); snprintf(out, sz, "Cmd:%02X", (unsigned)(k & 0xFF)); return; }
+    } else if(strcmp(proto, "KeeLoq") == 0) {
+        char* sp = strstr(ds, "Sn:0x");
+        char* bp = strstr(ds, "Btn:0x");
+        if(sp) { uint32_t sn = strtoul(sp + 5, NULL, 16); uint8_t btn = bp ? strtoul(bp + 6, NULL, 16) : 0;
+            snprintf(out, sz, "S%u %06lX", btn, (unsigned long)(sn & 0xFFFFFFF)); return; }
+    } else if(strncmp(proto, "CAME", 4) == 0) {
+        char* kp = strstr(ds, "Key:0x");
+        if(kp) { snprintf(out, sz, "CAME 0x%lX", (unsigned long)strtoul(kp + 6, NULL, 16)); return; }
+    } else if(strcmp(proto, "Dooya") == 0) {
+        char* kp = strstr(ds, "Key:0x");
+        if(kp) { snprintf(out, sz, "Dooya %s", kp + 6); out[sz-1] = 0;
+            char* nl = strchr(out, '\r'); if(nl) *nl = 0; return; }
+    } else if(strstr(proto, "Nexus") != NULL) {
+        char* tp = strstr(ds, "Temp:");
+        if(tp) { snprintf(out, sz, "%.15s", tp + 5); char* nl = strchr(out, '\r'); if(nl) *nl = 0; return; }
+    } else if(strcmp(proto, "Honeywell") == 0) {
+        snprintf(out, sz, "event"); return;
+    }
+    snprintf(out, sz, "%.15s", proto);
+}
+
+// Firmware protocol decode callback — PRIMARY signal handler
+// Runs in worker thread. Does device management + autosave.
 static void nr_decode_cb(SubGhzReceiver* rx, SubGhzProtocolDecoderBase* db, void* ctx) {
     UNUSED(rx);
     NRApp* a = ctx;
-    if(a->dec_ready) return; // drop if previous not processed
-    strncpy(a->dec_proto, db->protocol->name, sizeof(a->dec_proto) - 1);
-    FuriString* text = furi_string_alloc();
-    subghz_protocol_decoder_base_get_string(db, text);
-    strncpy(a->dec_str, furi_string_get_cstr(text), sizeof(a->dec_str) - 1);
-    furi_string_free(text);
-    a->dec_ready = true;
-}
 
-static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
-    NRApp* a = ctx;
-    // Feed firmware protocol decoders
-    subghz_receiver_decode(a->receiver, level, duration);
-    if(level) { a->rx_pulse = duration; return; }
-    uint32_t h = a->rx_pulse, l = duration;
-    if(l > 5000) {
-        if(a->rx_bit_count >= 24 && a->rx_te_n > 0 && !a->rx_ready) {
-            uint16_t te = a->rx_te_sum / a->rx_te_n;
-            uint8_t bl = (a->rx_bit_count + 7) / 8; if(bl > 32) bl = 32;
-            uint8_t tmp[32];
-            memset(tmp, 0, 32);
-            for(uint16_t i = 0; i < a->rx_bit_count && i < 256; i++)
-                if(a->rx_bits[i]) tmp[i/8] |= (1 << (7-(i%8)));
-            // Repeat validation: EV1527/PT2262 range requires 2 identical frames
-            bool need_repeat = (te >= 105 && te <= 215 && a->rx_bit_count <= 80);
-            if(need_repeat) {
-                bool match = (bl == a->rx_last_len && bl > 0 &&
-                    abs((int)te - (int)a->rx_last_te) < 20 &&
-                    memcmp(tmp, a->rx_last, bl) == 0);
-                memcpy(a->rx_last, tmp, bl);
-                a->rx_last_len = bl;
-                a->rx_last_te = te;
-                if(!match) { // first frame — store and wait for repeat
-                    a->rx_bit_count = 0; a->rx_te_sum = 0; a->rx_te_n = 0;
-                    return;
-                }
-            }
-            memcpy(a->rx_fdata, tmp, 32);
-            a->rx_fte = te; a->rx_fbits = a->rx_bit_count; a->rx_flen = bl;
-            a->rx_ready = true;
-        }
-        a->rx_bit_count = 0; a->rx_te_sum = 0; a->rx_te_n = 0;
+    // Dedup: same hash within 600ms = skip
+    uint32_t hash = subghz_protocol_decoder_base_get_hash_data_long(db);
+    uint32_t now = furi_get_tick();
+    if(hash == a->last_decode_hash && (now - a->last_decode_tick) < 600) {
+        a->last_decode_tick = now;
         return;
     }
-    if(h < 50 || l < 50) return;
-    uint32_t sh = h < l ? h : l;
-    if(sh < 800) { a->rx_te_sum += sh; a->rx_te_n++; }
-    if(a->rx_bit_count < 128) {
-        // Universal bit decision: compare pulse vs gap duration
-        // Works for all PWM ratios (1:2 CAME, 1:3 PT2262, gap-based NexusTH)
-        a->rx_bits[a->rx_bit_count++] = (h >= l) ? 1 : 0;
+    a->last_decode_hash = hash;
+    a->last_decode_tick = now;
+
+    const char* pn = db->protocol->name;
+    NRProto proto = nr_map_proto(pn);
+
+    // Get decode string for field extraction
+    FuriString* text = furi_string_alloc();
+    subghz_protocol_decoder_base_get_string(db, text);
+    const char* ds = furi_string_get_cstr(text);
+
+    uint16_t te = 0;
+    uint32_t dev_id = nr_extract_id(pn, ds, &te);
+    char label[20] = {0};
+    nr_extract_label(pn, ds, label, 20);
+
+    // Protocol lock filter
+    if(a->lock_proto >= 0 && proto != (NRProto)a->lock_proto) { furi_string_free(text); return; }
+
+    // Find or create device
+    int8_t di = nr_find_dev(a, proto, dev_id);
+    // CAME special: match garage seed
+    if(di < 0 && proto == NRProtoBinRAW && strncmp(pn, "CAME", 4) == 0) {
+        int8_t gi = nr_find_dev(a, NRProtoBinRAW, 0x09EC);
+        if(gi >= 0 && dev_id == 0x09EC) di = gi;
     }
+
+    if(di >= 0) {
+        NRDev* d = &a->devs[di];
+        if((a->tick - d->last_seen) >= NR_HIT_COOLDOWN) d->hits++;
+        d->last_seen = a->tick;
+        if(d->seeded) d->confirmed = true;
+        if(!d->fw_proto[0]) snprintf(d->fw_proto, 16, "%s", pn);
+        // Update first signal label
+        if(label[0] && d->sig_count > 0) snprintf(d->sigs[0].label, 20, "%s", label);
+        // For replayable: store unique signals
+        if(nr_can_replay(d) && label[0] && d->sig_count < NR_MAX_SIGS) {
+            bool found = false;
+            for(uint8_t i = 0; i < d->sig_count; i++)
+                if(strcmp(d->sigs[i].label, label) == 0) { found = true; break; }
+            if(!found) {
+                NRSig* ns = &d->sigs[d->sig_count++];
+                memset(ns, 0, sizeof(NRSig));
+                snprintf(ns->label, 20, "%s", label);
+            }
+        }
+    } else if(a->dev_count < NR_MAX_DEVICES) {
+        NRDev* d = &a->devs[a->dev_count];
+        memset(d, 0, sizeof(NRDev));
+        d->proto = proto; d->te = te; d->dev_id = dev_id;
+        d->freq = a->rx_freq; d->hits = 1; d->last_seen = a->tick;
+        d->useful = (proto != NRProtoBinRAW);
+        snprintf(d->fw_proto, 16, "%s", pn);
+        if(label[0]) { snprintf(d->sigs[0].label, 20, "%s", label); d->sig_count = 1; }
+        nr_dev_label(d);
+        di = a->dev_count++;
+        notification_message(a->notif, &sequence_blink_cyan_10);
+    }
+
+    // Autosave: serialize proper .sub file (skip Honeywell spam)
+    if(di >= 0 && a->autosave && proto != NRProtoHoneywell) {
+        Storage* st = furi_record_open(RECORD_STORAGE);
+        storage_simply_mkdir(st, NR_SAVE_DIR);
+        storage_simply_mkdir(st, NR_AUTOSAVE_DIR);
+        char path[80];
+        snprintf(path, sizeof(path), "%s/%s_%04d.sub",
+            NR_AUTOSAVE_DIR, nr_pname[proto], a->autosave_seq);
+        FlipperFormat* ff = flipper_format_file_alloc(st);
+        if(flipper_format_file_open_always(ff, path)) {
+            SubGhzRadioPreset preset = {
+                .frequency = a->rx_freq,
+                .name = furi_string_alloc_set("AM650"),
+                .data = NULL, .data_size = 0,
+            };
+            subghz_protocol_decoder_base_serialize(db, ff, &preset);
+            furi_string_free(preset.name);
+            // Mark signal as having a file for replay
+            NRDev* d = &a->devs[di];
+            if(d->sig_count > 0) {
+                // Update last signal's file reference
+                uint8_t si = d->sig_count - 1;
+                d->sigs[si].file_seq = a->autosave_seq;
+                d->sigs[si].has_file = true;
+            }
+        }
+        flipper_format_free(ff);
+        a->autosave_seq++;
+        furi_record_close(RECORD_STORAGE);
+    }
+
+    furi_string_free(text);
+    a->rx_new_signal = true;
+}
+
+// RX callback — just feeds firmware decoders
+static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
+    NRApp* a = ctx;
+    subghz_receiver_decode(a->receiver, level, duration);
 }
 
 static void nr_rx_start(NRApp* a) {
@@ -381,8 +386,6 @@ static void nr_rx_start(NRApp* a) {
     uint32_t freq = (a->freq_mode == NRFreq868) ? 868350000 : 433920000;
     a->rx_freq = freq;
     subghz_devices_set_frequency(a->radio, freq);
-    a->rx_bit_count = 0; a->rx_te_sum = 0; a->rx_te_n = 0; a->rx_ready = false;
-    a->dec_ready = false;
     subghz_receiver_reset(a->receiver);
     subghz_worker_set_pair_callback(a->worker, (SubGhzWorkerPairCallback)nr_rx_cb);
     subghz_worker_set_context(a->worker, a);
@@ -399,41 +402,42 @@ static void nr_rx_stop(NRApp* a) {
     a->rx_on = false;
 }
 
+// TX: replay signal from saved .sub file using firmware transmitter
 static void nr_tx(NRApp* a, NRDev* d, NRSig* s) {
-    if(!s->raw_len) return;
+    if(!s->has_file) return;
     bool was = a->rx_on; if(was) nr_rx_stop(a);
-    subghz_devices_idle(a->radio);
-    subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
-    subghz_devices_set_frequency(a->radio, d->freq ? d->freq : 433920000);
-    uint16_t te = d->te;
-    // Detect CAME-style encoding: TE ~320, 12 bits, on 868 MHz
-    bool is_came = (d->freq == 868350000 && s->bits == 12 && te >= 280 && te <= 360);
-    for(int r = 0; r < 6; r++) {
-        subghz_devices_set_tx(a->radio);
-        if(is_came) {
-            // CAME: header = LOW 47*TE, then HIGH TE
-            furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(te * 47);
-            furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(te);
-            for(uint16_t i = 0; i < s->bits; i++) {
-                uint8_t b = (s->raw[i/8] >> (7-(i%8))) & 1;
-                // CAME: 1=LOW long+HIGH short, 0=LOW short+HIGH long
-                furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(b ? te*2 : te);
-                furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(b ? te : te*2);
-            }
-        } else {
-            // PT2262/EV1527: sync = HIGH TE, LOW 31*TE
-            furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(te);
-            furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(te * 31);
-            uint16_t te3 = te * 3;
-            for(uint16_t i = 0; i < s->bits && i < 256; i++) {
-                uint8_t b = (s->raw[i/8] >> (7-(i%8))) & 1;
-                furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(b ? te3 : te);
-                furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(b ? te : te3);
+
+    char path[80];
+    snprintf(path, sizeof(path), "%s/%s_%04d.sub",
+        NR_AUTOSAVE_DIR, nr_pname[d->proto], s->file_seq);
+
+    Storage* st = furi_record_open(RECORD_STORAGE);
+    FlipperFormat* ff = flipper_format_file_alloc(st);
+    if(flipper_format_file_open_existing(ff, path)) {
+        FuriString* proto_name = furi_string_alloc();
+        if(flipper_format_read_string(ff, "Protocol", proto_name)) {
+            flipper_format_rewind(ff);
+            SubGhzTransmitter* transmitter = subghz_transmitter_alloc_init(
+                a->environment, furi_string_get_cstr(proto_name));
+            if(transmitter) {
+                if(subghz_transmitter_deserialize(transmitter, ff) == SubGhzProtocolStatusOk) {
+                    subghz_devices_idle(a->radio);
+                    subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
+                    subghz_devices_set_frequency(a->radio, d->freq ? d->freq : 433920000);
+                    if(subghz_devices_start_async_tx(a->radio, subghz_transmitter_yield, transmitter)) {
+                        while(!subghz_devices_is_async_complete_tx(a->radio))
+                            furi_delay_ms(10);
+                        subghz_devices_stop_async_tx(a->radio);
+                    }
+                }
+                subghz_transmitter_free(transmitter);
             }
         }
-        furi_hal_gpio_write(&gpio_cc1101_g0, false);
-        subghz_devices_idle(a->radio); furi_delay_ms(8);
+        furi_string_free(proto_name);
     }
+    flipper_format_free(ff);
+    furi_record_close(RECORD_STORAGE);
+    subghz_devices_idle(a->radio);
     if(was) nr_rx_start(a);
 }
 
@@ -447,7 +451,6 @@ static void nr_came_tx_code(NRApp* a, uint16_t code) {
     uint16_t te = 320;
     for(int r = 0; r < 3; r++) {
         subghz_devices_set_tx(a->radio);
-        // CAME header: LOW 47*TE, HIGH TE
         furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(te * 47);
         furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(te);
         for(int8_t i = 11; i >= 0; i--) {
@@ -462,162 +465,7 @@ static void nr_came_tx_code(NRApp* a, uint16_t code) {
     a->came_tx = false;
 }
 
-// ============== Process frame ==============
-
-static void nr_process(NRApp* a) {
-    // Process firmware protocol decode (higher priority than raw accumulator)
-    if(a->dec_ready) {
-        // Extract key from CAME decode string: "Key:0x000009EC"
-        if(strncmp(a->dec_proto, "CAME", 4) == 0) {
-            char* kp = strstr(a->dec_str, "Key:0x");
-            if(kp) {
-                uint32_t key = strtoul(kp + 6, NULL, 16);
-                uint8_t nbits = 12; // CAME 12-bit default
-                char* bp = strstr(a->dec_str, "bit");
-                if(bp && bp > a->dec_str) {
-                    // parse "12bit" or "24bit" before "bit"
-                    char* np = bp - 1;
-                    while(np > a->dec_str && *(np-1) >= '0' && *(np-1) <= '9') np--;
-                    nbits = atoi(np);
-                    if(nbits == 0) nbits = 12;
-                }
-                // Build proper device entry from firmware decode
-                uint8_t raw[4]; uint8_t raw_len;
-                if(nbits <= 16) {
-                    raw[0] = (key >> 8) & 0xFF; raw[1] = key & 0xFF; raw_len = 2;
-                } else {
-                    raw[0] = (key >> 16) & 0xFF; raw[1] = (key >> 8) & 0xFF;
-                    raw[2] = key & 0xFF; raw_len = 3;
-                }
-                uint32_t did = key & 0xFFFF;
-                int8_t di = nr_find_dev(a, NRProtoBinRAW, did);
-                if(di < 0) di = nr_find_dev(a, NRProtoBinRAW, 0x09EC); // match garage seed
-                if(di >= 0) {
-                    NRDev* d = &a->devs[di];
-                    if((a->tick - d->last_seen) >= NR_HIT_COOLDOWN) {
-                        d->hits++; d->last_seen = a->tick;
-                    }
-                    if(d->seeded) d->confirmed = true;
-                    // Update signal with correct decoded data
-                    if(d->sig_count > 0) {
-                        memcpy(d->sigs[0].raw, raw, raw_len);
-                        d->sigs[0].raw_len = raw_len;
-                        d->sigs[0].bits = nbits;
-                        snprintf(d->sigs[0].label, 20, "CAME 0x%lX", (unsigned long)key);
-                    }
-                    NRSig tmp = {.raw_len = raw_len, .bits = nbits};
-                    memcpy(tmp.raw, raw, raw_len);
-                    snprintf(tmp.label, 20, "CAME 0x%lX", (unsigned long)key);
-                    nr_autosave_sig(a, d, &tmp);
-                }
-                a->dec_ready = false; a->dec_proto[0] = 0; a->dec_str[0] = 0;
-                return; // handled via firmware decode, skip raw processing
-            }
-        }
-        // For other firmware decodes, just note it for autosave annotation (handled below)
-    }
-
-    if(!a->rx_ready) return;
-    uint16_t te = a->rx_fte, bits = a->rx_fbits;
-    uint8_t len = a->rx_flen, data[32];
-    memcpy(data, a->rx_fdata, len);
-    a->rx_ready = false;
-
-    NRProto p = nr_classify(te, bits, data, len);
-
-    // Read RSSI while signal is fresh
-    int8_t rssi = -127;
-    if(a->rx_on) rssi = (int8_t)subghz_devices_get_rssi(a->radio);
-
-    // Protocol lock: ignore non-matching
-    if(a->lock_proto >= 0 && p != (NRProto)a->lock_proto) return;
-
-    uint32_t did = nr_dev_id(p, data, len, te);
-
-    // Filter noise: EV1527 addr 0 or power-of-2 only
-    if(p == NRProtoEV1527 && (did == 0 || (did & (did - 1)) == 0)) return;
-    // Filter noise: PT2262 addr 0 only (0x02 is a real remote!)
-    if(p == NRProtoPT2262 && did == 0) return;
-    int8_t di = nr_find_dev(a, p, did);
-
-    if(di >= 0) {
-        NRDev* d = &a->devs[di];
-        if((a->tick - d->last_seen) >= NR_HIT_COOLDOWN) {
-            d->hits++; d->last_seen = a->tick; d->rssi = rssi;
-        }
-        if(d->seeded) d->confirmed = true;
-        // NexusTH: update first signal label with latest temp reading (reject bad frames)
-        if(p == NRProtoNexusTH && d->sig_count > 0 && len >= 5) {
-            uint16_t raw = ((uint16_t)(data[1] & 0x0F) << 8) | data[2];
-            int16_t temp = (raw > 2048) ? (int16_t)(raw - 4096) : (int16_t)raw;
-            uint8_t humi = ((data[3] & 0x0F) << 4) | (data[4] >> 4);
-            if(temp < -400 || temp > 600 || humi > 100) return; // reject garbage
-            d->useful = true; // good frame promotes device to useful
-            nr_sig_label(p, data, len, d->sigs[0].label, sizeof(d->sigs[0].label));
-            memcpy(d->sigs[0].raw, data, len);
-            d->sigs[0].raw_len = len;
-            d->sigs[0].bits = bits;
-            nr_autosave_sig(a, d, &d->sigs[0]);
-            a->dec_ready = false; a->dec_proto[0] = 0;
-            return;
-        }
-        // Keeloq/Honeywell: update sigs[0] with latest capture (rolling code, events)
-        if((p == NRProtoKeeloq || p == NRProtoHoneywell) && d->sig_count > 0) {
-            nr_sig_label(p, data, len, d->sigs[0].label, sizeof(d->sigs[0].label));
-            memcpy(d->sigs[0].raw, data, len);
-            d->sigs[0].raw_len = len;
-            d->sigs[0].bits = bits;
-            return;
-        }
-        // Store unique signals for replayable protocols (in-memory)
-        if(nr_replayable[p] && nr_find_sig(d, data, len) < 0 && d->sig_count < NR_MAX_SIGS) {
-            NRSig* s = &d->sigs[d->sig_count];
-            memset(s, 0, sizeof(NRSig));
-            s->raw_len = len; s->bits = bits;
-            memcpy(s->raw, data, len);
-            nr_sig_label(p, data, len, s->label, sizeof(s->label));
-            d->sig_count++;
-            notification_message(a->notif, &sequence_blink_green_10);
-        }
-        // Autosave all protocols except Honeywell (too spammy)
-        if(p != NRProtoHoneywell) {
-            NRSig tmp = {.raw_len = len, .bits = bits};
-            memcpy(tmp.raw, data, len);
-            nr_sig_label(p, data, len, tmp.label, sizeof(tmp.label));
-            nr_autosave_sig(a, d, &tmp);
-            a->dec_ready = false; a->dec_proto[0] = 0;
-        }
-        return;
-    }
-
-    // New device
-    uint8_t slot = a->dev_count;
-    if(slot >= NR_MAX_DEVICES) {
-        slot = 0;
-        for(uint8_t i = 1; i < NR_MAX_DEVICES; i++)
-            if(!a->devs[i].seeded && a->devs[i].hits < a->devs[slot].hits) slot = i;
-        if(a->devs[slot].seeded) return; // don't evict seeded
-    }
-    NRDev* d = &a->devs[slot];
-    memset(d, 0, sizeof(NRDev));
-    d->proto = p; d->te = te; d->dev_id = did; d->freq = a->rx_freq;
-    d->hits = 1; d->last_seen = a->tick; d->rssi = rssi;
-    NRSig* s = &d->sigs[0];
-    s->raw_len = len; s->bits = bits;
-    memcpy(s->raw, data, len);
-    nr_sig_label(p, data, len, s->label, sizeof(s->label));
-    d->sig_count = 1;
-    d->useful = (p != NRProtoBinRAW);
-    // NexusTH with bad frames (sanity filter rejected) are not useful
-    if(p == NRProtoNexusTH && strstr(s->label, "bad frame")) d->useful = false;
-    nr_dev_label(d);
-    if(slot >= a->dev_count && a->dev_count < NR_MAX_DEVICES) a->dev_count++;
-    nr_autosave_sig(a, d, s);
-    a->dec_ready = false;
-    a->dec_proto[0] = 0;
-    a->dec_str[0] = 0;
-    notification_message(a->notif, &sequence_blink_cyan_10);
-}
+static void nr_process(NRApp* a) { UNUSED(a); }
 
 // ============== Drawing ==============
 
@@ -1384,8 +1232,6 @@ tick:
             subghz_devices_idle(a->radio);
             subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
             subghz_devices_set_frequency(a->radio, next);
-            a->rx_bit_count = 0; a->rx_te_sum = 0; a->rx_te_n = 0; a->rx_ready = false;
-            a->dec_ready = false;
             subghz_receiver_reset(a->receiver);
             subghz_worker_set_pair_callback(a->worker, (SubGhzWorkerPairCallback)nr_rx_cb);
             subghz_worker_set_context(a->worker, a);
