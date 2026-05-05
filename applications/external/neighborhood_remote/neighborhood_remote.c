@@ -145,7 +145,7 @@ static void nr_load(NRApp* a) {
 }
 
 // Write a .sub file for a seeded signal
-static void nr_seed_sub(NRApp* a, const char* proto, uint32_t freq, uint8_t bits,
+static void nr_seed_sub(NRApp* a, const char* proto, uint32_t freq, uint16_t bits,
                         const char* key_hex, uint16_t te, uint16_t seq) {
     UNUSED(a);
     Storage* st = furi_record_open(RECORD_STORAGE);
@@ -156,13 +156,20 @@ static void nr_seed_sub(NRApp* a, const char* proto, uint32_t freq, uint8_t bits
     File* file = storage_file_alloc(st);
     if(storage_file_open(file, path, FSAM_WRITE, FSOM_CREATE_ALWAYS)) {
         FuriString* s = furi_string_alloc();
-        furi_string_printf(s,
-            "Filetype: Flipper SubGhz Key File\nVersion: 1\n"
-            "Frequency: %lu\nPreset: FuriHalSubGhzPresetOok650Async\n"
-            "Protocol: %s\nBit: %u\nKey: %s\n",
-            (unsigned long)freq, proto, bits, key_hex);
-        if(te && strcmp(proto, "Princeton") == 0) {
-            furi_string_cat_printf(s, "TE: %u\nGuard_time: 31\n", te);
+        if(strcmp(proto, "BinRAW") == 0) {
+            furi_string_printf(s,
+                "Filetype: Flipper SubGhz Key File\nVersion: 1\n"
+                "Frequency: %lu\nPreset: FuriHalSubGhzPresetOok650Async\n"
+                "Protocol: BinRAW\nBit: %u\nTE: %u\nBit_RAW: %u\nData_RAW: %s\n",
+                (unsigned long)freq, bits, te, bits, key_hex);
+        } else {
+            furi_string_printf(s,
+                "Filetype: Flipper SubGhz Key File\nVersion: 1\n"
+                "Frequency: %lu\nPreset: FuriHalSubGhzPresetOok650Async\n"
+                "Protocol: %s\nBit: %u\nKey: %s\n",
+                (unsigned long)freq, proto, bits, key_hex);
+            if(te && strcmp(proto, "Princeton") == 0)
+                furi_string_cat_printf(s, "TE: %u\nGuard_time: 31\n", te);
         }
         storage_file_write(file, furi_string_get_cstr(s), furi_string_size(s));
         furi_string_free(s);
@@ -186,13 +193,19 @@ static void nr_seed(NRApp* a) {
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "S2 2F9AE1");
     snprintf(a->devs[a->dev_count-1].sigs[1].label, 20, "S3 2F9AE1");
 
-    // Remote 4F — Princeton, 2 buttons with .sub files for replay
+    // Remote 4F — Princeton, 2 buttons with BinRAW .sub files for replay
     SEED(NRProtoPT2262, 194, 0x4F, 53, "Remote 4F", "May 2", 433920000, "Princeton");
     { NRDev* r = &a->devs[a->dev_count-1];
-      snprintf(r->sigs[0].label, 20, "Btn B");
+      snprintf(r->sigs[0].label, 20, "Btn A");
       r->sigs[0].file_seq = 9000; r->sigs[0].has_file = true;
-      r->sig_count = 1;
-      nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 00 44 80", 194, 9000);
+      snprintf(r->sigs[1].label, 20, "Btn B");
+      r->sigs[1].file_seq = 9001; r->sigs[1].has_file = true;
+      r->sig_count = 2;
+      // BinRAW waveform: sync(1T HIGH + 31T LOW) + data bits (1110=1, 1000=0)
+      nr_seed_sub(a, "BinRAW", 433920000, 192,
+        "80 00 00 00 EE EE EE EE EE EE EE E8 8E 88 EE EE EE EE EE EE EE E8 88 88", 194, 9000);
+      nr_seed_sub(a, "BinRAW", 433920000, 128,
+        "80 00 00 00 88 88 88 88 8E 88 8E 88 E8 88 88 88", 194, 9001);
     }
 
     SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30", 433920000, "");
