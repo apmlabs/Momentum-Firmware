@@ -557,7 +557,11 @@ static void nr_dooya_rx_frame(NRApp* a, uint64_t frame) {
     a->rx_new_signal = true;
 }
 
+__attribute__((unused))
 static void nr_dooya_decode(NRApp* a, bool level, uint32_t duration) {
+    UNUSED(a); UNUSED(level); UNUSED(duration);
+    // Temporarily disabled for debugging
+    return;
     switch(nr_dooya_rx_state) {
     case NRDooyaIdle:
         if(level && duration > 180 && duration < 450) {
@@ -597,13 +601,6 @@ static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
     a->dbg_rx_cb++;
     // Feed firmware protocol decoders (ALWAYS, regardless of RSSI gate)
     subghz_receiver_decode(a->receiver, level, duration);
-    // Feed A-OK/Dooya decoder (ALWAYS)
-    nr_dooya_decode(a, level, duration);
-    // Capture raw pulses only when RSSI gate is open
-    if(nr_raw_gate && !nr_raw_ready && nr_raw_count < NR_RAW_BUF_SIZE) {
-        int16_t val = duration > 32767 ? 32767 : (int16_t)duration;
-        nr_raw_buf[nr_raw_count++] = level ? val : -val;
-    }
 }
 
 static void nr_rx_start(NRApp* a) {
