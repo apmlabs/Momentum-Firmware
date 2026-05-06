@@ -136,6 +136,16 @@ static void nr_load(NRApp* a) {
     furi_record_close(RECORD_STORAGE);
 }
 
+// ============== RAW pulse capture buffer ==============
+#define NR_RAW_BUF_SIZE 1024
+#define NR_RSSI_THRESHOLD -75.0f
+#define NR_RSSI_LOW_COUNT 3  // ticks below threshold before signal "ended"
+static int16_t nr_raw_buf[NR_RAW_BUF_SIZE];
+static volatile uint16_t nr_raw_count;
+static volatile bool nr_raw_ready;    // buffer ready to save (signal ended)
+static volatile bool nr_raw_gate;     // true = RSSI above threshold, capturing
+static uint8_t nr_raw_low_count;      // consecutive ticks below threshold
+
 // Write a .sub file for a seeded signal
 static void nr_seed_sub(NRApp* a, const char* proto, uint32_t freq, uint16_t bits,
                         const char* key_hex, uint16_t te, uint16_t seq) {
@@ -286,11 +296,10 @@ static void nr_seed(NRApp* a) {
       snprintf(d->sigs[1].label, 20, "STOP"); d->sigs[1].file_seq = 9011; d->sigs[1].has_file = true;
       snprintf(d->sigs[2].label, 20, "DOWN"); d->sigs[2].file_seq = 9012; d->sigs[2].has_file = true;
       d->sig_count = 3;
-      int16_t raw[450];
       uint16_t n;
-      n = nr_dooya_encode_raw(raw, 0xA3C0A16C01000BD9ULL, 3); nr_seed_raw_sub(a, 433920000, raw, n, 9010);
-      n = nr_dooya_encode_raw(raw, 0xA3C0A16C010023F1ULL, 3); nr_seed_raw_sub(a, 433920000, raw, n, 9011);
-      n = nr_dooya_encode_raw(raw, 0xA3C0A16C01004311ULL, 3); nr_seed_raw_sub(a, 433920000, raw, n, 9012);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0A16C01000BD9ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9010);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0A16C010023F1ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9011);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0A16C01004311ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9012);
     }
     SEED(NRProtoBinRAW, 366, 0xC0AD01, 0, "Window 2", "May 5", 433920000, "Dooya");
     { NRDev* d = &a->devs[a->dev_count-1];
@@ -298,11 +307,10 @@ static void nr_seed(NRApp* a) {
       snprintf(d->sigs[1].label, 20, "STOP"); d->sigs[1].file_seq = 9021; d->sigs[1].has_file = true;
       snprintf(d->sigs[2].label, 20, "DOWN"); d->sigs[2].file_seq = 9022; d->sigs[2].has_file = true;
       d->sig_count = 3;
-      int16_t raw[450];
       uint16_t n;
-      n = nr_dooya_encode_raw(raw, 0xA3C0AD0101000B7AULL, 3); nr_seed_raw_sub(a, 433920000, raw, n, 9020);
-      n = nr_dooya_encode_raw(raw, 0xA3C0AD0101002392ULL, 3); nr_seed_raw_sub(a, 433920000, raw, n, 9021);
-      n = nr_dooya_encode_raw(raw, 0xA3C0AD01010043B2ULL, 3); nr_seed_raw_sub(a, 433920000, raw, n, 9022);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0AD0101000B7AULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9020);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0AD0101002392ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9021);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0AD01010043B2ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9022);
     }
     SEED(NRProtoBinRAW, 366, 0xC09EBD, 0, "Window 3", "May 5", 433920000, "Dooya");
     { NRDev* d = &a->devs[a->dev_count-1];
@@ -310,11 +318,10 @@ static void nr_seed(NRApp* a) {
       snprintf(d->sigs[1].label, 20, "STOP"); d->sigs[1].file_seq = 9031; d->sigs[1].has_file = true;
       snprintf(d->sigs[2].label, 20, "DOWN"); d->sigs[2].file_seq = 9032; d->sigs[2].has_file = true;
       d->sig_count = 3;
-      int16_t raw[450];
       uint16_t n;
-      n = nr_dooya_encode_raw(raw, 0xA3C09EBD01000B27ULL, 5); nr_seed_raw_sub(a, 433920000, raw, n, 9030);
-      n = nr_dooya_encode_raw(raw, 0xA3C09EBD0100233FULL, 5); nr_seed_raw_sub(a, 433920000, raw, n, 9031);
-      n = nr_dooya_encode_raw(raw, 0xA3C09EBD0100435FULL, 5); nr_seed_raw_sub(a, 433920000, raw, n, 9032);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C09EBD01000B27ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9030);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C09EBD0100233FULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9031);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C09EBD0100435FULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9032);
     }
     #undef SEED
     a->autosave_seq = 100; // start live captures at 100 to avoid seed file conflicts
@@ -396,12 +403,6 @@ static void nr_extract_label(const char* proto, const char* ds, char* out, uint8
     }
     snprintf(out, sz, "%.15s", proto);
 }
-
-// ============== RAW pulse capture buffer ==============
-#define NR_RAW_BUF_SIZE 1024
-static int16_t nr_raw_buf[NR_RAW_BUF_SIZE];
-static volatile uint16_t nr_raw_count;
-static volatile bool nr_raw_ready; // true when signal ended and buffer has data to save
 
 // Firmware protocol decode callback — PRIMARY signal handler
 // Runs in worker thread. Does device management + autosave.
@@ -583,19 +584,12 @@ static void nr_dooya_decode(NRApp* a, bool level, uint32_t duration) {
 // RX callback — feeds firmware decoders + A-OK decoder + raw capture
 static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
     NRApp* a = ctx;
-    // Feed firmware protocol decoders
+    // Feed firmware protocol decoders (ALWAYS, regardless of RSSI gate)
     subghz_receiver_decode(a->receiver, level, duration);
-    // Feed A-OK/Dooya decoder
+    // Feed A-OK/Dooya decoder (ALWAYS)
     nr_dooya_decode(a, level, duration);
-    // Capture raw pulses for replay (signed: positive=high, negative=low)
-    // Gap > 10ms = signal ended
-    if(!level && duration > 10000) {
-        if(nr_raw_count >= 20 && !nr_raw_ready) {
-            nr_raw_ready = true; // main loop will save and reset
-        } else {
-            nr_raw_count = 0; // too short, discard
-        }
-    } else if(!nr_raw_ready && nr_raw_count < NR_RAW_BUF_SIZE) {
+    // Capture raw pulses only when RSSI gate is open
+    if(nr_raw_gate && !nr_raw_ready && nr_raw_count < NR_RAW_BUF_SIZE) {
         int16_t val = duration > 32767 ? 32767 : (int16_t)duration;
         nr_raw_buf[nr_raw_count++] = level ? val : -val;
     }
@@ -1309,14 +1303,12 @@ int32_t neighborhood_remote_app(void* p) {
                 } else if(ev.key == InputKeyDown && a->sel + 1 < lc) {
                     a->sel++;
                 } else if(ev.key == InputKeyOk && ev.type == InputTypeShort && lc > 0) {
-                    // Short OK: lock on selected device's protocol
+                    // Short OK: open device detail view
                     int8_t ri = nr_live_idx(a, a->sel);
                     if(ri >= 0) {
-                        NRProto sp = a->devs[ri].proto;
-                        if(a->lock_proto == (int8_t)sp)
-                            a->lock_proto = -1; // toggle off
-                        else
-                            a->lock_proto = sp;
+                        a->dev_sel = ri;
+                        a->dev_scroll = 0;
+                        a->view = NRViewDevice;
                     }
                 } else if(ev.key == InputKeyOk && ev.type == InputTypeLong && lc > 0) {
                     // Long OK: save selected device to known + clear from live
@@ -1552,6 +1544,26 @@ tick:
             view_port_update(a->vp);
         }
         nr_process(a);
+        // RSSI-gated raw capture: poll RSSI every tick
+        if(a->rx_on && !nr_raw_ready) {
+            float rssi = subghz_devices_get_rssi(a->radio);
+            if(rssi > NR_RSSI_THRESHOLD) {
+                nr_raw_gate = true;
+                nr_raw_low_count = 0;
+            } else if(nr_raw_gate) {
+                nr_raw_low_count++;
+                if(nr_raw_low_count >= NR_RSSI_LOW_COUNT) {
+                    // Signal ended — close gate
+                    nr_raw_gate = false;
+                    nr_raw_low_count = 0;
+                    if(nr_raw_count >= 20) {
+                        nr_raw_ready = true; // nr_process will save next tick
+                    } else {
+                        nr_raw_count = 0; // too short, discard
+                    }
+                }
+            }
+        }
         if(a->view == NRViewScan && (a->tick % 8) == 0) a->scan_anim++;
         view_port_update(a->vp);
     }
