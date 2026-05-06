@@ -235,7 +235,7 @@ static void nr_seed(NRApp* a) {
         d->useful=true; d->freq=FREQ; snprintf(d->name, NR_MAX_NAME, NAME); \
         snprintf(d->last_seen_date, 12, DATE); if(FWPROTO[0]) snprintf(d->fw_proto, 16, "%s", FWPROTO); }
 
-    SEED(NRProtoHoneywell, 143, 0x5800, 1633, "Alarm System", "May 2", 433920000, "Honeywell");
+    SEED(NRProtoHoneywell, 143, 0x5800, 1633, "Alarm System", "May 6", 433920000, "Honeywell");
     SEED(NRProtoKeeloq, 322, 0x2F9AE15, 24, "Parking Fob", "Apr 27", 433920000, "KeeLoq");
     a->devs[a->dev_count-1].sig_count = 2;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "S2 2F9AE1");
@@ -256,7 +256,7 @@ static void nr_seed(NRApp* a) {
     }
 
     // Neighbor Gate — Princeton TE=311, 4 buttons (3 captured + 1 computed), strong RSSI
-    SEED(NRProtoPT2262, 311, 0x87, 4, "Neighbor Gate", "May 5", 433920000, "Princeton");
+    SEED(NRProtoPT2262, 311, 0x87, 4, "Neighbor Gate", "May 6", 433920000, "Princeton");
     { NRDev* r = &a->devs[a->dev_count-1];
       snprintf(r->sigs[0].label, 20, "Open");
       r->sigs[0].file_seq = 9002; r->sigs[0].has_file = true;
@@ -273,9 +273,18 @@ static void nr_seed(NRApp* a) {
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 9C B8 78", 311, 9005);
     }
 
+    // New Princeton remote — TE=380, 1 button captured so far
+    SEED(NRProtoPT2262, 380, 0x88, 5, "Remote C6", "May 6", 433920000, "Princeton");
+    { NRDev* r = &a->devs[a->dev_count-1];
+      snprintf(r->sigs[0].label, 20, "Btn 6");
+      r->sigs[0].file_seq = 9040; r->sigs[0].has_file = true;
+      r->sig_count = 1;
+      nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 C6 2C 86", 380, 9040);
+    }
+
     SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30", 433920000, "");
-    SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "May 2", 433920000, "BinRAW");
-    SEED(NRProtoNexusTH, 650, 0xE0E0, 29, "Weather E0", "May 2", 433920000, "NexusTH");
+    SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "May 6", 433920000, "BinRAW");
+    SEED(NRProtoNexusTH, 650, 0xE0E0, 29, "Weather E0", "May 6", 433920000, "NexusTH");
     a->devs[a->dev_count-1].sig_count = 1;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "16.5C");
     SEED(NRProtoBinRAW, 345, 0xB122, 10, "Bell Ctrl", "May 2", 433920000, "");
@@ -409,6 +418,7 @@ static void nr_extract_label(const char* proto, const char* ds, char* out, uint8
 static void nr_decode_cb(SubGhzReceiver* rx, SubGhzProtocolDecoderBase* db, void* ctx) {
     UNUSED(rx);
     NRApp* a = ctx;
+    a->dbg_decode_cb++;
 
     // Firmware decoded this signal — don't also save as RAW
     // Exception: firmware Dooya decoder fires at 40 bits (wrong for our 64-bit A-OK)
@@ -584,6 +594,7 @@ static void nr_dooya_decode(NRApp* a, bool level, uint32_t duration) {
 // RX callback — feeds firmware decoders + A-OK decoder + raw capture
 static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
     NRApp* a = ctx;
+    a->dbg_rx_cb++;
     // Feed firmware protocol decoders (ALWAYS, regardless of RSSI gate)
     subghz_receiver_decode(a->receiver, level, duration);
     // Feed A-OK/Dooya decoder (ALWAYS)
@@ -602,6 +613,7 @@ static void nr_rx_start(NRApp* a) {
     uint32_t freq = (a->freq_mode == NRFreq868) ? 868350000 : 433920000;
     a->rx_freq = freq;
     subghz_devices_set_frequency(a->radio, freq);
+    subghz_devices_flush_rx(a->radio);
     subghz_receiver_reset(a->receiver);
     subghz_worker_set_pair_callback(a->worker, (SubGhzWorkerPairCallback)nr_rx_cb);
     subghz_worker_set_context(a->worker, a);
@@ -835,7 +847,9 @@ static void nr_draw(Canvas* c, void* ctx) {
                ((!a->devs[i].seeded && a->devs[i].last_seen >= a->session_start) ||
                (a->devs[i].seeded && a->devs[i].confirmed && a->devs[i].last_seen >= a->session_start))) live++;
         const char* fq = (a->rx_freq == 868350000) ? "868" : "433";
-        snprintf(buf, sizeof(buf), "%s %d", fq, live);
+        snprintf(buf, sizeof(buf), "%s %d R%lu D%lu", fq, live,
+            (unsigned long)(a->dbg_rx_cb / 1000),
+            (unsigned long)a->dbg_decode_cb);
         canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
@@ -1529,6 +1543,7 @@ tick:
             subghz_devices_idle(a->radio);
             subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
             subghz_devices_set_frequency(a->radio, next);
+            subghz_devices_flush_rx(a->radio);
             subghz_receiver_reset(a->receiver);
             subghz_worker_set_pair_callback(a->worker, (SubGhzWorkerPairCallback)nr_rx_cb);
             subghz_worker_set_context(a->worker, a);
