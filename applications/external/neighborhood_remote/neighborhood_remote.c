@@ -593,8 +593,6 @@ static void nr_rx_start(NRApp* a) {
     a->rx_freq = freq;
     subghz_devices_set_frequency(a->radio, freq);
     subghz_receiver_reset(a->receiver);
-    subghz_worker_set_pair_callback(a->worker, (SubGhzWorkerPairCallback)subghz_receiver_decode);
-    subghz_worker_set_context(a->worker, a->receiver);
     subghz_devices_start_async_rx(a->radio, subghz_worker_rx_callback, a->worker);
     subghz_worker_start(a->worker);
     a->rx_on = true;
@@ -1249,6 +1247,11 @@ int32_t neighborhood_remote_app(void* p) {
     subghz_receiver_set_rx_callback(a->receiver, nr_decode_cb, a);
     // Debug: count how many protocols are in the registry
     a->dbg_overrun = subghz_protocol_registry_count(&subghz_protocol_registry);
+
+    // Set up worker callbacks ONCE at init (like firmware does)
+    subghz_worker_set_overrun_callback(a->worker, (SubGhzWorkerOverrunCallback)subghz_receiver_reset);
+    subghz_worker_set_pair_callback(a->worker, (SubGhzWorkerPairCallback)subghz_receiver_decode);
+    subghz_worker_set_context(a->worker, a->receiver);
 
     nr_load(a);
     nr_seed(a);
