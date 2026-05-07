@@ -123,4 +123,5 @@ typedef struct {
     // Debug counters
     volatile uint32_t dbg_rx_cb;    // nr_rx_cb call count
     volatile uint32_t dbg_decode_cb; // nr_decode_cb call count
+    volatile uint32_t dbg_overrun;   // stream buffer overrun count
 } NRApp;

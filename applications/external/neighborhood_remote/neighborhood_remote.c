@@ -603,6 +603,12 @@ static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
     subghz_receiver_decode(a->receiver, level, duration);
 }
 
+static void nr_overrun_cb(void* ctx) {
+    NRApp* a = ctx;
+    a->dbg_overrun++;
+    subghz_receiver_reset(a->receiver);
+}
+
 static void nr_rx_start(NRApp* a) {
     if(a->rx_on) return;
     subghz_devices_idle(a->radio);
@@ -614,6 +620,7 @@ static void nr_rx_start(NRApp* a) {
     subghz_receiver_reset(a->receiver);
     subghz_worker_set_pair_callback(a->worker, (SubGhzWorkerPairCallback)nr_rx_cb);
     subghz_worker_set_context(a->worker, a);
+    subghz_worker_set_overrun_callback(a->worker, nr_overrun_cb);
     subghz_devices_start_async_rx(a->radio, subghz_worker_rx_callback, a->worker);
     subghz_worker_start(a->worker);
     a->rx_on = true;
@@ -844,9 +851,10 @@ static void nr_draw(Canvas* c, void* ctx) {
                ((!a->devs[i].seeded && a->devs[i].last_seen >= a->session_start) ||
                (a->devs[i].seeded && a->devs[i].confirmed && a->devs[i].last_seen >= a->session_start))) live++;
         const char* fq = (a->rx_freq == 868350000) ? "868" : "433";
-        snprintf(buf, sizeof(buf), "%s %d R%lu D%lu", fq, live,
+        snprintf(buf, sizeof(buf), "%s R%lu D%lu O%lu", fq,
             (unsigned long)(a->dbg_rx_cb / 1000),
-            (unsigned long)a->dbg_decode_cb);
+            (unsigned long)a->dbg_decode_cb,
+            (unsigned long)a->dbg_overrun);
         canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
