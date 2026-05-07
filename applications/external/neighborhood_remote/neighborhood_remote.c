@@ -593,8 +593,8 @@ static void nr_rx_start(NRApp* a) {
     a->rx_freq = freq;
     subghz_devices_set_frequency(a->radio, freq);
     subghz_receiver_reset(a->receiver);
-    subghz_worker_set_pair_callback(a->worker, (SubGhzWorkerPairCallback)nr_rx_cb);
-    subghz_worker_set_context(a->worker, a);
+    subghz_worker_set_pair_callback(a->worker, (SubGhzWorkerPairCallback)subghz_receiver_decode);
+    subghz_worker_set_context(a->worker, a->receiver);
     subghz_devices_start_async_rx(a->radio, subghz_worker_rx_callback, a->worker);
     subghz_worker_start(a->worker);
     a->rx_on = true;
