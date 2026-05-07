@@ -17,7 +17,7 @@
 #define NR_SAVE_DIR      APP_DATA_PATH("neighborhood")
 #define NR_SAVE_FILE     APP_DATA_PATH("neighborhood/devices.txt")
 #define NR_AUTOSAVE_DIR  APP_DATA_PATH("neighborhood/autosave")
-#define NR_MAX_DEVICES   18
+#define NR_MAX_DEVICES   64
 #define NR_MAX_SIGS      4
 #define NR_MAX_NAME      16
 #define NR_HIT_COOLDOWN  40

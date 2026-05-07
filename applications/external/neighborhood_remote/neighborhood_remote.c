@@ -439,6 +439,13 @@ static void nr_seed(NRApp* a) {
     }
 
     SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30", 433920000);
+
+    // Confirmed neighbor KeeLoq fobs (seen multiple times across batches)
+    SEED(NRProtoKeeloq, 225, 0x000B116, 8, "Fob B116", "May 2", 433920000);
+    SEED(NRProtoKeeloq, 295, 0x008011F, 4, "Fob 8011F", "May 7", 433920000);
+    SEED(NRProtoKeeloq, 295, 0x008005E, 4, "Fob 8005E", "May 7", 433920000);
+    SEED(NRProtoKeeloq, 240, 0x000B118, 3, "Fob B118", "May 2", 433920000);
+    SEED(NRProtoKeeloq, 300, 0x0080218, 2, "Fob 80218", "May 7", 433920000);
     SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "May 2", 433920000);
     SEED(NRProtoNexusTH, 650, 0xE0E0, 29, "Weather E0", "May 2", 433920000);
     a->devs[a->dev_count-1].sig_count = 1;
