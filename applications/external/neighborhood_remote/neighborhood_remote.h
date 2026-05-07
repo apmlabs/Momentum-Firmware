@@ -119,10 +119,4 @@ typedef struct {
     uint16_t came_code;
     bool     came_running;
     bool     came_tx;
-
-    // Debug counters
-    volatile uint32_t dbg_rx_cb;    // nr_rx_cb call count
-    volatile uint32_t dbg_decode_cb; // nr_decode_cb call count
-    volatile uint32_t dbg_overrun;   // stream buffer overrun count
-    char dbg_last_proto[16];         // last protocol name that fired
 } NRApp;
