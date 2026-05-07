@@ -228,6 +228,8 @@ static uint16_t nr_dooya_encode_raw(int16_t* buf, uint64_t frame, uint8_t repeat
 }
 
 static void nr_seed(NRApp* a) {
+    UNUSED(a);
+    return; // DISABLED FOR TESTING
     if(a->dev_count > 0) return;
     #define SEED(P,TE,ID,HITS,NAME,DATE,FREQ,FWPROTO) { \
         NRDev* d = &a->devs[a->dev_count++]; memset(d,0,sizeof(NRDev)); \
@@ -587,15 +589,14 @@ static void nr_overrun_cb(void* ctx) {
 
 static void nr_rx_start(NRApp* a) {
     if(a->rx_on) return;
-    subghz_devices_reset(a->radio);
     subghz_devices_idle(a->radio);
     subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
     uint32_t freq = (a->freq_mode == NRFreq868) ? 868350000 : 433920000;
     a->rx_freq = freq;
-    subghz_devices_idle(a->radio);
     subghz_devices_set_frequency(a->radio, freq);
-    subghz_devices_flush_rx(a->radio);
-    subghz_devices_set_rx(a->radio);
+    subghz_receiver_reset(a->receiver);
+    subghz_worker_set_pair_callback(a->worker, (SubGhzWorkerPairCallback)nr_rx_cb);
+    subghz_worker_set_context(a->worker, a);
     subghz_devices_start_async_rx(a->radio, subghz_worker_rx_callback, a->worker);
     subghz_worker_start(a->worker);
     a->rx_on = true;
@@ -1245,19 +1246,20 @@ int32_t neighborhood_remote_app(void* p) {
     // Firmware protocol decoder chain
     a->environment = subghz_environment_alloc();
     subghz_environment_set_protocol_registry(a->environment, (void*)&subghz_protocol_registry);
+
+    nr_load(a);
+    nr_seed(a);
+
+    // Allocate receiver AFTER seeding to avoid heap corruption from seed file I/O
     a->receiver = subghz_receiver_alloc_init(a->environment);
     subghz_receiver_set_filter(a->receiver, SubGhzProtocolFlag_Decodable);
     subghz_receiver_set_rx_callback(a->receiver, nr_decode_cb, a);
-    // Debug: count how many protocols are in the registry
     a->dbg_overrun = subghz_protocol_registry_count(&subghz_protocol_registry);
 
     // Set up worker callbacks ONCE at init (like firmware does)
     subghz_worker_set_overrun_callback(a->worker, (SubGhzWorkerOverrunCallback)subghz_receiver_reset);
     subghz_worker_set_pair_callback(a->worker, (SubGhzWorkerPairCallback)subghz_receiver_decode);
     subghz_worker_set_context(a->worker, a->receiver);
-
-    nr_load(a);
-    nr_seed(a);
     a->view = NRViewMenu;
     a->session_start = 1; // tick starts at 0, session_start=1 means nothing is "live" yet
 
