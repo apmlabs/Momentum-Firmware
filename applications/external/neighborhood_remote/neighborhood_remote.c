@@ -47,7 +47,7 @@ static void nr_save(NRApp* a) {
     storage_simply_mkdir(st, NR_SAVE_DIR);
     FlipperFormat* ff = flipper_format_file_alloc(st);
     if(flipper_format_file_open_always(ff, NR_SAVE_FILE)) {
-        flipper_format_write_header_cstr(ff, "Neighborhood DB", 6);
+        flipper_format_write_header_cstr(ff, "Neighborhood DB", 7);
         uint32_t cnt = a->dev_count;
         flipper_format_write_uint32(ff, "Count", &cnt, 1);
         for(uint8_t i = 0; i < a->dev_count; i++) {
@@ -61,6 +61,8 @@ static void nr_save(NRApp* a) {
             flipper_format_write_uint32(ff, "Freq", &fq, 1);
             flipper_format_write_string_cstr(ff, "FWProto",
                 d->fw_proto[0] ? d->fw_proto : "--");
+            uint32_t rssi_val = (uint32_t)(int32_t)d->rssi; // store as signed via cast
+            flipper_format_write_uint32(ff, "RSSI", &rssi_val, 1);
             for(uint8_t s = 0; s < d->sig_count; s++) {
                 flipper_format_write_string_cstr(ff, "SL", d->sigs[s].label);
                 uint32_t sf[2] = {d->sigs[s].file_seq, d->sigs[s].has_file};
@@ -79,7 +81,7 @@ static void nr_load(NRApp* a) {
     if(flipper_format_file_open_existing(ff, NR_SAVE_FILE)) {
         uint32_t ver = 0;
         FuriString* t = furi_string_alloc();
-        if(flipper_format_read_header(ff, t, &ver) && ver >= 3 && ver <= 6) {
+        if(flipper_format_read_header(ff, t, &ver) && ver == 7) {
             uint32_t cnt = 0;
             flipper_format_read_uint32(ff, "Count", &cnt, 1);
             if(cnt > NR_MAX_DEVICES) cnt = NR_MAX_DEVICES;
@@ -95,39 +97,29 @@ static void nr_load(NRApp* a) {
                 d->seeded = h[5];
                 if(flipper_format_read_string(ff, "Name", s))
                     snprintf(d->name, NR_MAX_NAME, "%s", furi_string_get_cstr(s));
-                if(ver >= 4 && flipper_format_read_string(ff, "Date", s)) {
+                if(flipper_format_read_string(ff, "Date", s)) {
                     const char* ds = furi_string_get_cstr(s);
                     if(strcmp(ds, "--") != 0)
                         snprintf(d->last_seen_date, 12, "%s", ds);
                 }
-                if(ver >= 5) {
-                    uint32_t fq = 0;
-                    if(flipper_format_read_uint32(ff, "Freq", &fq, 1)) d->freq = fq;
-                }
+                { uint32_t fq = 0;
+                  if(flipper_format_read_uint32(ff, "Freq", &fq, 1)) d->freq = fq; }
                 if(!d->freq) d->freq = 433920000;
-                if(ver >= 6 && flipper_format_read_string(ff, "FWProto", s)) {
+                if(flipper_format_read_string(ff, "FWProto", s)) {
                     const char* fp = furi_string_get_cstr(s);
                     if(strcmp(fp, "--") != 0)
                         snprintf(d->fw_proto, 16, "%s", fp);
                 }
+                { uint32_t rssi_val = 0;
+                  if(flipper_format_read_uint32(ff, "RSSI", &rssi_val, 1))
+                      d->rssi = (int8_t)(int32_t)rssi_val; }
                 for(uint8_t j = 0; j < sc; j++) {
                     if(!flipper_format_read_string(ff, "SL", s)) break;
                     snprintf(d->sigs[j].label, 20, "%s", furi_string_get_cstr(s));
-                    if(ver >= 6) {
-                        uint32_t sf[2] = {0, 0};
-                        if(flipper_format_read_uint32(ff, "SF", sf, 2)) {
-                            d->sigs[j].file_seq = sf[0];
-                            d->sigs[j].has_file = sf[1];
-                        }
-                    } else {
-                        // Old format: skip SB/SD fields
-                        uint32_t sb[2] = {0, 0};
-                        flipper_format_read_uint32(ff, "SB", sb, 2);
-                        if(sb[1] > 0) {
-                            uint8_t dd[32] = {0};
-                            flipper_format_read_hex(ff, "SD", dd, sb[1] > 32 ? 32 : sb[1]);
-                        }
-                        d->sigs[j].has_file = false;
+                    uint32_t sf[2] = {0, 0};
+                    if(flipper_format_read_uint32(ff, "SF", sf, 2)) {
+                        d->sigs[j].file_seq = sf[0];
+                        d->sigs[j].has_file = sf[1];
                     }
                     d->sig_count++;
                 }
@@ -143,6 +135,16 @@ static void nr_load(NRApp* a) {
     flipper_format_free(ff);
     furi_record_close(RECORD_STORAGE);
 }
+
+// ============== RAW pulse capture buffer ==============
+#define NR_RAW_BUF_SIZE 1024
+#define NR_RSSI_THRESHOLD -75.0f
+#define NR_RSSI_LOW_COUNT 3  // ticks below threshold before signal "ended"
+static int16_t nr_raw_buf[NR_RAW_BUF_SIZE];
+static volatile uint16_t nr_raw_count;
+static volatile bool nr_raw_ready;    // buffer ready to save (signal ended)
+static volatile bool nr_raw_gate;     // true = RSSI above threshold, capturing
+static uint8_t nr_raw_low_count;      // consecutive ticks below threshold
 
 // Write a .sub file for a seeded signal
 static void nr_seed_sub(NRApp* a, const char* proto, uint32_t freq, uint16_t bits,
@@ -179,6 +181,52 @@ static void nr_seed_sub(NRApp* a, const char* proto, uint32_t freq, uint16_t bit
     furi_record_close(RECORD_STORAGE);
 }
 
+// Write a RAW .sub file with pre-computed pulse timing (universal TX for any protocol)
+static void nr_seed_raw_sub(NRApp* a, uint32_t freq, const int16_t* pulses, uint16_t count, uint16_t seq) {
+    UNUSED(a);
+    Storage* st = furi_record_open(RECORD_STORAGE);
+    storage_simply_mkdir(st, NR_SAVE_DIR);
+    storage_simply_mkdir(st, NR_AUTOSAVE_DIR);
+    char path[80];
+    snprintf(path, sizeof(path), "%s/%04d.sub", NR_AUTOSAVE_DIR, seq);
+    File* file = storage_file_alloc(st);
+    if(storage_file_open(file, path, FSAM_WRITE, FSOM_CREATE_ALWAYS)) {
+        FuriString* s = furi_string_alloc();
+        furi_string_printf(s,
+            "Filetype: Flipper SubGhz RAW File\nVersion: 1\n"
+            "Frequency: %lu\nPreset: FuriHalSubGhzPresetOok650Async\n"
+            "Protocol: RAW\nRAW_Data:",
+            (unsigned long)freq);
+        for(uint16_t i = 0; i < count; i++)
+            furi_string_cat_printf(s, " %d", (int)pulses[i]);
+        furi_string_cat(s, "\n");
+        storage_file_write(file, furi_string_get_cstr(s), furi_string_size(s));
+        furi_string_free(s);
+    }
+    storage_file_close(file);
+    storage_file_free(file);
+    furi_record_close(RECORD_STORAGE);
+}
+
+// Encode a Dooya/A-OK 64-bit frame into RAW pulse array, returns count
+static uint16_t nr_dooya_encode_raw(int16_t* buf, uint64_t frame, uint8_t repeats) {
+    uint16_t pos = 0;
+    for(uint8_t r = 0; r < repeats; r++) {
+        // Preamble: 8x short-high, long-low
+        for(uint8_t i = 0; i < 8; i++) { buf[pos++] = 290; buf[pos++] = -600; }
+        // Sync: long-high, short-low
+        buf[pos++] = 5000; buf[pos++] = -650;
+        // Data: 64 bits MSB first
+        for(int8_t bit = 63; bit >= 0; bit--) {
+            if((frame >> bit) & 1) { buf[pos++] = 600; buf[pos++] = -290; }
+            else { buf[pos++] = 290; buf[pos++] = -600; }
+        }
+        // End: short-high, gap-low
+        buf[pos++] = 290; buf[pos++] = -5000;
+    }
+    return pos;
+}
+
 static void nr_seed(NRApp* a) {
     if(a->dev_count > 0) return;
     #define SEED(P,TE,ID,HITS,NAME,DATE,FREQ,FWPROTO) { \
@@ -187,7 +235,7 @@ static void nr_seed(NRApp* a) {
         d->useful=true; d->freq=FREQ; snprintf(d->name, NR_MAX_NAME, NAME); \
         snprintf(d->last_seen_date, 12, DATE); if(FWPROTO[0]) snprintf(d->fw_proto, 16, "%s", FWPROTO); }
 
-    SEED(NRProtoHoneywell, 143, 0x5800, 1633, "Alarm System", "May 2", 433920000, "Honeywell");
+    SEED(NRProtoHoneywell, 143, 0x5800, 1633, "Alarm System", "May 6", 433920000, "Honeywell");
     SEED(NRProtoKeeloq, 322, 0x2F9AE15, 24, "Parking Fob", "Apr 27", 433920000, "KeeLoq");
     a->devs[a->dev_count-1].sig_count = 2;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "S2 2F9AE1");
@@ -207,21 +255,36 @@ static void nr_seed(NRApp* a) {
         "80 00 00 00 88 88 88 88 8E 88 8E 88 E8 88 88 88", 194, 9001);
     }
 
-    // Neighbor Gate — Princeton TE=311, 2 buttons, strong RSSI
-    SEED(NRProtoPT2262, 311, 0x87, 2, "Neighbor Gate", "May 5", 433920000, "Princeton");
+    // Neighbor Gate — Princeton TE=311, 4 buttons (3 captured + 1 computed), strong RSSI
+    SEED(NRProtoPT2262, 311, 0x87, 4, "Neighbor Gate", "May 6", 433920000, "Princeton");
     { NRDev* r = &a->devs[a->dev_count-1];
-      snprintf(r->sigs[0].label, 20, "Btn 1");
+      snprintf(r->sigs[0].label, 20, "Open");
       r->sigs[0].file_seq = 9002; r->sigs[0].has_file = true;
-      snprintf(r->sigs[1].label, 20, "Btn 2");
+      snprintf(r->sigs[1].label, 20, "Close");
       r->sigs[1].file_seq = 9003; r->sigs[1].has_file = true;
-      r->sig_count = 2;
+      snprintf(r->sigs[2].label, 20, "Pedestrian");
+      r->sigs[2].file_seq = 9004; r->sigs[2].has_file = true;
+      snprintf(r->sigs[3].label, 20, "Light");
+      r->sigs[3].file_seq = 9005; r->sigs[3].has_file = true;
+      r->sig_count = 4;
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 9C B8 71", 311, 9002);
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 9C B8 72", 311, 9003);
+      nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 9C B8 74", 311, 9004);
+      nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 9C B8 78", 311, 9005);
+    }
+
+    // New Princeton remote — TE=380, 1 button captured so far
+    SEED(NRProtoPT2262, 380, 0x88, 5, "Remote C6", "May 6", 433920000, "Princeton");
+    { NRDev* r = &a->devs[a->dev_count-1];
+      snprintf(r->sigs[0].label, 20, "Btn 6");
+      r->sigs[0].file_seq = 9040; r->sigs[0].has_file = true;
+      r->sig_count = 1;
+      nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 C6 2C 86", 380, 9040);
     }
 
     SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30", 433920000, "");
-    SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "May 2", 433920000, "BinRAW");
-    SEED(NRProtoNexusTH, 650, 0xE0E0, 29, "Weather E0", "May 2", 433920000, "NexusTH");
+    SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "May 6", 433920000, "BinRAW");
+    SEED(NRProtoNexusTH, 650, 0xE0E0, 29, "Weather E0", "May 6", 433920000, "NexusTH");
     a->devs[a->dev_count-1].sig_count = 1;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "16.5C");
     SEED(NRProtoBinRAW, 345, 0xB122, 10, "Bell Ctrl", "May 2", 433920000, "");
@@ -230,21 +293,22 @@ static void nr_seed(NRApp* a) {
     SEED(NRProtoBinRAW, 320, 0x09EC, 19, "Garage", "May 4", 868350000, "CAME");
     { NRDev* g = &a->devs[a->dev_count-1];
       snprintf(g->sigs[0].label, 20, "CAME 0x9EC");
-      g->sigs[0].file_seq = 9001; g->sigs[0].has_file = true;
+      g->sigs[0].file_seq = 9006; g->sigs[0].has_file = true;
       g->sig_count = 1;
-      nr_seed_sub(a, "CAME", 868350000, 12, "00 00 00 00 00 00 09 EC", 0, 9001);
+      nr_seed_sub(a, "CAME", 868350000, 12, "00 00 00 00 00 00 09 EC", 0, 9006);
     }
 
-    // Dooya Windows — 3 remotes, STOP command each, with .sub files
+    // Dooya Windows — 3 remotes with RAW .sub files for replay
     SEED(NRProtoBinRAW, 366, 0xC0A16C, 0, "Window 1", "May 5", 433920000, "Dooya");
     { NRDev* d = &a->devs[a->dev_count-1];
       snprintf(d->sigs[0].label, 20, "UP"); d->sigs[0].file_seq = 9010; d->sigs[0].has_file = true;
       snprintf(d->sigs[1].label, 20, "STOP"); d->sigs[1].file_seq = 9011; d->sigs[1].has_file = true;
       snprintf(d->sigs[2].label, 20, "DOWN"); d->sigs[2].file_seq = 9012; d->sigs[2].has_file = true;
       d->sig_count = 3;
-      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 A1 6C 01 00 0B D9", 0, 9010);
-      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 A1 6C 01 00 23 F1", 0, 9011);
-      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 A1 6C 01 00 43 11", 0, 9012);
+      uint16_t n;
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0A16C01000BD9ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9010);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0A16C010023F1ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9011);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0A16C01004311ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9012);
     }
     SEED(NRProtoBinRAW, 366, 0xC0AD01, 0, "Window 2", "May 5", 433920000, "Dooya");
     { NRDev* d = &a->devs[a->dev_count-1];
@@ -252,9 +316,10 @@ static void nr_seed(NRApp* a) {
       snprintf(d->sigs[1].label, 20, "STOP"); d->sigs[1].file_seq = 9021; d->sigs[1].has_file = true;
       snprintf(d->sigs[2].label, 20, "DOWN"); d->sigs[2].file_seq = 9022; d->sigs[2].has_file = true;
       d->sig_count = 3;
-      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 AD 01 01 00 0B 7A", 0, 9020);
-      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 AD 01 01 00 23 92", 0, 9021);
-      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 AD 01 01 00 43 B2", 0, 9022);
+      uint16_t n;
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0AD0101000B7AULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9020);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0AD0101002392ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9021);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0AD01010043B2ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9022);
     }
     SEED(NRProtoBinRAW, 366, 0xC09EBD, 0, "Window 3", "May 5", 433920000, "Dooya");
     { NRDev* d = &a->devs[a->dev_count-1];
@@ -262,9 +327,10 @@ static void nr_seed(NRApp* a) {
       snprintf(d->sigs[1].label, 20, "STOP"); d->sigs[1].file_seq = 9031; d->sigs[1].has_file = true;
       snprintf(d->sigs[2].label, 20, "DOWN"); d->sigs[2].file_seq = 9032; d->sigs[2].has_file = true;
       d->sig_count = 3;
-      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 9E BD 01 00 0B 27", 0, 9030);
-      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 9E BD 01 00 23 3F", 0, 9031);
-      nr_seed_sub(a, "Dooya", 433920000, 64, "A3 C0 9E BD 01 00 43 5F", 0, 9032);
+      uint16_t n;
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C09EBD01000B27ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9030);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C09EBD0100233FULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9031);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C09EBD0100435FULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9032);
     }
     #undef SEED
     a->autosave_seq = 100; // start live captures at 100 to avoid seed file conflicts
@@ -352,6 +418,15 @@ static void nr_extract_label(const char* proto, const char* ds, char* out, uint8
 static void nr_decode_cb(SubGhzReceiver* rx, SubGhzProtocolDecoderBase* db, void* ctx) {
     UNUSED(rx);
     NRApp* a = ctx;
+    a->dbg_decode_cb++;
+    snprintf(a->dbg_last_proto, 16, "%s", db->protocol->name);
+
+    // Firmware decoded this signal — don't also save as RAW
+    // Exception: firmware Dooya decoder fires at 40 bits (wrong for our 64-bit A-OK)
+    if(strcmp(db->protocol->name, "Dooya") != 0) {
+        nr_raw_ready = false;
+        nr_raw_count = 0;
+    }
 
     // Dedup: same hash within 600ms = skip
     uint32_t hash = subghz_protocol_decoder_base_get_hash_data_long(db);
@@ -419,56 +494,109 @@ static void nr_decode_cb(SubGhzReceiver* rx, SubGhzProtocolDecoderBase* db, void
         notification_message(a->notif, &sequence_blink_cyan_10);
     }
 
-    // Autosave: serialize proper .sub file (skip Honeywell spam)
-    if(di >= 0 && a->autosave && proto != NRProtoHoneywell) {
-        Storage* st = furi_record_open(RECORD_STORAGE);
-        storage_simply_mkdir(st, NR_SAVE_DIR);
-        storage_simply_mkdir(st, NR_AUTOSAVE_DIR);
-        char path[80];
-        snprintf(path, sizeof(path), "%s/%04d.sub", NR_AUTOSAVE_DIR, a->autosave_seq);
-        FlipperFormat* ff = flipper_format_file_alloc(st);
-        if(flipper_format_file_open_always(ff, path)) {
-            SubGhzRadioPreset preset = {
-                .frequency = a->rx_freq,
-                .name = furi_string_alloc_set("AM650"),
-                .data = NULL, .data_size = 0,
-            };
-            subghz_protocol_decoder_base_serialize(db, ff, &preset);
-            furi_string_free(preset.name);
-            // Mark signal as having a file for replay
-            NRDev* d = &a->devs[di];
-            if(d->sig_count > 0) {
-                // Update last signal's file reference
-                uint8_t si = d->sig_count - 1;
-                d->sigs[si].file_seq = a->autosave_seq;
-                d->sigs[si].has_file = true;
-            }
-        }
-        flipper_format_free(ff);
-        a->autosave_seq++;
-        furi_record_close(RECORD_STORAGE);
-    }
+    // Autosave DISABLED — was blocking worker thread, causing overruns
+    // TODO: move to main loop with flag + cached decoder data
+    (void)di;
 
     furi_string_free(text);
     a->rx_new_signal = true;
 }
 
-// RX callback — just feeds firmware decoders
+// A-OK/Dooya 64-bit RX state machine (runs alongside firmware decoders)
+static enum { NRDooyaIdle, NRDooyaPre, NRDooyaSync, NRDooyaData } nr_dooya_rx_state;
+static uint8_t nr_dooya_rx_pre;
+static uint8_t nr_dooya_rx_bits;
+static uint64_t nr_dooya_rx_data;
+static uint32_t nr_dooya_last_hash;
+static uint32_t nr_dooya_last_tick;
+
+static void nr_dooya_rx_frame(NRApp* a, uint64_t frame) {
+    // Extract RID (bytes 1-3) for device matching
+    uint32_t rid = (frame >> 32) & 0xFFFFFF;
+    int8_t di = -1;
+    for(uint8_t i = 0; i < a->dev_count; i++) {
+        if(a->devs[i].dev_id == rid && strcmp(a->devs[i].fw_proto, "Dooya") == 0) {
+            di = i; break;
+        }
+    }
+    if(di < 0) return; // Unknown RID — ignore for now
+    NRDev* d = &a->devs[di];
+    // Dedup (own hash, separate from firmware decoder)
+    uint32_t hash = (uint32_t)(frame >> 16);
+    if(hash == nr_dooya_last_hash && (a->tick - nr_dooya_last_tick) < 12) return;
+    nr_dooya_last_hash = hash;
+    nr_dooya_last_tick = a->tick;
+    d->hits++;
+    d->last_seen = a->tick;
+    d->confirmed = true;
+    a->rx_new_signal = true;
+}
+
+__attribute__((unused))
+static void nr_dooya_decode(NRApp* a, bool level, uint32_t duration) {
+    UNUSED(a); UNUSED(level); UNUSED(duration);
+    // Temporarily disabled for debugging
+    return;
+    switch(nr_dooya_rx_state) {
+    case NRDooyaIdle:
+        if(level && duration > 180 && duration < 450) {
+            nr_dooya_rx_pre = 1; nr_dooya_rx_state = NRDooyaPre;
+        }
+        break;
+    case NRDooyaPre:
+        if(!level && duration > 400 && duration < 800) { /* gap ok */ }
+        else if(level && duration > 180 && duration < 450) { nr_dooya_rx_pre++; }
+        else if(level && duration > 3500 && duration < 6500) {
+            nr_dooya_rx_state = nr_dooya_rx_pre >= 4 ? NRDooyaSync : NRDooyaIdle;
+        } else { nr_dooya_rx_state = NRDooyaIdle; }
+        break;
+    case NRDooyaSync:
+        if(!level && duration > 300 && duration < 1000) {
+            nr_dooya_rx_bits = 0; nr_dooya_rx_data = 0; nr_dooya_rx_state = NRDooyaData;
+        } else { nr_dooya_rx_state = NRDooyaIdle; }
+        break;
+    case NRDooyaData:
+        if(level) {
+            nr_dooya_rx_data <<= 1;
+            if(duration > 400) nr_dooya_rx_data |= 1;
+            if(++nr_dooya_rx_bits >= 64) {
+                nr_dooya_rx_frame(a, nr_dooya_rx_data);
+                nr_dooya_rx_state = NRDooyaIdle;
+            }
+        } else if(duration > 3500) {
+            nr_dooya_rx_state = NRDooyaIdle;
+        }
+        break;
+    }
+}
+
+// RX callback — feeds firmware decoders + A-OK decoder + raw capture
 static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
     NRApp* a = ctx;
+    a->dbg_rx_cb++;
+    // Feed firmware protocol decoders (ALWAYS, regardless of RSSI gate)
     subghz_receiver_decode(a->receiver, level, duration);
+}
+
+static void nr_overrun_cb(void* ctx) {
+    NRApp* a = ctx;
+    a->dbg_overrun++;
+    subghz_receiver_reset(a->receiver);
 }
 
 static void nr_rx_start(NRApp* a) {
     if(a->rx_on) return;
     subghz_devices_idle(a->radio);
     subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
+    subghz_devices_idle(a->radio);
     uint32_t freq = (a->freq_mode == NRFreq868) ? 868350000 : 433920000;
     a->rx_freq = freq;
     subghz_devices_set_frequency(a->radio, freq);
+    subghz_devices_flush_rx(a->radio);
     subghz_receiver_reset(a->receiver);
     subghz_worker_set_pair_callback(a->worker, (SubGhzWorkerPairCallback)nr_rx_cb);
     subghz_worker_set_context(a->worker, a);
+    subghz_worker_set_overrun_callback(a->worker, nr_overrun_cb);
     subghz_devices_start_async_rx(a->radio, subghz_worker_rx_callback, a->worker);
     subghz_worker_start(a->worker);
     a->rx_on = true;
@@ -482,7 +610,10 @@ static void nr_rx_stop(NRApp* a) {
     a->rx_on = false;
 }
 
-// TX: replay signal from saved .sub file using firmware transmitter
+// Dooya TX: custom LevelDuration encoder (firmware has no Dooya transmitter)
+#include <lib/subghz/protocols/raw.h>
+
+// TX: replay signal from saved .sub file
 static void nr_tx(NRApp* a, NRDev* d, NRSig* s) {
     if(!s->has_file) return;
     bool was = a->rx_on; if(was) nr_rx_stop(a);
@@ -496,20 +627,46 @@ static void nr_tx(NRApp* a, NRDev* d, NRSig* s) {
         FuriString* proto_name = furi_string_alloc();
         if(flipper_format_read_string(ff, "Protocol", proto_name)) {
             flipper_format_rewind(ff);
-            SubGhzTransmitter* transmitter = subghz_transmitter_alloc_init(
-                a->environment, furi_string_get_cstr(proto_name));
-            if(transmitter) {
-                if(subghz_transmitter_deserialize(transmitter, ff) == SubGhzProtocolStatusOk) {
-                    subghz_devices_idle(a->radio);
-                    subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
-                    subghz_devices_set_frequency(a->radio, d->freq ? d->freq : 433920000);
-                    if(subghz_devices_start_async_tx(a->radio, subghz_transmitter_yield, transmitter)) {
-                        while(!subghz_devices_is_async_complete_tx(a->radio))
-                            furi_delay_ms(10);
-                        subghz_devices_stop_async_tx(a->radio);
+
+            if(strcmp(furi_string_get_cstr(proto_name), "RAW") == 0) {
+                // RAW file: use file encoder worker (streams from disk)
+                flipper_format_file_close(ff);
+                FlipperFormat* fff_data = flipper_format_string_alloc();
+                subghz_protocol_raw_gen_fff_data(
+                    fff_data, path, subghz_devices_get_name(a->radio));
+                SubGhzTransmitter* transmitter = subghz_transmitter_alloc_init(
+                    a->environment, "RAW");
+                if(transmitter) {
+                    if(subghz_transmitter_deserialize(transmitter, fff_data) == SubGhzProtocolStatusOk) {
+                        subghz_devices_idle(a->radio);
+                        subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
+                        subghz_devices_set_frequency(a->radio, d->freq ? d->freq : 433920000);
+                        if(subghz_devices_start_async_tx(a->radio, subghz_transmitter_yield, transmitter)) {
+                            while(!subghz_devices_is_async_complete_tx(a->radio))
+                                furi_delay_ms(10);
+                            subghz_devices_stop_async_tx(a->radio);
+                        }
                     }
+                    subghz_transmitter_free(transmitter);
                 }
-                subghz_transmitter_free(transmitter);
+                flipper_format_free(fff_data);
+            } else {
+                // Protocol-encoded file: standard transmitter
+                SubGhzTransmitter* transmitter = subghz_transmitter_alloc_init(
+                    a->environment, furi_string_get_cstr(proto_name));
+                if(transmitter) {
+                    if(subghz_transmitter_deserialize(transmitter, ff) == SubGhzProtocolStatusOk) {
+                        subghz_devices_idle(a->radio);
+                        subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
+                        subghz_devices_set_frequency(a->radio, d->freq ? d->freq : 433920000);
+                        if(subghz_devices_start_async_tx(a->radio, subghz_transmitter_yield, transmitter)) {
+                            while(!subghz_devices_is_async_complete_tx(a->radio))
+                                furi_delay_ms(10);
+                            subghz_devices_stop_async_tx(a->radio);
+                        }
+                    }
+                    subghz_transmitter_free(transmitter);
+                }
             }
         }
         furi_string_free(proto_name);
@@ -544,7 +701,39 @@ static void nr_came_tx_code(NRApp* a, uint16_t code) {
     a->came_tx = false;
 }
 
-static void nr_process(NRApp* a) { UNUSED(a); }
+static void nr_process(NRApp* a) {
+    // Save raw capture buffer when signal ended
+    if(nr_raw_ready && a->autosave) {
+        Storage* st = furi_record_open(RECORD_STORAGE);
+        storage_simply_mkdir(st, NR_SAVE_DIR);
+        storage_simply_mkdir(st, NR_AUTOSAVE_DIR);
+        char path[80];
+        snprintf(path, sizeof(path), "%s/%04d.sub", NR_AUTOSAVE_DIR, a->autosave_seq);
+        File* file = storage_file_alloc(st);
+        if(storage_file_open(file, path, FSAM_WRITE, FSOM_CREATE_ALWAYS)) {
+            FuriString* s = furi_string_alloc();
+            furi_string_printf(s,
+                "Filetype: Flipper SubGhz RAW File\nVersion: 1\n"
+                "Frequency: %lu\nPreset: FuriHalSubGhzPresetOok650Async\n"
+                "Protocol: RAW\nRAW_Data:",
+                (unsigned long)a->rx_freq);
+            for(uint16_t i = 0; i < nr_raw_count; i++)
+                furi_string_cat_printf(s, " %d", (int)nr_raw_buf[i]);
+            furi_string_cat(s, "\n");
+            storage_file_write(file, furi_string_get_cstr(s), furi_string_size(s));
+            furi_string_free(s);
+        }
+        storage_file_close(file);
+        storage_file_free(file);
+        furi_record_close(RECORD_STORAGE);
+        a->autosave_seq++;
+        nr_raw_count = 0;
+        nr_raw_ready = false;
+    } else if(nr_raw_ready) {
+        nr_raw_count = 0;
+        nr_raw_ready = false;
+    }
+}
 
 // ============== Drawing ==============
 
@@ -634,21 +823,26 @@ static void nr_draw(Canvas* c, void* ctx) {
         canvas_draw_str(c, 0, HDR_Y, buf);
         uint8_t live = 0;
         for(uint8_t i = 0; i < a->dev_count; i++)
-            if(a->devs[i].useful &&
-               ((!a->devs[i].seeded && a->devs[i].last_seen >= a->session_start) ||
-               (a->devs[i].seeded && a->devs[i].confirmed && a->devs[i].last_seen >= a->session_start))) live++;
+            if((!a->devs[i].seeded && a->devs[i].last_seen >= a->session_start) ||
+               (a->devs[i].seeded && a->devs[i].confirmed && a->devs[i].last_seen >= a->session_start)) live++;
         const char* fq = (a->rx_freq == 868350000) ? "868" : "433";
-        snprintf(buf, sizeof(buf), "%s %d", fq, live);
+        snprintf(buf, sizeof(buf), "%s R%lu D%lu O%lu", fq,
+            (unsigned long)(a->dbg_rx_cb / 1000),
+            (unsigned long)a->dbg_decode_cb,
+            (unsigned long)a->dbg_overrun);
         canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
+        // Show last decoded protocol below header
         canvas_set_font(c, FontSecondary);
+        if(a->dbg_last_proto[0])
+            canvas_draw_str(c, 0, HDR_LINE + 8, a->dbg_last_proto);
 
         uint8_t vis = 0, row = 0;
         for(uint8_t i = 0; i < a->dev_count && row < MAX_ROWS; i++) {
             NRDev* d = &a->devs[i];
             bool is_live = (!d->seeded && d->last_seen >= a->session_start) ||
                            (d->seeded && d->confirmed && d->last_seen >= a->session_start);
-            if(!is_live || !d->useful) continue;
+            if(!is_live) continue;
             if(vis < a->sel) { vis++; continue; }
             uint8_t y = ROW_START + row * ROW_H;
             if(vis == a->sel) {
@@ -695,15 +889,12 @@ static void nr_draw(Canvas* c, void* ctx) {
                 canvas_draw_str(c, 0, ROW_START + 8, "<");
                 canvas_draw_str_aligned(c, 127, ROW_START + 8, AlignRight, AlignBottom, ">");
             }
-            char age[6]; nr_age_str(age, sizeof(age), a->tick, d->last_seen);
-            const char* when = (d->last_seen == 0 && d->last_seen_date[0]) ?
-                d->last_seen_date : age;
-            snprintf(buf, sizeof(buf), "%lux  %s", (unsigned long)d->hits, when);
-            canvas_draw_str_aligned(c, 64, ROW_START + ROW_H + 7, AlignCenter, AlignBottom, buf);
-            canvas_draw_line(c, 0, ROW_START + ROW_H + 8, 127, ROW_START + ROW_H + 8);
-            for(uint8_t s = 0; s < d->sig_count; s++) {
-                uint8_t y = ROW_START + ROW_H + 10 + s * ROW_H;
-                if(y + ROW_H > FTR_LINE) break;
+            // Signal list with scroll (3 visible rows below device name)
+            uint8_t sig_rows = 3; // rows available for signals
+            uint8_t sig_start = 0;
+            if(a->dev_scroll >= sig_rows) sig_start = a->dev_scroll - sig_rows + 1;
+            for(uint8_t s = sig_start; s < d->sig_count && (s - sig_start) < sig_rows; s++) {
+                uint8_t y = ROW_START + ROW_H + 2 + (s - sig_start) * ROW_H;
                 if(s == a->dev_scroll) {
                     canvas_draw_box(c, 0, y, 128, ROW_H);
                     canvas_set_color(c, ColorWhite);
@@ -790,7 +981,15 @@ static void nr_draw(Canvas* c, void* ctx) {
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
 
-        int8_t line = -(int8_t)a->dev_scroll;
+        // For replayable devices, auto-scroll to keep selected signal visible
+        // Info line takes 1 row, so signals start at row 1. MAX_ROWS=4 means rows 0-3 visible.
+        // Signal s is at row (1 + s). Visible if (1 + s - scroll) < MAX_ROWS && (1 + s - scroll) >= 0
+        uint8_t dev_scroll_offset = 0;
+        if(nr_can_replay(d) && d->sig_count > 0) {
+            uint8_t sel_row = 1 + a->dev_scroll; // row of selected signal (0-based from info line)
+            if(sel_row >= MAX_ROWS) dev_scroll_offset = sel_row - MAX_ROWS + 1;
+        }
+        int8_t line = nr_can_replay(d) ? -(int8_t)dev_scroll_offset : -(int8_t)a->dev_scroll;
         // Protocol-specific info line
         if(d->proto == NRProtoNexusTH) {
             if(line >= 0 && line < MAX_ROWS) {
@@ -1101,14 +1300,12 @@ int32_t neighborhood_remote_app(void* p) {
                 } else if(ev.key == InputKeyDown && a->sel + 1 < lc) {
                     a->sel++;
                 } else if(ev.key == InputKeyOk && ev.type == InputTypeShort && lc > 0) {
-                    // Short OK: lock on selected device's protocol
+                    // Short OK: open device detail view
                     int8_t ri = nr_live_idx(a, a->sel);
                     if(ri >= 0) {
-                        NRProto sp = a->devs[ri].proto;
-                        if(a->lock_proto == (int8_t)sp)
-                            a->lock_proto = -1; // toggle off
-                        else
-                            a->lock_proto = sp;
+                        a->dev_sel = ri;
+                        a->dev_scroll = 0;
+                        a->view = NRViewDevice;
                     }
                 } else if(ev.key == InputKeyOk && ev.type == InputTypeLong && lc > 0) {
                     // Long OK: save selected device to known + clear from live
@@ -1329,6 +1526,7 @@ tick:
             subghz_devices_idle(a->radio);
             subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
             subghz_devices_set_frequency(a->radio, next);
+            subghz_devices_flush_rx(a->radio);
             subghz_receiver_reset(a->receiver);
             subghz_worker_set_pair_callback(a->worker, (SubGhzWorkerPairCallback)nr_rx_cb);
             subghz_worker_set_context(a->worker, a);
@@ -1344,6 +1542,26 @@ tick:
             view_port_update(a->vp);
         }
         nr_process(a);
+        // RSSI-gated raw capture: poll RSSI every tick
+        if(a->rx_on && !nr_raw_ready) {
+            float rssi = subghz_devices_get_rssi(a->radio);
+            if(rssi > NR_RSSI_THRESHOLD) {
+                nr_raw_gate = true;
+                nr_raw_low_count = 0;
+            } else if(nr_raw_gate) {
+                nr_raw_low_count++;
+                if(nr_raw_low_count >= NR_RSSI_LOW_COUNT) {
+                    // Signal ended — close gate
+                    nr_raw_gate = false;
+                    nr_raw_low_count = 0;
+                    if(nr_raw_count >= 20) {
+                        nr_raw_ready = true; // nr_process will save next tick
+                    } else {
+                        nr_raw_count = 0; // too short, discard
+                    }
+                }
+            }
+        }
         if(a->view == NRViewScan && (a->tick % 8) == 0) a->scan_anim++;
         view_port_update(a->vp);
     }
