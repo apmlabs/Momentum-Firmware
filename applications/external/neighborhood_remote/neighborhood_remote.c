@@ -1061,8 +1061,7 @@ static void nr_draw(Canvas* c, void* ctx) {
         if(row == 0) canvas_draw_str(c, 10, 32, "Listening...");
 
         canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
-        canvas_draw_str(c, 0, FTR_Y, "OK:Lock LongOK:Save");
-        canvas_draw_str_aligned(c, 127, FTR_Y, AlignRight, AlignBottom, "Bk");
+        canvas_draw_str(c, 0, FTR_Y, "OK:Detail LongOK:Save Bk");
 
     } else if(a->view == NRViewRemotes) {
         canvas_set_font(c, FontPrimary);
@@ -1246,9 +1245,14 @@ static void nr_draw(Canvas* c, void* ctx) {
         for(uint8_t s = 0; s < d->sig_count; s++) {
             if(line >= 0 && line < MAX_ROWS) {
                 uint8_t y = ROW_START + line * ROW_H;
+                if(nr_can_replay(d) && s == a->sig_sel) {
+                    canvas_draw_box(c, 0, y, 128, ROW_H);
+                    canvas_set_color(c, ColorWhite);
+                }
                 snprintf(buf, sizeof(buf), " %s %s",
-                    nr_can_replay(d) ? ">" : " ", d->sigs[s].label);
+                    (nr_can_replay(d) && s == a->sig_sel) ? ">>" : " >", d->sigs[s].label);
                 canvas_draw_str(c, 0, y + 8, buf);
+                canvas_set_color(c, ColorBlack);
             }
             line++;
         }
@@ -1271,10 +1275,9 @@ static void nr_draw(Canvas* c, void* ctx) {
         }
         canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
         if(nr_can_replay(d))
-            canvas_draw_str(c, 0, FTR_Y, "OK:Send LOK:Lock");
+            canvas_draw_str(c, 0, FTR_Y, "OK:Send U/D:Btn L/R:Dev");
         else
-            canvas_draw_str(c, 0, FTR_Y, "LOK:Lock U/D:Scroll");
-        canvas_draw_str_aligned(c, 127, FTR_Y, AlignRight, AlignBottom, "L/R Bk");
+            canvas_draw_str(c, 0, FTR_Y, "U/D:Scroll L/R:Dev Bk");
 
         if(a->tx_flash && (a->tick - a->tx_flash) < 30) {
             canvas_draw_box(c, 34, 20, 60, 20);
@@ -1324,7 +1327,7 @@ static void nr_draw(Canvas* c, void* ctx) {
         if(sc == 0) canvas_draw_str(c, 10, 32, "No sensors found");
 
         canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
-        canvas_draw_str(c, 0, FTR_Y, "OK:Detail LOK:Lock Bk");
+        canvas_draw_str(c, 0, FTR_Y, "OK:Detail  Bk:Menu");
 
     } else if(a->view == NRViewSettings) {
         canvas_set_font(c, FontPrimary);
@@ -1484,14 +1487,14 @@ int32_t neighborhood_remote_app(void* p) {
                 } else if(ev.key == InputKeyDown && a->sel + 1 < lc) {
                     a->sel++;
                 } else if(ev.key == InputKeyOk && ev.type == InputTypeShort && lc > 0) {
-                    // Short OK: lock on selected device's protocol
+                    // Short OK: open device detail
                     int8_t ri = nr_live_idx(a, a->sel);
                     if(ri >= 0) {
-                        NRProto sp = a->devs[ri].proto;
-                        if(a->lock_proto == (int8_t)sp)
-                            a->lock_proto = -1; // toggle off
-                        else
-                            a->lock_proto = sp;
+                        a->dev_sel = ri;
+                        a->dev_scroll = 0;
+                        a->sig_sel = 0;
+                        a->dev_back = NRViewScan;
+                        a->view = NRViewDevice;
                     }
                 } else if(ev.key == InputKeyOk && ev.type == InputTypeLong && lc > 0) {
                     // Long OK: mark device as useful (persists) + save DB
@@ -1562,8 +1565,9 @@ int32_t neighborhood_remote_app(void* p) {
                     } else if(ev.key == InputKeyOk && a->sel < uc) {
                         a->dev_sel = ui[a->sel];
                         a->dev_scroll = 0;
+                        a->sig_sel = 0;
+                        a->dev_back = NRViewKnown;
                         a->view = NRViewDevice;
-                        a->lock_proto = a->devs[ui[a->sel]].proto;
                         nr_rx_start(a);
                     }
                 }
@@ -1571,33 +1575,47 @@ int32_t neighborhood_remote_app(void* p) {
             } else if(a->view == NRViewDevice) {
                 NRDev* d = a->dev_sel < a->dev_count ? &a->devs[a->dev_sel] : NULL;
                 if(ev.key == InputKeyBack) {
-                    a->lock_proto = -1; // clear lock on exit
                     nr_rx_stop(a);
-                    a->view = NRViewKnown;
-                    a->sel = a->dev_sel;
+                    a->view = a->dev_back;
                 } else if(ev.key == InputKeyOk && ev.type == InputTypeShort &&
                           d && d->sig_count > 0 && nr_can_replay(d)) {
-                    uint8_t si = a->dev_scroll < d->sig_count ? a->dev_scroll : 0;
+                    uint8_t si = a->sig_sel < d->sig_count ? a->sig_sel : 0;
                     notification_message(a->notif, &sequence_blink_magenta_100);
                     nr_tx(a, d, &d->sigs[si]);
                     notification_message(a->notif, &sequence_blink_green_100);
                     a->tx_flash = a->tick;
-                } else if(ev.key == InputKeyOk && ev.type == InputTypeLong && d) {
-                    // Long OK: toggle protocol lock
-                    if(a->lock_proto == (int8_t)d->proto)
-                        a->lock_proto = -1; // unlock
-                    else
-                        a->lock_proto = d->proto; // re-lock
-                } else if(ev.key == InputKeyUp && a->dev_scroll > 0) {
-                    a->dev_scroll--;
+                } else if(ev.key == InputKeyUp) {
+                    if(d && nr_can_replay(d) && a->sig_sel > 0)
+                        a->sig_sel--;
+                    else if(!nr_can_replay(d) && a->dev_scroll > 0)
+                        a->dev_scroll--;
                 } else if(ev.key == InputKeyDown) {
-                    if(a->dev_scroll < 20) a->dev_scroll++;
-                } else if(ev.key == InputKeyLeft && a->dev_sel > 0) {
-                    a->dev_sel--; a->dev_scroll = 0;
-                    a->lock_proto = a->devs[a->dev_sel].proto; // update lock
-                } else if(ev.key == InputKeyRight && a->dev_sel + 1 < a->dev_count) {
-                    a->dev_sel++; a->dev_scroll = 0;
-                    a->lock_proto = a->devs[a->dev_sel].proto; // update lock
+                    if(d && nr_can_replay(d) && a->sig_sel + 1 < d->sig_count)
+                        a->sig_sel++;
+                    else if(!nr_can_replay(d) && a->dev_scroll < 20)
+                        a->dev_scroll++;
+                } else if(ev.key == InputKeyLeft || ev.key == InputKeyRight) {
+                    // L/R: cycle through devices from same source list
+                    uint8_t li[NR_MAX_DEVICES], lc2 = 0;
+                    if(a->dev_back == NRViewSensors) {
+                        for(uint8_t i = 0; i < a->dev_count; i++)
+                            if(nr_is_sensor[a->devs[i].proto] && a->devs[i].useful && !nr_can_replay(&a->devs[i])) li[lc2++] = i;
+                    } else if(a->dev_back == NRViewScan) {
+                        for(uint8_t i = 0; i < a->dev_count; i++)
+                            if(a->devs[i].last_seen >= a->session_start) li[lc2++] = i;
+                    } else {
+                        for(uint8_t i = 0; i < a->dev_count; i++)
+                            if(a->devs[i].useful) li[lc2++] = i;
+                    }
+                    // Find current position in list
+                    uint8_t cur = 0;
+                    for(uint8_t i = 0; i < lc2; i++)
+                        if(li[i] == a->dev_sel) { cur = i; break; }
+                    if(ev.key == InputKeyRight && cur + 1 < lc2) cur++;
+                    else if(ev.key == InputKeyLeft && cur > 0) cur--;
+                    a->dev_sel = li[cur];
+                    a->dev_scroll = 0;
+                    a->sig_sel = 0;
                 }
 
             } else if(a->view == NRViewSensors) {
@@ -1607,7 +1625,6 @@ int32_t neighborhood_remote_app(void* p) {
                     if(nr_is_sensor[a->devs[i].proto]) si[sc++] = i;
 
                 if(ev.key == InputKeyBack) {
-                    a->lock_proto = -1;
                     nr_rx_stop(a);
                     a->view = NRViewMenu;
                 } else if(ev.key == InputKeyUp && a->sel > 0) {
@@ -1617,14 +1634,9 @@ int32_t neighborhood_remote_app(void* p) {
                 } else if(ev.key == InputKeyOk && ev.type == InputTypeShort && a->sel < sc) {
                     a->dev_sel = si[a->sel];
                     a->dev_scroll = 0;
+                    a->sig_sel = 0;
+                    a->dev_back = NRViewSensors;
                     a->view = NRViewDevice;
-                    a->lock_proto = a->devs[si[a->sel]].proto;
-                } else if(ev.key == InputKeyOk && ev.type == InputTypeLong && a->sel < sc) {
-                    NRProto sp = a->devs[si[a->sel]].proto;
-                    if(a->lock_proto == (int8_t)sp)
-                        a->lock_proto = -1;
-                    else
-                        a->lock_proto = sp;
                 }
 
             } else if(a->view == NRViewSettings) {

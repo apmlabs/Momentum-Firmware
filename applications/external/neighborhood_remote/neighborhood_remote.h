@@ -97,6 +97,9 @@ typedef struct {
     uint8_t  sel;
     uint8_t  dev_sel;
     uint8_t  dev_scroll;
+    uint8_t  sig_sel;
+    NRView   dev_back; // view to return to on Back from Device
+    uint8_t  dev_source; // 0=known, 1=sensors, 2=scan
     uint8_t  menu_sel;
     uint32_t tick;
     uint32_t session_start;
