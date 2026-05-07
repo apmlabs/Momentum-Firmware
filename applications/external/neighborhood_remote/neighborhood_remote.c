@@ -1247,6 +1247,8 @@ int32_t neighborhood_remote_app(void* p) {
     a->receiver = subghz_receiver_alloc_init(a->environment);
     subghz_receiver_set_filter(a->receiver, SubGhzProtocolFlag_Decodable);
     subghz_receiver_set_rx_callback(a->receiver, nr_decode_cb, a);
+    // Debug: count how many protocols are in the registry
+    a->dbg_overrun = subghz_protocol_registry_count(&subghz_protocol_registry);
 
     nr_load(a);
     nr_seed(a);
