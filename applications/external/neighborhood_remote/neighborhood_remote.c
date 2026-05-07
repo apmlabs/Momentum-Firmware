@@ -5,7 +5,10 @@
 #include "neighborhood_remote.h"
 #include <lib/subghz/protocols/raw.h>
 #include <lib/subghz/transmitter.h>
+#include <furi_hal_rtc.h>
 #define TAG "Neighborhood"
+
+static void nr_update_date(NRDev* d);
 
 // ============== Classification ==============
 
@@ -298,7 +301,8 @@ static void nr_load(NRApp* a) {
                     d->sig_count++;
                 }
                 // Restore useful flag based on protocol (not saved in file)
-                d->useful = (d->proto != NRProtoBinRAW);
+                d->useful = (d->proto != NRProtoBinRAW) || d->seeded ||
+                    (d->sig_count > 0 && d->sigs[0].has_file);
                 if(d->proto == NRProtoNexusTH && d->sig_count > 0 &&
                    strstr(d->sigs[0].label, "bad frame")) d->useful = false;
                 a->dev_count++;
@@ -522,6 +526,7 @@ static void nr_dooya_rx_frame(NRApp* a, uint64_t frame) {
     if((a->tick - d->last_seen) >= NR_HIT_COOLDOWN) d->hits++;
     d->last_seen = a->tick;
     d->confirmed = true;
+    nr_update_date(d);
 }
 
 // Dooya A-OK 64-bit RX state machine
@@ -787,6 +792,7 @@ static void nr_process(NRApp* a) {
                     NRDev* d = &a->devs[di];
                     if((a->tick - d->last_seen) >= NR_HIT_COOLDOWN) {
                         d->hits++; d->last_seen = a->tick;
+                        nr_update_date(d);
                     }
                     if(d->seeded) d->confirmed = true;
                     // Update signal with correct decoded data
@@ -835,6 +841,7 @@ static void nr_process(NRApp* a) {
         NRDev* d = &a->devs[di];
         if((a->tick - d->last_seen) >= NR_HIT_COOLDOWN) {
             d->hits++; d->last_seen = a->tick; d->rssi = rssi;
+            nr_update_date(d);
         }
         if(d->seeded) d->confirmed = true;
         // NexusTH: update first signal label with latest temp reading (reject bad frames)
@@ -893,6 +900,7 @@ static void nr_process(NRApp* a) {
     memset(d, 0, sizeof(NRDev));
     d->proto = p; d->te = te; d->dev_id = did; d->freq = a->rx_freq;
     d->hits = 1; d->last_seen = a->tick; d->rssi = rssi;
+    nr_update_date(d);
     NRSig* s = &d->sigs[0];
     s->raw_len = len; s->bits = bits;
     memcpy(s->raw, data, len);
@@ -920,6 +928,16 @@ static void nr_age_str(char* out, uint8_t sz, uint32_t tick, uint32_t last_seen)
     else if(age < 60) snprintf(out, sz, "%us", (unsigned)age);
     else if(age < 3600) snprintf(out, sz, "%um", (unsigned)(age/60));
     else { unsigned h = age/3600; if(h > 99) h = 99; snprintf(out, sz, "%uh", h); }
+}
+
+static void nr_update_date(NRDev* d) {
+    DateTime dt;
+    furi_hal_rtc_get_datetime(&dt);
+    if(dt.year >= 2026) {
+        const char* months[] = {"","Jan","Feb","Mar","Apr","May","Jun",
+                                "Jul","Aug","Sep","Oct","Nov","Dec"};
+        snprintf(d->last_seen_date, 12, "%s %d", months[dt.month], dt.day);
+    }
 }
 
 // RSSI bars: 4 levels
@@ -1065,8 +1083,10 @@ static void nr_draw(Canvas* c, void* ctx) {
             snprintf(buf, sizeof(buf), "%lux  %s", (unsigned long)d->hits, when);
             canvas_draw_str_aligned(c, 64, ROW_START + ROW_H + 7, AlignCenter, AlignBottom, buf);
             canvas_draw_line(c, 0, ROW_START + ROW_H + 8, 127, ROW_START + ROW_H + 8);
-            for(uint8_t s = 0; s < d->sig_count; s++) {
-                uint8_t y = ROW_START + ROW_H + 10 + s * ROW_H;
+            uint8_t max_vis = (FTR_LINE - (ROW_START + ROW_H + 10)) / ROW_H;
+            uint8_t sstart = a->dev_scroll >= max_vis ? a->dev_scroll - max_vis + 1 : 0;
+            for(uint8_t s = sstart; s < d->sig_count; s++) {
+                uint8_t y = ROW_START + ROW_H + 10 + (s - sstart) * ROW_H;
                 if(y + ROW_H > FTR_LINE) break;
                 if(s == a->dev_scroll) {
                     canvas_draw_box(c, 0, y, 128, ROW_H);
@@ -1080,7 +1100,7 @@ static void nr_draw(Canvas* c, void* ctx) {
             canvas_draw_str(c, 4, 30, "No replayable devices");
         }
         canvas_draw_line(c, 0, FTR_LINE, 127, FTR_LINE);
-        canvas_draw_str(c, 0, FTR_Y, "OK:SEND  L/R:Dev  Bk");
+        canvas_draw_str(c, 0, FTR_Y, "OK:SEND  U/D:Btn  L/R:Dev");
 
         if(a->tx_flash && (a->tick - a->tx_flash) < 30) {
             canvas_draw_box(c, 34, 20, 60, 20);
@@ -1467,13 +1487,12 @@ int32_t neighborhood_remote_app(void* p) {
                             a->lock_proto = sp;
                     }
                 } else if(ev.key == InputKeyOk && ev.type == InputTypeLong && lc > 0) {
-                    // Long OK: save selected device to known + clear from live
+                    // Long OK: mark device as useful (persists) + save DB
                     int8_t ri = nr_live_idx(a, a->sel);
                     if(ri >= 0) {
-                        // Save: reset hits so it drops to bottom, but keeps capturing
-                        a->devs[ri].hits = 0;
+                        a->devs[ri].useful = true;
+                        nr_save(a);
                         notification_message(a->notif, &sequence_blink_green_100);
-                        if(a->sel > 0) a->sel--;
                     }
                 } else if(ev.key == InputKeyLeft || ev.key == InputKeyRight) {
                     // L/R: cycle frequency mode
