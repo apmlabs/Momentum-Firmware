@@ -157,6 +157,8 @@ static void nr_autosave_sig(NRApp* a, NRDev* d, NRSig* s) {
         flipper_format_write_string_cstr(ff, "Signal", s->label);
         uint32_t v[2] = {d->te, s->bits};
         flipper_format_write_uint32(ff, "Info", v, 2);
+        int32_t rssi32 = d->rssi;
+        flipper_format_write_int32(ff, "RSSI", &rssi32, 1);
         if(s->raw_len) flipper_format_write_hex(ff, "Data", s->raw, s->raw_len);
         // Append firmware protocol decode if available
         if(a->dec_proto[0]) {
