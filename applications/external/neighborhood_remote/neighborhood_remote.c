@@ -419,6 +419,7 @@ static void nr_decode_cb(SubGhzReceiver* rx, SubGhzProtocolDecoderBase* db, void
     UNUSED(rx);
     NRApp* a = ctx;
     a->dbg_decode_cb++;
+    snprintf(a->dbg_last_proto, 16, "%s", db->protocol->name);
 
     // Firmware decoded this signal — don't also save as RAW
     // Exception: firmware Dooya decoder fires at 40 bits (wrong for our 64-bit A-OK)
@@ -493,35 +494,9 @@ static void nr_decode_cb(SubGhzReceiver* rx, SubGhzProtocolDecoderBase* db, void
         notification_message(a->notif, &sequence_blink_cyan_10);
     }
 
-    // Autosave: serialize proper .sub file (skip Honeywell spam)
-    if(di >= 0 && a->autosave && proto != NRProtoHoneywell) {
-        Storage* st = furi_record_open(RECORD_STORAGE);
-        storage_simply_mkdir(st, NR_SAVE_DIR);
-        storage_simply_mkdir(st, NR_AUTOSAVE_DIR);
-        char path[80];
-        snprintf(path, sizeof(path), "%s/%04d.sub", NR_AUTOSAVE_DIR, a->autosave_seq);
-        FlipperFormat* ff = flipper_format_file_alloc(st);
-        if(flipper_format_file_open_always(ff, path)) {
-            SubGhzRadioPreset preset = {
-                .frequency = a->rx_freq,
-                .name = furi_string_alloc_set("AM650"),
-                .data = NULL, .data_size = 0,
-            };
-            subghz_protocol_decoder_base_serialize(db, ff, &preset);
-            furi_string_free(preset.name);
-            // Mark signal as having a file for replay
-            NRDev* d = &a->devs[di];
-            if(d->sig_count > 0) {
-                // Update last signal's file reference
-                uint8_t si = d->sig_count - 1;
-                d->sigs[si].file_seq = a->autosave_seq;
-                d->sigs[si].has_file = true;
-            }
-        }
-        flipper_format_free(ff);
-        a->autosave_seq++;
-        furi_record_close(RECORD_STORAGE);
-    }
+    // Autosave DISABLED — was blocking worker thread, causing overruns
+    // TODO: move to main loop with flag + cached decoder data
+    (void)di;
 
     furi_string_free(text);
     a->rx_new_signal = true;
@@ -613,6 +588,7 @@ static void nr_rx_start(NRApp* a) {
     if(a->rx_on) return;
     subghz_devices_idle(a->radio);
     subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
+    subghz_devices_idle(a->radio);
     uint32_t freq = (a->freq_mode == NRFreq868) ? 868350000 : 433920000;
     a->rx_freq = freq;
     subghz_devices_set_frequency(a->radio, freq);
@@ -847,9 +823,8 @@ static void nr_draw(Canvas* c, void* ctx) {
         canvas_draw_str(c, 0, HDR_Y, buf);
         uint8_t live = 0;
         for(uint8_t i = 0; i < a->dev_count; i++)
-            if(a->devs[i].useful &&
-               ((!a->devs[i].seeded && a->devs[i].last_seen >= a->session_start) ||
-               (a->devs[i].seeded && a->devs[i].confirmed && a->devs[i].last_seen >= a->session_start))) live++;
+            if((!a->devs[i].seeded && a->devs[i].last_seen >= a->session_start) ||
+               (a->devs[i].seeded && a->devs[i].confirmed && a->devs[i].last_seen >= a->session_start)) live++;
         const char* fq = (a->rx_freq == 868350000) ? "868" : "433";
         snprintf(buf, sizeof(buf), "%s R%lu D%lu O%lu", fq,
             (unsigned long)(a->dbg_rx_cb / 1000),
@@ -857,14 +832,17 @@ static void nr_draw(Canvas* c, void* ctx) {
             (unsigned long)a->dbg_overrun);
         canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
+        // Show last decoded protocol below header
         canvas_set_font(c, FontSecondary);
+        if(a->dbg_last_proto[0])
+            canvas_draw_str(c, 0, HDR_LINE + 8, a->dbg_last_proto);
 
         uint8_t vis = 0, row = 0;
         for(uint8_t i = 0; i < a->dev_count && row < MAX_ROWS; i++) {
             NRDev* d = &a->devs[i];
             bool is_live = (!d->seeded && d->last_seen >= a->session_start) ||
                            (d->seeded && d->confirmed && d->last_seen >= a->session_start);
-            if(!is_live || !d->useful) continue;
+            if(!is_live) continue;
             if(vis < a->sel) { vis++; continue; }
             uint8_t y = ROW_START + row * ROW_H;
             if(vis == a->sel) {
