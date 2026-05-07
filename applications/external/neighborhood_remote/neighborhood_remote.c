@@ -16,8 +16,10 @@ static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* d, uint8_t len) 
         if(ff > len / 3 && te < 70) return NRProtoFSK;
     }
     if(te >= 500 && te <= 750 && bits >= 30) return NRProtoNexusTH;
-    // KeeLoq: TE 220-360, 60-80 bits (64-66 data + up to 14 preamble bits)
+    // KeeLoq: TE 220-360, 60-80 bits (single frame + preamble)
     if(te >= 220 && te <= 360 && bits >= 60 && bits <= 80) return NRProtoKeeloq;
+    // KeeLoq multi-frame: TE 220-360, 120-250 bits (2-4 concatenated frames)
+    if(te >= 220 && te <= 360 && bits >= 120 && bits <= 250) return NRProtoKeeloq;
     if(te >= 110 && te <= 210 && bits >= 30) return NRProtoHoneywell;
     if(te >= 70 && te <= 84 && bits >= 50) return NRProtoHoneywell; // half-bit Manchester
     // Princeton/PT2262: TE 175-400, 16-50 bits (covers Remote C6 at TE=380)
@@ -31,7 +33,10 @@ static uint32_t nr_dev_id(NRProto p, uint8_t* d, uint8_t len, uint16_t te) {
     if(p == NRProtoEV1527 && len >= 3)
         return (((uint32_t)d[0]<<16)|((uint32_t)d[1]<<8)|d[2]) >> 4;
     if(p == NRProtoKeeloq && len >= 8) {
-        uint32_t sn = (((uint32_t)d[4]&0xF)<<24)|((uint32_t)d[5]<<16)|((uint32_t)d[6]<<8)|d[7];
+        // For multi-frame captures, use last frame's serial (bytes at end)
+        uint8_t off = (len > 9) ? len - 9 : 0;
+        uint32_t sn = (((uint32_t)d[off+4]&0xF)<<24)|((uint32_t)d[off+5]<<16)|
+                      ((uint32_t)d[off+6]<<8)|d[off+7];
         return sn >> 4;
     }
     if(p == NRProtoHoneywell) return 0x5800;
@@ -385,7 +390,7 @@ static void nr_seed(NRApp* a) {
         snprintf(d->last_seen_date, 12, DATE); }
 
     SEED(NRProtoHoneywell, 143, 0x5800, 1633, "Alarm System", "May 2", 433920000);
-    SEED(NRProtoKeeloq, 322, 0x2F9AE15, 24, "Parking Fob", "Apr 27", 433920000);
+    SEED(NRProtoKeeloq, 289, 0x2F9AE15, 24, "Parking Fob", "May 7", 433920000);
     a->devs[a->dev_count-1].sig_count = 2;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "S2 2F9AE1");
     snprintf(a->devs[a->dev_count-1].sigs[1].label, 20, "S3 2F9AE1");
