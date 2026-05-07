@@ -16,10 +16,10 @@ static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* d, uint8_t len) 
         if(ff > len / 3 && te < 70) return NRProtoFSK;
     }
     if(te >= 500 && te <= 750 && bits >= 30) return NRProtoNexusTH;
-    // KeeLoq: TE 220-360, 60-80 bits (single frame + preamble)
-    if(te >= 220 && te <= 360 && bits >= 60 && bits <= 80) return NRProtoKeeloq;
-    // KeeLoq multi-frame: TE 220-360, 120-250 bits (2-4 concatenated frames)
-    if(te >= 220 && te <= 360 && bits >= 120 && bits <= 250) return NRProtoKeeloq;
+    // KeeLoq: TE 220-400, 60-90 bits (single frame + preamble)
+    if(te >= 220 && te <= 400 && bits >= 60 && bits <= 90) return NRProtoKeeloq;
+    // KeeLoq multi-frame: TE 220-400, 120-250 bits (2-4 concatenated frames)
+    if(te >= 220 && te <= 400 && bits >= 120 && bits <= 250) return NRProtoKeeloq;
     if(te >= 110 && te <= 210 && bits >= 30) return NRProtoHoneywell;
     if(te >= 70 && te <= 84 && bits >= 50) return NRProtoHoneywell; // half-bit Manchester
     // Princeton/PT2262: TE 175-400, 16-50 bits (covers Remote C6 at TE=380)
