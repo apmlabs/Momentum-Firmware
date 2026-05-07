@@ -997,7 +997,7 @@ static void nr_draw(Canvas* c, void* ctx) {
             } else if(i == 3) {
                 uint8_t sc = 0;
                 for(uint8_t j = 0; j < a->dev_count; j++)
-                    if(nr_is_sensor[a->devs[j].proto] && a->devs[j].useful) sc++;
+                    if(nr_is_sensor[a->devs[j].proto] && a->devs[j].useful && !nr_can_replay(&a->devs[j])) sc++;
                 snprintf(buf, sizeof(buf), "(%d)", sc);
                 canvas_draw_str(c, 90, y + 8, buf);
             }
@@ -1287,7 +1287,7 @@ static void nr_draw(Canvas* c, void* ctx) {
 
         uint8_t si[NR_MAX_DEVICES], sc = 0;
         for(uint8_t i = 0; i < a->dev_count; i++)
-            if(nr_is_sensor[a->devs[i].proto] && a->devs[i].useful) si[sc++] = i;
+            if(nr_is_sensor[a->devs[i].proto] && a->devs[i].useful && !nr_can_replay(&a->devs[i])) si[sc++] = i;
 
         uint8_t start = a->sel > 3 ? a->sel - 3 : 0;
         for(uint8_t j = start; j < sc && (j - start) < MAX_ROWS; j++) {
