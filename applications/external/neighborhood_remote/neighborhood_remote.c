@@ -587,12 +587,15 @@ static void nr_overrun_cb(void* ctx) {
 
 static void nr_rx_start(NRApp* a) {
     if(a->rx_on) return;
+    subghz_devices_reset(a->radio);
     subghz_devices_idle(a->radio);
     subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
     uint32_t freq = (a->freq_mode == NRFreq868) ? 868350000 : 433920000;
     a->rx_freq = freq;
+    subghz_devices_idle(a->radio);
     subghz_devices_set_frequency(a->radio, freq);
-    subghz_receiver_reset(a->receiver);
+    subghz_devices_flush_rx(a->radio);
+    subghz_devices_set_rx(a->radio);
     subghz_devices_start_async_rx(a->radio, subghz_worker_rx_callback, a->worker);
     subghz_worker_start(a->worker);
     a->rx_on = true;
