@@ -6,7 +6,6 @@
 #include <notification/notification_messages.h>
 #include <lib/subghz/subghz_worker.h>
 #include <lib/subghz/receiver.h>
-#include <lib/subghz/transmitter.h>
 #include <lib/subghz/environment.h>
 #include <lib/subghz/protocols/protocol_items.h>
 #include <lib/subghz/protocols/base.h>
@@ -43,22 +42,25 @@ static const char* nr_pdesc[] = {
 };
 
 typedef struct {
+    uint8_t  raw[32];
+    uint8_t  raw_len;
+    uint16_t bits;
     char     label[20];
-    uint16_t file_seq;   // autosave sequence number for .sub file replay
-    bool     has_file;   // true if .sub file exists on SD
+    uint16_t file_seq;  // .sub file sequence number (0=none)
+    bool     has_file;  // true if .sub file exists for replay
 } NRSig;
 
 typedef struct {
     NRProto  proto;
     uint16_t te;
     uint32_t dev_id;
-    uint32_t freq;      // 433920000 or 868350000
+    uint32_t freq;
     uint32_t hits;
     uint32_t last_seen;
     int8_t   rssi;
     char     name[NR_MAX_NAME];
     char     last_seen_date[12];
-    char     fw_proto[16]; // firmware protocol name (for TX)
+    char     fw_proto[16];  // firmware decoder protocol name (annotation)
     NRSig    sigs[NR_MAX_SIGS];
     uint8_t  sig_count;
     bool     seeded;
@@ -108,10 +110,20 @@ typedef struct {
     uint32_t rx_freq;
     uint32_t auto_switch;
 
-    // RX state (decode callback)
-    volatile bool rx_new_signal;
-    uint32_t last_decode_hash;
-    uint32_t last_decode_tick;
+    // RX double buffer (bit accumulator)
+    uint32_t rx_pulse;
+    uint8_t  rx_bits[128];
+    uint16_t rx_bit_count;
+    uint32_t rx_te_sum;
+    uint16_t rx_te_n;
+    volatile bool rx_ready;
+    uint16_t rx_fbits;
+    uint16_t rx_fte;
+    uint8_t  rx_fdata[32];
+    uint8_t  rx_flen;
+    uint8_t  rx_last[32];
+    uint8_t  rx_last_len;
+    uint16_t rx_last_te;
     uint32_t tx_flash;
     uint16_t autosave_seq;
 
@@ -119,4 +131,16 @@ typedef struct {
     uint16_t came_code;
     bool     came_running;
     bool     came_tx;
+
+    // Firmware protocol decoder result (lock-free handoff)
+    volatile bool dec_ready;
+    char dec_proto[16];
+    char dec_str[128];
+
+    // Dooya A-OK 64-bit RX state machine
+    uint8_t  dooya_state;  // 0=idle 1=pre 2=sync 3=data
+    uint8_t  dooya_pre;
+    uint8_t  dooya_bits;
+    uint64_t dooya_data;
+    uint32_t dooya_last_hash;
 } NRApp;
