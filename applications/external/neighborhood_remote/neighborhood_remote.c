@@ -38,8 +38,6 @@ static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* d, uint8_t len) 
     }
     // KeeLoq: TE 220-400, 60-90 bits (single frame + preamble)
     if(te >= 220 && te <= 400 && bits >= 60 && bits <= 90) return NRProtoKeeloq;
-    // KeeLoq multi-frame: TE 220-400, 120-250 bits (2-4 concatenated frames)
-    if(te >= 220 && te <= 400 && bits >= 120 && bits <= 250) return NRProtoKeeloq;
     if(te >= 110 && te <= 210 && bits >= 30) return NRProtoHoneywell;
     if(te >= 70 && te <= 84 && bits >= 50) return NRProtoHoneywell; // half-bit Manchester
     // Princeton/PT2262: TE 175-400, 16-50 bits (covers Remote C6 at TE=380)
@@ -223,10 +221,16 @@ static void nr_save(NRApp* a) {
     FlipperFormat* ff = flipper_format_file_alloc(st);
     if(flipper_format_file_open_always(ff, NR_SAVE_FILE)) {
         flipper_format_write_header_cstr(ff, "Neighborhood DB", 6);
-        uint32_t cnt = a->dev_count;
+        // Count persistable devices: seeded OR (hits >= 2 AND not KeeLoq)
+        uint32_t cnt = 0;
+        for(uint8_t i = 0; i < a->dev_count; i++) {
+            NRDev* d = &a->devs[i];
+            if(d->seeded || (d->hits >= 2 && d->proto != NRProtoKeeloq)) cnt++;
+        }
         flipper_format_write_uint32(ff, "Count", &cnt, 1);
         for(uint8_t i = 0; i < a->dev_count; i++) {
             NRDev* d = &a->devs[i];
+            if(!d->seeded && (d->hits < 2 || d->proto == NRProtoKeeloq)) continue;
             uint32_t h[6] = {d->proto, d->te, d->dev_id, d->hits, d->sig_count, d->seeded};
             flipper_format_write_uint32(ff, "Dev", h, 6);
             flipper_format_write_string_cstr(ff, "Name", d->name);
