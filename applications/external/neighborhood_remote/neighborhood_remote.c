@@ -18,7 +18,24 @@ static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* d, uint8_t len) 
         for(uint8_t i = 0; i < len; i++) if(d[i] == 0xFF) ff++;
         if(ff > len / 3 && te < 70) return NRProtoFSK;
     }
-    if(te >= 500 && te <= 750 && bits >= 30) return NRProtoNexusTH;
+    // Dooya A-OK: starts with 0xA3, TE 250-400, 64 bits — check before KeeLoq
+    if(te >= 250 && te <= 400 && bits >= 60 && bits <= 70 && len >= 1 && d[0] >= 0xA0)
+        return NRProtoBinRAW; // Dooya handled by custom decoder, classify as BinRAW
+    // NexusTH: TE 500-750, bits 30-50, AND sanity check decoded temp
+    if(te >= 500 && te <= 750 && bits >= 30 && bits <= 50 && len >= 4) {
+        // Nexus-TH frame: [ID:8][Ch:2][Bat:1][?:1][Temp:12][Hum:8]
+        // Temp is bits 12-23 (signed, 0.1C units). Reject if all-zero or implausible.
+        int16_t raw_temp = (int16_t)(((d[1] & 0x0F) << 8) | d[2]);
+        if(d[1] & 0x08) raw_temp |= (int16_t)0xF000; // sign extend
+        // Real temps: -400 to +600 (i.e. -40.0C to +60.0C)
+        if(raw_temp >= -400 && raw_temp <= 600 && raw_temp != 0)
+            return NRProtoNexusTH;
+        // Also accept if humidity is non-zero and reasonable (1-100)
+        if(len >= 5 && d[3] >= 1 && d[3] <= 100)
+            return NRProtoNexusTH;
+        // Otherwise it's OOK meter noise
+        return NRProtoBinRAW;
+    }
     // KeeLoq: TE 220-400, 60-90 bits (single frame + preamble)
     if(te >= 220 && te <= 400 && bits >= 60 && bits <= 90) return NRProtoKeeloq;
     // KeeLoq multi-frame: TE 220-400, 120-250 bits (2-4 concatenated frames)
@@ -439,10 +456,11 @@ static void nr_seed(NRApp* a) {
     }
 
     SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30", 433920000);
+    SEED(NRProtoEV1527, 113, 0x87FFE, 1, "Sens 87FFE", "May 8", 433920000);
 
     // Confirmed neighbor KeeLoq fobs (seen multiple times across batches)
     SEED(NRProtoKeeloq, 225, 0x000B116, 8, "Fob B116", "May 2", 433920000);
-    SEED(NRProtoKeeloq, 295, 0x008011F, 4, "Fob 8011F", "May 7", 433920000);
+    SEED(NRProtoKeeloq, 295, 0x008011F, 6, "Fob 8011F", "May 8", 433920000);
     SEED(NRProtoKeeloq, 295, 0x008005E, 4, "Fob 8005E", "May 7", 433920000);
     SEED(NRProtoKeeloq, 240, 0x000B118, 3, "Fob B118", "May 2", 433920000);
     SEED(NRProtoKeeloq, 300, 0x0080218, 2, "Fob 80218", "May 7", 433920000);
