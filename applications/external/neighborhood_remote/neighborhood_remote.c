@@ -38,7 +38,7 @@ static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* d, uint8_t len) 
     }
     // KeeLoq: TE 220-400, 60-90 bits (single frame + preamble)
     if(te >= 220 && te <= 400 && bits >= 60 && bits <= 90) return NRProtoKeeloq;
-    if(te >= 110 && te <= 210 && bits >= 30) return NRProtoHoneywell;
+    if(te >= 100 && te <= 210 && bits >= 30) return NRProtoHoneywell;
     if(te >= 70 && te <= 84 && bits >= 50) return NRProtoHoneywell; // half-bit Manchester
     // Princeton/PT2262: TE 175-400, 16-50 bits (covers Remote C6 at TE=380)
     if(te >= 175 && te <= 400 && bits >= 16 && bits <= 50) return NRProtoPT2262;
