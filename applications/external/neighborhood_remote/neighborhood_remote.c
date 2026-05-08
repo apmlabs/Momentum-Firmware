@@ -558,6 +558,106 @@ static void nr_dooya_rx_frame(NRApp* a, uint64_t frame) {
     nr_update_date(d);
 }
 
+// NexusTH state machine decoder (gap-based PPM)
+// Protocol: ~490µs pulse + gap (980µs=0, 1960µs=1, 3920µs=sync)
+static void nr_nexus_rx_frame(NRApp* a, uint64_t data) {
+    // Validate: nibble 6 must be 0xF
+    if(((data >> 8) & 0x0F) != 0x0F) return;
+    uint8_t id = (data >> 28) & 0xFF;
+    int16_t raw_temp = (data >> 12) & 0x0FFF;
+    if(raw_temp & 0x0800) raw_temp |= 0xF000; // sign extend
+    if(raw_temp < -400 || raw_temp > 600) return; // -40C to +60C
+    uint8_t hum = data & 0xFF;
+    if(hum > 100) return;
+    // Build fake frame for nr_process: pack as NexusTH-style data
+    uint8_t buf[5];
+    buf[0] = id;
+    buf[1] = (data >> 20) & 0xFF; // flags + temp high
+    buf[2] = (data >> 12) & 0xFF; // temp low
+    buf[3] = hum;
+    buf[4] = 0;
+    // Format label
+    float temp_f = raw_temp / 10.0f;
+    char label[20];
+    snprintf(label, 20, "%.1fC %d%%", (double)temp_f, hum);
+    // Find or create device
+    uint32_t dev_id = ((uint32_t)id << 8) | id; // 0xE0E0 for id=0xE0
+    NRDev* d = NULL;
+    for(uint8_t i = 0; i < a->dev_count; i++) {
+        if(a->devs[i].proto == NRProtoNexusTH && a->devs[i].dev_id == dev_id) {
+            d = &a->devs[i]; break;
+        }
+    }
+    if(!d && a->dev_count < NR_MAX_DEVICES) {
+        d = &a->devs[a->dev_count++];
+        memset(d, 0, sizeof(NRDev));
+        d->proto = NRProtoNexusTH;
+        d->dev_id = dev_id;
+        d->te = 500;
+        d->freq = a->rx_freq;
+        snprintf(d->name, NR_MAX_NAME, "Weather %02X", id);
+        d->useful = true;
+    }
+    if(!d) return;
+    d->hits++;
+    d->last_seen = a->tick;
+    d->rssi = furi_hal_subghz_get_rssi();
+    d->confirmed = true;
+    snprintf(d->sigs[0].label, 20, "%s", label);
+    d->sig_count = 1;
+    memcpy(d->sigs[0].raw, buf, 4);
+    d->sigs[0].raw_len = 4;
+    d->sigs[0].bits = 36;
+    nr_update_date(d);
+}
+
+static void nr_nexus_decode(NRApp* a, bool level, uint32_t duration) {
+    switch(a->nexus_state) {
+    case 0: // wait for sync gap (~3920µs = 8×490)
+        if(!level && duration > 3000 && duration < 5000) {
+            a->nexus_bits = 0;
+            a->nexus_data = 0;
+            a->nexus_state = 1;
+        }
+        break;
+    case 1: // expect pulse (~490µs)
+        if(level && duration > 300 && duration < 700) {
+            a->nexus_pulse = duration;
+            a->nexus_state = 2;
+        } else {
+            a->nexus_state = 0;
+        }
+        break;
+    case 2: // check gap duration
+        if(!level) {
+            if(duration > 3000 && duration < 5000) {
+                // Sync gap — frame complete
+                if(a->nexus_bits == 36) {
+                    nr_nexus_rx_frame(a, a->nexus_data);
+                }
+                a->nexus_bits = 0;
+                a->nexus_data = 0;
+                a->nexus_state = 1; // expect next frame's first pulse
+            } else if(duration > 700 && duration < 1300) {
+                // Short gap (~980µs) = bit 0
+                a->nexus_data = (a->nexus_data << 1);
+                a->nexus_bits++;
+                a->nexus_state = 1;
+            } else if(duration > 1500 && duration < 2500) {
+                // Long gap (~1960µs) = bit 1
+                a->nexus_data = (a->nexus_data << 1) | 1;
+                a->nexus_bits++;
+                a->nexus_state = 1;
+            } else {
+                a->nexus_state = 0;
+            }
+        } else {
+            a->nexus_state = 0;
+        }
+        break;
+    }
+}
+
 // Dooya A-OK 64-bit RX state machine
 static void nr_dooya_decode(NRApp* a, bool level, uint32_t duration) {
     switch(a->dooya_state) {
@@ -599,6 +699,8 @@ static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
     subghz_receiver_decode(a->receiver, level, duration);
     // Feed Dooya A-OK 64-bit decoder
     nr_dooya_decode(a, level, duration);
+    // Feed NexusTH gap-based decoder
+    nr_nexus_decode(a, level, duration);
     if(level) { a->rx_pulse = duration; return; }
     uint32_t h = a->rx_pulse, l = duration;
     if(l > 5000) {
@@ -610,7 +712,7 @@ static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
             for(uint16_t i = 0; i < a->rx_bit_count && i < 256; i++)
                 if(a->rx_bits[i]) tmp[i/8] |= (1 << (7-(i%8)));
             // Repeat validation: EV1527/PT2262 range requires 2 identical frames
-            bool need_repeat = (te >= 105 && te <= 215 && a->rx_bit_count <= 80);
+            bool need_repeat = (te >= 105 && te <= 400 && a->rx_bit_count <= 50);
             if(need_repeat) {
                 bool match = (bl == a->rx_last_len && bl > 0 &&
                     abs((int)te - (int)a->rx_last_te) < 20 &&

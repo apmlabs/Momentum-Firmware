@@ -145,5 +145,11 @@ typedef struct {
     uint8_t  dooya_pre;
     uint8_t  dooya_bits;
     uint64_t dooya_data;
+
+    // NexusTH state machine decoder
+    uint8_t  nexus_state; // 0=wait_sync 1=save_pulse 2=check_gap
+    uint8_t  nexus_bits;
+    uint32_t nexus_pulse;
+    uint64_t nexus_data;
     uint32_t dooya_last_hash;
 } NRApp;
