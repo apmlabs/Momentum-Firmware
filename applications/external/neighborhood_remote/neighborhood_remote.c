@@ -34,7 +34,7 @@ static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* d, uint8_t len) 
 }
 
 static uint32_t nr_dev_id(NRProto p, uint8_t* d, uint8_t len, uint16_t te) {
-    if(p == NRProtoPT2262 && len >= 3) return d[len - 3];
+    if(p == NRProtoPT2262 && len >= 3) return d[0];
     if(p == NRProtoEV1527 && len >= 3)
         return (((uint32_t)d[0]<<16)|((uint32_t)d[1]<<8)|d[2]) >> 4;
     if(p == NRProtoKeeloq && len >= 8) {
@@ -47,8 +47,10 @@ static uint32_t nr_dev_id(NRProto p, uint8_t* d, uint8_t len, uint16_t te) {
     if(p == NRProtoHoneywell) return 0x5800;
     if(p == NRProtoFSK) return 0xF5C0;
     if(p == NRProtoNexusTH && len >= 1) return 0xE000 | d[0];
-    // Group OOK meter variants (TE 90-109) into single device
+    // Group OOK meter variants into single device
     if(p == NRProtoBinRAW && te >= 90 && te <= 109) return 0xB109;
+    // TE 400-750 BinRAW is also OOK meter noise (TE estimation varies wildly)
+    if(p == NRProtoBinRAW && te >= 400 && te <= 750) return 0xB109;
     return 0xB100 | ((te / 10) & 0xFF);
 }
 
@@ -424,7 +426,7 @@ static void nr_seed(NRApp* a) {
     r->sig_count = 2;
 
     // Neighbor Gate — Princeton TE=311, 4 buttons
-    SEED(NRProtoPT2262, 311, 0x87, 4, "Neighbor Gate", "May 5", 433920000);
+    SEED(NRProtoPT2262, 311, 0x9C, 4, "Neighbor Gate", "May 5", 433920000);
     { NRDev* ng = &a->devs[a->dev_count-1];
       memset(ng->sigs, 0, sizeof(ng->sigs));
       snprintf(ng->sigs[0].label, 20, "Open"); ng->sigs[0].file_seq = 9002; ng->sigs[0].has_file = true;
