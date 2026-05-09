@@ -21,27 +21,14 @@ static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* d, uint8_t len) 
     // Dooya A-OK: starts with 0xA3, TE 250-400, 64 bits — check before KeeLoq
     if(te >= 250 && te <= 400 && bits >= 60 && bits <= 70 && len >= 1 && d[0] >= 0xA0)
         return NRProtoBinRAW; // Dooya handled by custom decoder, classify as BinRAW
-    // NexusTH: TE 500-750, bits 30-50, AND sanity check decoded temp
-    if(te >= 500 && te <= 750 && bits >= 30 && bits <= 50 && len >= 4) {
-        // Nexus-TH frame: [ID:8][Ch:2][Bat:1][?:1][Temp:12][Hum:8]
-        // Temp is bits 12-23 (signed, 0.1C units). Reject if all-zero or implausible.
-        int16_t raw_temp = (int16_t)(((d[1] & 0x0F) << 8) | d[2]);
-        if(d[1] & 0x08) raw_temp |= (int16_t)0xF000; // sign extend
-        // Real temps: -400 to +600 (i.e. -40.0C to +60.0C)
-        if(raw_temp >= -400 && raw_temp <= 600 && raw_temp != 0)
-            return NRProtoNexusTH;
-        // Also accept if humidity is non-zero and reasonable (1-100)
-        if(len >= 5 && d[3] >= 1 && d[3] <= 100)
-            return NRProtoNexusTH;
-        // Otherwise it's OOK meter noise
-        return NRProtoBinRAW;
-    }
+    // NexusTH handled by dedicated state machine (nr_nexus_decode), not bit accumulator
+    if(te >= 500 && te <= 750) return NRProtoBinRAW;
     // KeeLoq: TE 220-400, 60-90 bits (single frame + preamble)
     if(te >= 220 && te <= 400 && bits >= 60 && bits <= 90) return NRProtoKeeloq;
     if(te >= 100 && te <= 210 && bits >= 30) return NRProtoHoneywell;
-    if(te >= 70 && te <= 84 && bits >= 50) return NRProtoHoneywell; // half-bit Manchester
+    if(te >= 70 && te <= 90 && bits >= 50) return NRProtoHoneywell; // half-bit Manchester
     // Princeton/PT2262: TE 175-400, 16-50 bits (covers Remote C6 at TE=380)
-    if(te >= 175 && te <= 400 && bits >= 16 && bits <= 50) return NRProtoPT2262;
+    if(te >= 175 && te <= 400 && bits >= 16 && bits <= 56) return NRProtoPT2262;
     if(te >= 105 && te <= 130 && bits >= 20 && bits <= 80) return NRProtoEV1527;
     return NRProtoBinRAW;
 }
@@ -323,7 +310,8 @@ static void nr_load(NRApp* a) {
                 }
                 // Restore useful flag based on protocol (not saved in file)
                 d->useful = (d->proto != NRProtoBinRAW) || d->seeded ||
-                    (d->sig_count > 0 && d->sigs[0].has_file);
+                    (d->sig_count > 0 && d->sigs[0].has_file) ||
+                    (d->proto == NRProtoBinRAW && d->hits >= 5);
                 if(d->proto == NRProtoNexusTH && d->sig_count > 0 &&
                    strstr(d->sigs[0].label, "bad frame")) d->useful = false;
                 a->dev_count++;
@@ -581,7 +569,7 @@ static void nr_nexus_rx_frame(NRApp* a, uint64_t data) {
     char label[20];
     snprintf(label, 20, "%.1fC %d%%", (double)temp_f, hum);
     // Find or create device
-    uint32_t dev_id = ((uint32_t)id << 8) | id; // 0xE0E0 for id=0xE0
+    uint32_t dev_id = 0xE000 | (uint32_t)id; // matches nr_dev_id for NexusTH
     NRDev* d = NULL;
     for(uint8_t i = 0; i < a->dev_count; i++) {
         if(a->devs[i].proto == NRProtoNexusTH && a->devs[i].dev_id == dev_id) {
@@ -712,7 +700,7 @@ static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
             for(uint16_t i = 0; i < a->rx_bit_count && i < 256; i++)
                 if(a->rx_bits[i]) tmp[i/8] |= (1 << (7-(i%8)));
             // Repeat validation: EV1527/PT2262 range requires 2 identical frames
-            bool need_repeat = (te >= 105 && te <= 400 && a->rx_bit_count <= 50);
+            bool need_repeat = (te >= 105 && te <= 400 && a->rx_bit_count <= 56);
             if(need_repeat) {
                 bool match = (bl == a->rx_last_len && bl > 0 &&
                     abs((int)te - (int)a->rx_last_te) < 20 &&
@@ -1274,8 +1262,9 @@ static void nr_draw(Canvas* c, void* ctx) {
                 d->last_seen_date : age;
             const char* dname = (d->proto == NRProtoNexusTH && d->sig_count > 0 && d->confirmed)
                 ? d->sigs[0].label : d->name;
-            snprintf(buf, sizeof(buf), "%c%s %s %lu %s",
-                tag, nr_picon[d->proto], dname, (unsigned long)d->hits, when);
+            snprintf(buf, sizeof(buf), "%c%s %s %lu%s %s",
+                tag, nr_picon[d->proto], dname, (unsigned long)d->hits,
+                nr_rssi_icon(d->rssi), when);
             buf[42] = 0;
             canvas_draw_str(c, 0, y + 8, buf);
             canvas_set_color(c, ColorBlack);
@@ -1436,14 +1425,17 @@ static void nr_draw(Canvas* c, void* ctx) {
             const char* when = (d->last_seen == 0 && d->last_seen_date[0]) ?
                 d->last_seen_date : age;
             if(d->proto == NRProtoNexusTH && d->sig_count > 0 && d->confirmed)
-                snprintf(buf, sizeof(buf), "%c~ %s %lu %s",
-                    tag, d->sigs[0].label, (unsigned long)d->hits, when);
+                snprintf(buf, sizeof(buf), "%c~ %s %lu%s %s",
+                    tag, d->sigs[0].label, (unsigned long)d->hits,
+                    nr_rssi_icon(d->rssi), when);
             else if(d->proto == NRProtoHoneywell)
-                snprintf(buf, sizeof(buf), "%c# %s %lu %s",
-                    tag, d->name, (unsigned long)d->hits, when);
+                snprintf(buf, sizeof(buf), "%c# %s %lu%s %s",
+                    tag, d->name, (unsigned long)d->hits,
+                    nr_rssi_icon(d->rssi), when);
             else
-                snprintf(buf, sizeof(buf), "%c%s %s %lu %s",
-                    tag, nr_picon[d->proto], d->name, (unsigned long)d->hits, when);
+                snprintf(buf, sizeof(buf), "%c%s %s %lu%s %s",
+                    tag, nr_picon[d->proto], d->name, (unsigned long)d->hits,
+                    nr_rssi_icon(d->rssi), when);
             buf[42] = 0;
             canvas_draw_str(c, 0, y + 8, buf);
             canvas_set_color(c, ColorBlack);
