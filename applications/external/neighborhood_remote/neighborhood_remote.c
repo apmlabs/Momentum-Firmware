@@ -400,19 +400,19 @@ static uint16_t nr_dooya_encode_raw(int16_t* buf, uint64_t frame, uint8_t repeat
 
 static void nr_seed(NRApp* a) {
     if(a->dev_count > 0) return; // already have data
-    #define SEED(P,TE,ID,HITS,NAME,DATE,FREQ) { \
+    #define SEED(P,TE,ID,HITS,NAME,DATE,FREQ,RSSI) { \
         NRDev* d = &a->devs[a->dev_count++]; memset(d,0,sizeof(NRDev)); \
         d->proto=P; d->te=TE; d->dev_id=ID; d->hits=HITS; d->seeded=true; \
-        d->useful=true; d->freq=FREQ; snprintf(d->name, NR_MAX_NAME, NAME); \
+        d->useful=true; d->freq=FREQ; d->rssi=RSSI; snprintf(d->name, NR_MAX_NAME, NAME); \
         snprintf(d->last_seen_date, 12, DATE); }
 
-    SEED(NRProtoHoneywell, 143, 0x5800, 1633, "Alarm System", "May 2", 433920000);
-    SEED(NRProtoKeeloq, 289, 0x2F9AE15, 24, "Parking Fob", "May 7", 433920000);
+    SEED(NRProtoHoneywell, 143, 0x5800, 1633, "Alarm System", "May 2", 433920000, -85);
+    SEED(NRProtoKeeloq, 289, 0x2F9AE15, 24, "Parking Fob", "May 7", 433920000, -88);
     a->devs[a->dev_count-1].sig_count = 2;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "S2 2F9AE1");
     snprintf(a->devs[a->dev_count-1].sigs[1].label, 20, "S3 2F9AE1");
 
-    SEED(NRProtoPT2262, 194, 0x4F, 53, "Remote 4F", "May 2", 433920000);
+    SEED(NRProtoPT2262, 194, 0x4F, 53, "Remote 4F", "May 2", 433920000, -75);
     NRDev* r = &a->devs[a->dev_count-1];
     memset(r->sigs, 0, sizeof(r->sigs));
     memcpy(r->sigs[0].raw, (uint8_t[]){0xFF,0xFE,0x4F,0xFF,0xE0}, 5);
@@ -426,7 +426,7 @@ static void nr_seed(NRApp* a) {
     r->sig_count = 2;
 
     // Neighbor Gate — Princeton TE=311, 4 buttons
-    SEED(NRProtoPT2262, 311, 0x9C, 5, "Neighbor Gate", "May 10", 433920000);
+    SEED(NRProtoPT2262, 311, 0x9C, 5, "Neighbor Gate", "May 10", 433920000, -88);
     { NRDev* ng = &a->devs[a->dev_count-1];
       memset(ng->sigs, 0, sizeof(ng->sigs));
       snprintf(ng->sigs[0].label, 20, "Open"); ng->sigs[0].file_seq = 9002; ng->sigs[0].has_file = true;
@@ -441,7 +441,7 @@ static void nr_seed(NRApp* a) {
     }
 
     // Remote C6 — Princeton TE=380, 1 button
-    SEED(NRProtoPT2262, 380, 0xC6, 3, "Remote C6", "May 10", 433920000);
+    SEED(NRProtoPT2262, 380, 0xC6, 3, "Remote C6", "May 10", 433920000, -69);
     { NRDev* rc = &a->devs[a->dev_count-1];
       memset(rc->sigs, 0, sizeof(rc->sigs));
       snprintf(rc->sigs[0].label, 20, "Button"); rc->sigs[0].file_seq = 9040; rc->sigs[0].has_file = true;
@@ -449,23 +449,23 @@ static void nr_seed(NRApp* a) {
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 C6 2C 86", 380, 9040);
     }
 
-    SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30", 433920000);
-    SEED(NRProtoEV1527, 113, 0x87FFE, 1, "Sens 87FFE", "May 8", 433920000);
+    SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30", 433920000, -88);
+    SEED(NRProtoEV1527, 113, 0x87FFE, 1, "Sens 87FFE", "May 8", 433920000, -90);
 
     // Confirmed neighbor KeeLoq fobs (seen multiple times across batches)
-    SEED(NRProtoKeeloq, 225, 0x000B116, 8, "Fob B116", "May 2", 433920000);
-    SEED(NRProtoKeeloq, 295, 0x008011F, 6, "Fob 8011F", "May 8", 433920000);
-    SEED(NRProtoKeeloq, 295, 0x008005E, 4, "Fob 8005E", "May 7", 433920000);
-    SEED(NRProtoKeeloq, 240, 0x000B118, 3, "Fob B118", "May 2", 433920000);
-    SEED(NRProtoKeeloq, 300, 0x0080218, 2, "Fob 80218", "May 7", 433920000);
-    SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "May 2", 433920000);
-    SEED(NRProtoNexusTH, 650, 0xE0E0, 29, "Weather E0", "May 2", 433920000);
+    SEED(NRProtoKeeloq, 225, 0x000B116, 8, "Fob B116", "May 2", 433920000, -92);
+    SEED(NRProtoKeeloq, 295, 0x008011F, 6, "Fob 8011F", "May 8", 433920000, -92);
+    SEED(NRProtoKeeloq, 295, 0x008005E, 4, "Fob 8005E", "May 7", 433920000, -92);
+    SEED(NRProtoKeeloq, 240, 0x000B118, 3, "Fob B118", "May 2", 433920000, -92);
+    SEED(NRProtoKeeloq, 300, 0x0080218, 2, "Fob 80218", "May 7", 433920000, -92);
+    SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "May 2", 433920000, -84);
+    SEED(NRProtoNexusTH, 650, 0xE0E0, 29, "Weather E0", "May 2", 433920000, -88);
     a->devs[a->dev_count-1].sig_count = 1;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "16.5C");
-    SEED(NRProtoBinRAW, 345, 0xB122, 10, "Bell Ctrl", "May 2", 433920000);
+    SEED(NRProtoBinRAW, 345, 0xB122, 10, "Bell Ctrl", "May 2", 433920000, -83);
 
     // 868 MHz devices
-    SEED(NRProtoBinRAW, 320, 0x09EC, 19, "Garage", "May 4", 868350000);
+    SEED(NRProtoBinRAW, 320, 0x09EC, 19, "Garage", "May 4", 868350000, -75);
     { NRDev* g = &a->devs[a->dev_count-1];
       memset(g->sigs, 0, sizeof(g->sigs));
       memcpy(g->sigs[0].raw, (uint8_t[]){0x9E,0xC0}, 2);
@@ -477,7 +477,7 @@ static void nr_seed(NRApp* a) {
     }
 
     // Dooya Windows — 3 remotes with RAW .sub files for replay
-    SEED(NRProtoBinRAW, 366, 0xC0A16C, 0, "Window 1", "May 5", 433920000);
+    SEED(NRProtoBinRAW, 366, 0xC0A16C, 0, "Window 1", "May 5", 433920000, 0);
     { NRDev* w = &a->devs[a->dev_count-1];
       snprintf(w->sigs[0].label, 20, "UP"); w->sigs[0].file_seq = 9010; w->sigs[0].has_file = true;
       snprintf(w->sigs[1].label, 20, "STOP"); w->sigs[1].file_seq = 9011; w->sigs[1].has_file = true;
@@ -488,7 +488,7 @@ static void nr_seed(NRApp* a) {
       n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0A16C010023F1ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9011);
       n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0A16C01004311ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9012);
     }
-    SEED(NRProtoBinRAW, 366, 0xC0AD01, 0, "Window 2", "May 5", 433920000);
+    SEED(NRProtoBinRAW, 366, 0xC0AD01, 0, "Window 2", "May 5", 433920000, 0);
     { NRDev* w = &a->devs[a->dev_count-1];
       snprintf(w->sigs[0].label, 20, "UP"); w->sigs[0].file_seq = 9020; w->sigs[0].has_file = true;
       snprintf(w->sigs[1].label, 20, "STOP"); w->sigs[1].file_seq = 9021; w->sigs[1].has_file = true;
@@ -499,7 +499,7 @@ static void nr_seed(NRApp* a) {
       n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0AD01010023B2ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9021);
       n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0AD01010043B2ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9022);
     }
-    SEED(NRProtoBinRAW, 366, 0xC09EBD, 0, "Window 3", "May 5", 433920000);
+    SEED(NRProtoBinRAW, 366, 0xC09EBD, 0, "Window 3", "May 5", 433920000, 0);
     { NRDev* w = &a->devs[a->dev_count-1];
       snprintf(w->sigs[0].label, 20, "UP"); w->sigs[0].file_seq = 9030; w->sigs[0].has_file = true;
       snprintf(w->sigs[1].label, 20, "STOP"); w->sigs[1].file_seq = 9031; w->sigs[1].has_file = true;
@@ -546,6 +546,13 @@ static void nr_dooya_rx_frame(NRApp* a, uint64_t frame) {
     d->last_seen = a->tick;
     d->confirmed = true;
     nr_update_date(d);
+    // Autosave Dooya frame
+    uint8_t raw[8];
+    for(int i = 7; i >= 0; i--) { raw[i] = frame & 0xFF; frame >>= 8; }
+    NRSig tmp = {.raw_len = 8, .bits = 64};
+    memcpy(tmp.raw, raw, 8);
+    snprintf(tmp.label, 20, "Dooya %06lX", (unsigned long)rid);
+    nr_autosave_sig(a, d, &tmp);
 }
 
 // NexusTH state machine decoder (gap-based PPM)
@@ -599,6 +606,8 @@ static void nr_nexus_rx_frame(NRApp* a, uint64_t data) {
     d->sigs[0].raw_len = 4;
     d->sigs[0].bits = 36;
     nr_update_date(d);
+    // Autosave NexusTH frame
+    nr_autosave_sig(a, d, &d->sigs[0]);
 }
 
 static void nr_nexus_decode(NRApp* a, bool level, uint32_t duration) {
@@ -932,6 +941,32 @@ static void nr_process(NRApp* a) {
                 return; // handled via firmware decode, skip raw processing
             }
         }
+        // Princeton firmware decode: extract key and match to PT2262 seed
+        if(strncmp(a->dec_proto, "Princeton", 9) == 0) {
+            char* kp = strstr(a->dec_str, "Key:0x");
+            if(kp) {
+                uint32_t key = strtoul(kp + 6, NULL, 16);
+                uint8_t did = (key >> 4) & 0xFF; // PT2262 dev_id = first byte of address
+                int8_t di = nr_find_dev(a, NRProtoPT2262, did);
+                if(di >= 0) {
+                    NRDev* d = &a->devs[di];
+                    if((a->tick - d->last_seen) >= NR_HIT_COOLDOWN) {
+                        d->hits++; d->last_seen = a->tick;
+                        d->rssi = furi_hal_subghz_get_rssi();
+                        nr_update_date(d);
+                    }
+                    if(d->seeded) d->confirmed = true;
+                    NRSig tmp = {.raw_len = 3, .bits = 24};
+                    tmp.raw[0] = (key >> 16) & 0xFF;
+                    tmp.raw[1] = (key >> 8) & 0xFF;
+                    tmp.raw[2] = key & 0xFF;
+                    snprintf(tmp.label, 20, "Cmd:%02lX", (unsigned long)(key & 0xFF));
+                    nr_autosave_sig(a, d, &tmp);
+                }
+                a->dec_ready = false; a->dec_proto[0] = 0; a->dec_str[0] = 0;
+                return;
+            }
+        }
         // For other firmware decodes, just note it for autosave annotation (handled below)
     }
 
@@ -1061,9 +1096,8 @@ static void nr_update_date(NRDev* d) {
     }
 }
 
-// RSSI bars: 4 levels
+// RSSI bars: 4 levels (0 = never seen = all dots)
 static const char* nr_rssi_icon(int8_t rssi) {
-    if(rssi == 0) return "";
     if(rssi > -60) return "||||";
     if(rssi > -75) return "|||.";
     if(rssi > -85) return "||..";
