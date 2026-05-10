@@ -26,7 +26,7 @@ static NRProto nr_classify(uint16_t te, uint16_t bits, uint8_t* d, uint8_t len) 
     // KeeLoq: TE 220-400, 60-90 bits (single frame + preamble)
     if(te >= 220 && te <= 400 && bits >= 60 && bits <= 90) return NRProtoKeeloq;
     if(te >= 100 && te <= 210 && bits >= 30) return NRProtoHoneywell;
-    if(te >= 70 && te <= 90 && bits >= 50) return NRProtoHoneywell; // half-bit Manchester
+    if(te >= 70 && te <= 90 && bits >= 30) return NRProtoHoneywell; // half-bit Manchester
     // Princeton/PT2262: TE 175-400, 16-50 bits (covers Remote C6 at TE=380)
     if(te >= 175 && te <= 400 && bits >= 16 && bits <= 56) return NRProtoPT2262;
     if(te >= 105 && te <= 130 && bits >= 20 && bits <= 80) return NRProtoEV1527;
@@ -952,8 +952,8 @@ static void nr_process(NRApp* a) {
 
     uint32_t did = nr_dev_id(p, data, len, te);
 
-    // Filter noise: EV1527 addr 0 or power-of-2 only
-    if(p == NRProtoEV1527 && (did == 0 || (did & (did - 1)) == 0)) return;
+    // Filter noise: EV1527 addr 0, power-of-2, or all-ones pattern
+    if(p == NRProtoEV1527 && (did == 0 || (did & (did - 1)) == 0 || ((did + 1) & did) == 0)) return;
     // Filter noise: PT2262 addr 0 only (0x02 is a real remote!)
     if(p == NRProtoPT2262 && did == 0) return;
     int8_t di = nr_find_dev(a, p, did);
