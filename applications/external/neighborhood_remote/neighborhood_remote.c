@@ -426,7 +426,7 @@ static void nr_seed(NRApp* a) {
     r->sig_count = 2;
 
     // Neighbor Gate — Princeton TE=311, 4 buttons
-    SEED(NRProtoPT2262, 311, 0x9C, 4, "Neighbor Gate", "May 5", 433920000);
+    SEED(NRProtoPT2262, 311, 0x9C, 5, "Neighbor Gate", "May 10", 433920000);
     { NRDev* ng = &a->devs[a->dev_count-1];
       memset(ng->sigs, 0, sizeof(ng->sigs));
       snprintf(ng->sigs[0].label, 20, "Open"); ng->sigs[0].file_seq = 9002; ng->sigs[0].has_file = true;
@@ -441,7 +441,7 @@ static void nr_seed(NRApp* a) {
     }
 
     // Remote C6 — Princeton TE=380, 1 button
-    SEED(NRProtoPT2262, 380, 0xC6, 1, "Remote C6", "May 6", 433920000);
+    SEED(NRProtoPT2262, 380, 0xC6, 3, "Remote C6", "May 10", 433920000);
     { NRDev* rc = &a->devs[a->dev_count-1];
       memset(rc->sigs, 0, sizeof(rc->sigs));
       snprintf(rc->sigs[0].label, 20, "Button"); rc->sigs[0].file_seq = 9040; rc->sigs[0].has_file = true;
@@ -1063,6 +1063,7 @@ static void nr_update_date(NRDev* d) {
 
 // RSSI bars: 4 levels
 static const char* nr_rssi_icon(int8_t rssi) {
+    if(rssi == 0) return "";
     if(rssi > -60) return "||||";
     if(rssi > -75) return "|||.";
     if(rssi > -85) return "||..";
@@ -1295,6 +1296,10 @@ static void nr_draw(Canvas* c, void* ctx) {
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
         canvas_set_font(c, FontSecondary);
 
+        // Auto-scroll to keep selected button visible (info=1 row + signals)
+        if(nr_can_replay(d) && a->sig_sel + 2 > a->dev_scroll + MAX_ROWS) {
+            a->dev_scroll = a->sig_sel + 2 - MAX_ROWS;
+        }
         int8_t line = -(int8_t)a->dev_scroll;
         // Protocol-specific info line
         if(d->proto == NRProtoNexusTH) {
