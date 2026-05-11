@@ -946,7 +946,7 @@ static void nr_process(NRApp* a) {
             char* kp = strstr(a->dec_str, "Key:0x");
             if(kp) {
                 uint32_t key = strtoul(kp + 6, NULL, 16);
-                uint8_t did = (key >> 4) & 0xFF; // PT2262 dev_id = first byte of address
+                uint8_t did = (key >> 16) & 0xFF; // PT2262 dev_id = first byte (matches d[0])
                 int8_t di = nr_find_dev(a, NRProtoPT2262, did);
                 if(di >= 0) {
                     NRDev* d = &a->devs[di];
