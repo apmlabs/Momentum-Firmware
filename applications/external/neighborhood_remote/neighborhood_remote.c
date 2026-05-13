@@ -1033,8 +1033,8 @@ static void nr_process(NRApp* a) {
             d->sig_count++;
             notification_message(a->notif, &sequence_blink_green_10);
         }
-        // Autosave all protocols except Honeywell (too spammy)
-        if(p != NRProtoHoneywell) {
+        // Autosave all protocols except Honeywell, OOK meter, and half-TE noise (too spammy)
+        if(p != NRProtoHoneywell && did != 0xB109 && did != 0xB108) {
             NRSig tmp = {.raw_len = len, .bits = bits};
             memcpy(tmp.raw, data, len);
             nr_sig_label(p, data, len, tmp.label, sizeof(tmp.label));
