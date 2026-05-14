@@ -76,10 +76,11 @@ typedef enum {
 } NRView;
 
 typedef enum { NRSortHits, NRSortRecent } NRSort;
-typedef enum { NRFreq433, NRFreq868, NRFreqAuto } NRFreqMode;
+typedef enum { NRFreq433AM, NRFreq433FM, NRFreq868AM, NRFreq868FM } NRFreqMode;
+#define NR_FREQ_COUNT 4
 
-static const uint32_t nr_freq_vals[] = {433920000, 868350000};
-static const char* nr_freq_names[] = {"433.92", "868.35", "Auto"};
+static const uint32_t nr_freq_vals[] = {433920000, 433920000, 868350000, 868350000};
+static const char* nr_freq_names[] = {"433 AM", "433 FM", "868 AM", "868 FM"};
 
 typedef struct {
     Gui* gui;
@@ -111,7 +112,6 @@ typedef struct {
     bool     autosave;
     NRFreqMode freq_mode;
     uint32_t rx_freq;
-    uint32_t auto_switch;
 
     // RX double buffer (bit accumulator)
     uint32_t rx_pulse;

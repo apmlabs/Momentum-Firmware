@@ -746,8 +746,12 @@ static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
 static void nr_rx_start(NRApp* a) {
     if(a->rx_on) return;
     subghz_devices_idle(a->radio);
-    subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
-    uint32_t freq = (a->freq_mode == NRFreq868) ? 868350000 : 433920000;
+    bool is_fm = (a->freq_mode == NRFreq433FM || a->freq_mode == NRFreq868FM);
+    if(is_fm)
+        subghz_devices_load_preset(a->radio, FuriHalSubGhzPreset2FSKDev238Async, NULL);
+    else
+        subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
+    uint32_t freq = nr_freq_vals[a->freq_mode];
     a->rx_freq = freq;
     subghz_devices_set_frequency(a->radio, freq);
     a->rx_bit_count = 0; a->rx_te_sum = 0; a->rx_te_n = 0; a->rx_ready = false;
@@ -1177,7 +1181,7 @@ static void nr_draw(Canvas* c, void* ctx) {
             if(a->devs[i].useful &&
                ((!a->devs[i].seeded && a->devs[i].last_seen >= a->session_start) ||
                (a->devs[i].seeded && a->devs[i].confirmed && a->devs[i].last_seen >= a->session_start))) live++;
-        const char* fq = (a->rx_freq == 868350000) ? "868" : "433";
+        const char* fq = nr_freq_names[a->freq_mode];
         snprintf(buf, sizeof(buf), "%s %d", fq, live);
         canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
         canvas_draw_line(c, 0, HDR_LINE, 127, HDR_LINE);
@@ -1666,9 +1670,9 @@ int32_t neighborhood_remote_app(void* p) {
                 } else if(ev.key == InputKeyLeft || ev.key == InputKeyRight) {
                     // L/R: cycle frequency mode
                     if(ev.key == InputKeyRight) {
-                        a->freq_mode = (a->freq_mode + 1) % 3;
+                        a->freq_mode = (a->freq_mode + 1) % NR_FREQ_COUNT;
                     } else {
-                        a->freq_mode = a->freq_mode == 0 ? 2 : a->freq_mode - 1;
+                        a->freq_mode = a->freq_mode == 0 ? NR_FREQ_COUNT - 1 : a->freq_mode - 1;
                     }
                     nr_rx_stop(a);
                     nr_rx_start(a);
@@ -1808,7 +1812,7 @@ int32_t neighborhood_remote_app(void* p) {
                 } else if(ev.key == InputKeyOk) {
                     if(a->sel == 0) {
                         // Cycle frequency mode
-                        a->freq_mode = (a->freq_mode + 1) % 3;
+                        a->freq_mode = (a->freq_mode + 1) % NR_FREQ_COUNT;
                         if(a->rx_on) {
                             nr_rx_stop(a);
                             nr_rx_start(a);
@@ -1862,25 +1866,6 @@ int32_t neighborhood_remote_app(void* p) {
 
 tick:
         a->tick++;
-        // Auto freq mode: alternate 433/868 every 10 ticks (500ms)
-        if(a->freq_mode == NRFreqAuto && a->rx_on && (a->tick - a->auto_switch) >= 10) {
-            a->auto_switch = a->tick;
-            uint32_t next = (a->rx_freq == 433920000) ? 868350000 : 433920000;
-            nr_rx_stop(a);
-            a->rx_freq = next;
-            // rx_start uses freq_mode, override for auto
-            subghz_devices_idle(a->radio);
-            subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
-            subghz_devices_set_frequency(a->radio, next);
-            a->rx_bit_count = 0; a->rx_te_sum = 0; a->rx_te_n = 0; a->rx_ready = false;
-            a->dec_ready = false;
-            subghz_receiver_reset(a->receiver);
-            subghz_worker_set_pair_callback(a->worker, (SubGhzWorkerPairCallback)nr_rx_cb);
-            subghz_worker_set_context(a->worker, a);
-            subghz_devices_start_async_rx(a->radio, subghz_worker_rx_callback, a->worker);
-            subghz_worker_start(a->worker);
-            a->rx_on = true;
-        }
         // CAME auto-scan: TX current code and advance
         if(a->view == NRViewCameScan && a->came_running && !a->came_tx) {
             nr_came_tx_code(a, a->came_code);
