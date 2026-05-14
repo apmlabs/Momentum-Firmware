@@ -451,6 +451,7 @@ static void nr_seed(NRApp* a) {
 
     SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30", 433920000, -88);
     SEED(NRProtoEV1527, 113, 0x87FFE, 1, "Sens 87FFE", "May 8", 433920000, -90);
+    SEED(NRProtoPT2262, 322, 0xEA, 1, "Remote EA", "May 14", 433920000, -86);
 
     // Confirmed neighbor KeeLoq fobs (seen multiple times across batches)
     SEED(NRProtoKeeloq, 225, 0x000B116, 8, "Fob B116", "May 2", 433920000, -92);
@@ -545,6 +546,7 @@ static void nr_dooya_rx_frame(NRApp* a, uint64_t frame) {
     if((a->tick - d->last_seen) >= NR_HIT_COOLDOWN) d->hits++;
     d->last_seen = a->tick;
     d->confirmed = true;
+    d->rssi = furi_hal_subghz_get_rssi();
     nr_update_date(d);
     // Autosave Dooya frame
     uint8_t raw[8];
