@@ -704,8 +704,12 @@ static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
     nr_nexus_decode(a, level, duration);
     if(level) { a->rx_pulse = duration; return; }
     uint32_t h = a->rx_pulse, l = duration;
-    if(l > 5000) {
-        if(a->rx_bit_count >= 24 && a->rx_te_n > 0 && !a->rx_ready) {
+    // Frame-end gap: 5ms for OOK, 1.5ms for FSK
+    bool is_fm = (a->freq_mode == NRFreq433FM || a->freq_mode == NRFreq868FM);
+    uint32_t gap_threshold = is_fm ? 1500 : 5000;
+    uint16_t min_bits = is_fm ? 40 : 24;
+    if(l > gap_threshold) {
+        if(a->rx_bit_count >= min_bits && a->rx_te_n > 0 && !a->rx_ready) {
             uint16_t te = a->rx_te_sum / a->rx_te_n;
             uint8_t bl = (a->rx_bit_count + 7) / 8; if(bl > 32) bl = 32;
             uint8_t tmp[32];
