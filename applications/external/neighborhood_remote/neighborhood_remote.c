@@ -134,7 +134,7 @@ static int8_t nr_find_dev(NRApp* a, NRProto p, uint32_t id) {
 
 // Can this device be replayed? PT2262/EV1527 always, plus CAME-style 868 MHz, plus has_file
 static bool nr_can_replay(NRDev* d) {
-    if(nr_replayable[d->proto]) return true;
+    if(nr_replayable[d->proto] && d->sig_count > 0) return true;
     if(d->freq == 868350000 && d->sig_count > 0 && d->sigs[0].bits == 12) return true;
     for(uint8_t i = 0; i < d->sig_count; i++)
         if(d->sigs[i].has_file) return true;
@@ -452,6 +452,12 @@ static void nr_seed(NRApp* a) {
     SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30", 433920000, -88);
     SEED(NRProtoEV1527, 113, 0x87FFE, 1, "Sens 87FFE", "May 8", 433920000, -90);
     SEED(NRProtoPT2262, 322, 0xEA, 1, "Remote EA", "May 14", 433920000, -86);
+    { NRDev* ea = &a->devs[a->dev_count-1];
+      memset(ea->sigs, 0, sizeof(ea->sigs));
+      snprintf(ea->sigs[0].label, 20, "Button"); ea->sigs[0].file_seq = 9041; ea->sigs[0].has_file = true;
+      ea->sig_count = 1;
+      nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 EA 55 B1", 322, 9041);
+    }
 
     // Confirmed neighbor KeeLoq fobs (seen multiple times across batches)
     SEED(NRProtoKeeloq, 225, 0x000B116, 8, "Fob B116", "May 2", 433920000, -92);
@@ -476,6 +482,7 @@ static void nr_seed(NRApp* a) {
       g->sig_count = 1;
       nr_seed_sub(a, "CAME", 868350000, 12, "00 00 00 00 00 00 09 EC", 0, 9006);
     }
+    SEED(NRProtoBinRAW, 249, 0xB118, 2, "868 Dev 249", "May 16", 868350000, -85);
 
     // Dooya Windows — 3 remotes with RAW .sub files for replay
     SEED(NRProtoBinRAW, 366, 0xC0A16C, 0, "Window 1", "May 5", 433920000, 0);
@@ -716,6 +723,15 @@ static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
             memset(tmp, 0, 32);
             for(uint16_t i = 0; i < a->rx_bit_count && i < 256; i++)
                 if(a->rx_bits[i]) tmp[i/8] |= (1 << (7-(i%8)));
+            // FM noise filter: reject frames with >75% ones (idle mark frequency)
+            if(is_fm) {
+                uint16_t ones = 0;
+                for(uint16_t i = 0; i < a->rx_bit_count; i++) if(a->rx_bits[i]) ones++;
+                if(ones > a->rx_bit_count * 3 / 4) {
+                    a->rx_bit_count = 0; a->rx_te_sum = 0; a->rx_te_n = 0;
+                    return;
+                }
+            }
             // Repeat validation: EV1527/PT2262 range requires 2 identical frames
             bool need_repeat = (te >= 105 && te <= 400 && a->rx_bit_count <= 56);
             if(need_repeat) {
