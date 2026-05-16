@@ -1200,7 +1200,8 @@ static void nr_draw(Canvas* c, void* ctx) {
         for(uint8_t i = 0; i < a->dev_count; i++)
             if(a->devs[i].useful &&
                ((!a->devs[i].seeded && a->devs[i].last_seen >= a->session_start) ||
-               (a->devs[i].seeded && a->devs[i].confirmed && a->devs[i].last_seen >= a->session_start))) live++;
+               (a->devs[i].seeded && a->devs[i].confirmed && a->devs[i].last_seen >= a->session_start)) &&
+               !(a->devs[i].proto == NRProtoKeeloq && !a->devs[i].seeded && a->devs[i].hits < 2)) live++;
         const char* fq = nr_freq_names[a->freq_mode];
         snprintf(buf, sizeof(buf), "%s %d", fq, live);
         canvas_draw_str_aligned(c, 127, HDR_Y, AlignRight, AlignBottom, buf);
@@ -1213,6 +1214,8 @@ static void nr_draw(Canvas* c, void* ctx) {
             bool is_live = (!d->seeded && d->last_seen >= a->session_start) ||
                            (d->seeded && d->confirmed && d->last_seen >= a->session_start);
             if(!is_live || !d->useful) continue;
+            // KeeLoq: require 2+ hits to show (filters phantom fobs from encrypted alarm)
+            if(d->proto == NRProtoKeeloq && !d->seeded && d->hits < 2) continue;
             if(vis < a->sel) { vis++; continue; }
             uint8_t y = ROW_START + row * ROW_H;
             if(vis == a->sel) {
