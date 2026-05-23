@@ -318,20 +318,17 @@ static void dooya_scan_transmit(DooyaApp* app) {
 }
 
 static uint16_t dooya_spiral_id(uint16_t center, uint32_t step) {
-    // Byte 1 constrained to 0x80-0xBF (top 2 bits = 10, manufacturer prefix)
-    // So scan space is 0x8000-0xBFFF = 16384 values
+    // Full 16-bit id16 space (0x0000-0xFFFF = 65536 values)
     int32_t offset = (step + 1) / 2;
     if(step & 1) offset = -offset;
     int32_t val = (int32_t)center + offset;
-    // Wrap within 0x8000-0xBFFF
-    int32_t range = 0x4000; // 16384
-    val = ((val - 0x8000) % range + range) % range + 0x8000;
+    val = ((val % 65536) + 65536) % 65536;
     return (uint16_t)val;
 }
 
 static bool dooya_scan_advance(DooyaApp* app) {
     app->scan_step++;
-    if(app->scan_step >= 16384) return false;
+    if(app->scan_step >= 65536) return false;
     app->scan_id16 = dooya_spiral_id(app->scan_center, app->scan_step);
     return true;
 }
@@ -350,7 +347,7 @@ static void dooya_draw_scan(Canvas* canvas, DooyaApp* app) {
     snprintf(buf, sizeof(buf), "ID:C0%04X Cmd:0x%02X", app->scan_id16, CMD_BYTES[app->scan_btn]);
     canvas_draw_str_aligned(canvas, 64, 26, AlignCenter, AlignTop, buf);
 
-    snprintf(buf, sizeof(buf), "%lu / 16384  (%lu%%)", (uint32_t)app->scan_step, (uint32_t)app->scan_step * 100 / 16384);
+    snprintf(buf, sizeof(buf), "%lu / 65536  (%lu%%)", (uint32_t)app->scan_step, (uint32_t)app->scan_step * 100 / 65536);
     canvas_draw_str_aligned(canvas, 64, 38, AlignCenter, AlignTop, buf);
 
     if(app->transmitting) {
