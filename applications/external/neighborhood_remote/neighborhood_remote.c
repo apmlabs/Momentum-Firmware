@@ -713,7 +713,7 @@ static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
     uint32_t h = a->rx_pulse, l = duration;
     // Frame-end gap: 5ms for OOK, 1.5ms for FSK
     bool is_fm = (a->freq_mode == NRFreq433FM || a->freq_mode == NRFreq868FM);
-    uint32_t gap_threshold = is_fm ? 1500 : 5000;
+    uint32_t gap_threshold = is_fm ? 800 : 5000;
     uint16_t min_bits = is_fm ? 40 : 24;
     if(l > gap_threshold) {
         if(a->rx_bit_count >= min_bits && a->rx_te_n > 0 && !a->rx_ready) {
@@ -724,10 +724,15 @@ static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
             for(uint16_t i = 0; i < a->rx_bit_count && i < 256; i++)
                 if(a->rx_bits[i]) tmp[i/8] |= (1 << (7-(i%8)));
             // FM noise filter: reject frames with >75% ones (idle mark frequency)
+            // Also reject if TE is outside FSK range (40-200µs = 5-25kbps)
             if(is_fm) {
+                if(te < 40 || te > 200) {
+                    a->rx_bit_count = 0; a->rx_te_sum = 0; a->rx_te_n = 0;
+                    return;
+                }
                 uint16_t ones = 0;
                 for(uint16_t i = 0; i < a->rx_bit_count; i++) if(a->rx_bits[i]) ones++;
-                if(ones > a->rx_bit_count * 3 / 4) {
+                if(ones > a->rx_bit_count * 3 / 4 || ones < a->rx_bit_count / 4) {
                     a->rx_bit_count = 0; a->rx_te_sum = 0; a->rx_te_n = 0;
                     return;
                 }
