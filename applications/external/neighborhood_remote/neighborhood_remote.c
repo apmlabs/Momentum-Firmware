@@ -426,7 +426,7 @@ static void nr_seed(NRApp* a) {
     r->sig_count = 2;
 
     // Neighbor Gate — Princeton TE=311, 4 buttons
-    SEED(NRProtoPT2262, 311, 0x9C, 5, "Neighbor Gate", "May 10", 433920000, -88);
+    SEED(NRProtoPT2262, 311, 0x9C, 8, "Neighbor Gate", "May 18", 433920000, -87);
     { NRDev* ng = &a->devs[a->dev_count-1];
       memset(ng->sigs, 0, sizeof(ng->sigs));
       snprintf(ng->sigs[0].label, 20, "Open"); ng->sigs[0].file_seq = 9002; ng->sigs[0].has_file = true;
@@ -441,7 +441,7 @@ static void nr_seed(NRApp* a) {
     }
 
     // Remote C6 — Princeton TE=380, 1 button
-    SEED(NRProtoPT2262, 380, 0xC6, 3, "Remote C6", "May 10", 433920000, -69);
+    SEED(NRProtoPT2262, 380, 0xC6, 9, "Remote C6", "May 25", 433920000, -77);
     { NRDev* rc = &a->devs[a->dev_count-1];
       memset(rc->sigs, 0, sizeof(rc->sigs));
       snprintf(rc->sigs[0].label, 20, "Button"); rc->sigs[0].file_seq = 9040; rc->sigs[0].has_file = true;
@@ -458,13 +458,20 @@ static void nr_seed(NRApp* a) {
       ea->sig_count = 1;
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 EA 55 B1", 322, 9041);
     }
+    SEED(NRProtoPT2262, 311, 0x11, 2, "Remote 11", "May 25", 433920000, -81);
+    { NRDev* r11 = &a->devs[a->dev_count-1];
+      memset(r11->sigs, 0, sizeof(r11->sigs));
+      snprintf(r11->sigs[0].label, 20, "Button"); r11->sigs[0].file_seq = 9042; r11->sigs[0].has_file = true;
+      r11->sig_count = 1;
+      nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 11 B1 72", 311, 9042);
+    }
 
     // Confirmed neighbor KeeLoq fobs (seen multiple times across batches)
     SEED(NRProtoKeeloq, 225, 0x000B116, 8, "Fob B116", "May 2", 433920000, -92);
     SEED(NRProtoKeeloq, 295, 0x008011F, 6, "Fob 8011F", "May 8", 433920000, -92);
-    SEED(NRProtoKeeloq, 295, 0x008005E, 4, "Fob 8005E", "May 7", 433920000, -92);
+    SEED(NRProtoKeeloq, 295, 0x008005E, 5, "Fob 8005E", "May 25", 433920000, -92);
     SEED(NRProtoKeeloq, 240, 0x000B118, 3, "Fob B118", "May 2", 433920000, -92);
-    SEED(NRProtoKeeloq, 300, 0x0080218, 2, "Fob 80218", "May 7", 433920000, -92);
+    SEED(NRProtoKeeloq, 300, 0x0080218, 4, "Fob 80218", "May 25", 433920000, -85);
     SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "May 2", 433920000, -84);
     SEED(NRProtoNexusTH, 650, 0xE0E0, 29, "Weather E0", "May 2", 433920000, -88);
     a->devs[a->dev_count-1].sig_count = 1;
