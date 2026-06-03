@@ -623,17 +623,21 @@ static void nr_nexus_rx_frame(NRApp* a, uint64_t data) {
     nr_autosave_sig(a, d, &d->sigs[0]);
 }
 
+// NexusTH / GT-WT02 state machine decoder (gap-based PPM)
+// GT-WT02: pulse ~500µs, gap 2000µs=0, gap 4000µs=1, sync gap 9000µs
+// Nexus-TH: pulse ~500µs, gap 1000µs=0, gap 2000µs=1, sync gap 4000µs
+// We accept BOTH timing variants with wide tolerance windows
 static void nr_nexus_decode(NRApp* a, bool level, uint32_t duration) {
     switch(a->nexus_state) {
-    case 0: // wait for sync gap (~3920µs = 8×490)
-        if(!level && duration > 3000 && duration < 5000) {
+    case 0: // wait for sync gap (4000-10000µs covers both protocols)
+        if(!level && duration > 3500 && duration < 10500) {
             a->nexus_bits = 0;
             a->nexus_data = 0;
             a->nexus_state = 1;
         }
         break;
-    case 1: // expect pulse (~490µs)
-        if(level && duration > 300 && duration < 700) {
+    case 1: // expect pulse (~500µs)
+        if(level && duration > 250 && duration < 750) {
             a->nexus_pulse = duration;
             a->nexus_state = 2;
         } else {
@@ -642,21 +646,21 @@ static void nr_nexus_decode(NRApp* a, bool level, uint32_t duration) {
         break;
     case 2: // check gap duration
         if(!level) {
-            if(duration > 3000 && duration < 5000) {
+            if(duration > 3500 && duration < 10500) {
                 // Sync gap — frame complete
-                if(a->nexus_bits == 36) {
+                if(a->nexus_bits == 36 || a->nexus_bits == 37) {
                     nr_nexus_rx_frame(a, a->nexus_data);
                 }
                 a->nexus_bits = 0;
                 a->nexus_data = 0;
-                a->nexus_state = 1; // expect next frame's first pulse
-            } else if(duration > 700 && duration < 1300) {
-                // Short gap (~980µs) = bit 0
+                a->nexus_state = 1;
+            } else if(duration > 700 && duration < 2700) {
+                // Short gap: Nexus 980µs or GT-WT02 2000µs = bit 0
                 a->nexus_data = (a->nexus_data << 1);
                 a->nexus_bits++;
                 a->nexus_state = 1;
-            } else if(duration > 1500 && duration < 2500) {
-                // Long gap (~1960µs) = bit 1
+            } else if(duration > 2700 && duration < 5500) {
+                // Long gap: Nexus 1960µs or GT-WT02 4000µs = bit 1
                 a->nexus_data = (a->nexus_data << 1) | 1;
                 a->nexus_bits++;
                 a->nexus_state = 1;
