@@ -48,6 +48,7 @@ typedef struct {
     char     label[20];
     uint16_t file_seq;  // .sub file sequence number (0=none)
     bool     has_file;  // true if .sub file exists for replay
+    uint64_t tx_key;    // protocol key/frame for direct TX encoding
 } NRSig;
 
 typedef struct {
@@ -152,4 +153,9 @@ typedef struct {
     uint32_t nexus_pulse;
     uint64_t nexus_data;
     uint32_t dooya_last_hash;
+
+    // Direct TX upload buffer (same method as Dooya Remote app)
+    LevelDuration upload[900];
+    volatile uint16_t upload_size;
+    volatile uint16_t upload_idx;
 } NRApp;

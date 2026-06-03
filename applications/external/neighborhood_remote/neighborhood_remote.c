@@ -3,8 +3,6 @@
  * Menu-first: Scan, My Remotes, Known Devices, Settings
  */
 #include "neighborhood_remote.h"
-#include <lib/subghz/protocols/raw.h>
-#include <lib/subghz/transmitter.h>
 #include <furi_hal_rtc.h>
 #define TAG "Neighborhood"
 
@@ -137,7 +135,7 @@ static bool nr_can_replay(NRDev* d) {
     if(nr_replayable[d->proto] && d->sig_count > 0) return true;
     if(d->freq == 868350000 && d->sig_count > 0 && d->sigs[0].bits == 12) return true;
     for(uint8_t i = 0; i < d->sig_count; i++)
-        if(d->sigs[i].has_file) return true;
+        if(d->sigs[i].tx_key || d->sigs[i].has_file) return true;
     return false;
 }
 
@@ -418,21 +416,19 @@ static void nr_seed(NRApp* a) {
     memcpy(r->sigs[0].raw, (uint8_t[]){0xFF,0xFE,0x4F,0xFF,0xE0}, 5);
     r->sigs[0].raw_len = 5; r->sigs[0].bits = 40;
     snprintf(r->sigs[0].label, 20, "Cmd:E0 (Btn A)");
-    r->sigs[0].file_seq = 9000; r->sigs[0].has_file = true;
     memcpy(r->sigs[1].raw, (uint8_t[]){0x00,0x44,0x80}, 3);
     r->sigs[1].raw_len = 3; r->sigs[1].bits = 24;
     snprintf(r->sigs[1].label, 20, "Cmd:22 (Btn B)");
-    r->sigs[1].file_seq = 9001; r->sigs[1].has_file = true;
     r->sig_count = 2;
 
     // Neighbor Gate — Princeton TE=311, 4 buttons
     SEED(NRProtoPT2262, 311, 0x9C, 8, "Neighbor Gate", "May 18", 433920000, -87);
     { NRDev* ng = &a->devs[a->dev_count-1];
       memset(ng->sigs, 0, sizeof(ng->sigs));
-      snprintf(ng->sigs[0].label, 20, "Open"); ng->sigs[0].file_seq = 9002; ng->sigs[0].has_file = true;
-      snprintf(ng->sigs[1].label, 20, "Close"); ng->sigs[1].file_seq = 9003; ng->sigs[1].has_file = true;
-      snprintf(ng->sigs[2].label, 20, "Pedestrian"); ng->sigs[2].file_seq = 9004; ng->sigs[2].has_file = true;
-      snprintf(ng->sigs[3].label, 20, "Light"); ng->sigs[3].file_seq = 9005; ng->sigs[3].has_file = true;
+      snprintf(ng->sigs[0].label, 20, "Open"); ng->sigs[0].tx_key = 0x9CB871; ng->sigs[0].has_file = true; ng->sigs[0].file_seq = 9002;
+      snprintf(ng->sigs[1].label, 20, "Close"); ng->sigs[1].tx_key = 0x9CB872; ng->sigs[1].has_file = true; ng->sigs[1].file_seq = 9003;
+      snprintf(ng->sigs[2].label, 20, "Pedestrian"); ng->sigs[2].tx_key = 0x9CB874; ng->sigs[2].has_file = true; ng->sigs[2].file_seq = 9004;
+      snprintf(ng->sigs[3].label, 20, "Light"); ng->sigs[3].tx_key = 0x9CB878; ng->sigs[3].has_file = true; ng->sigs[3].file_seq = 9005;
       ng->sig_count = 4;
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 9C B8 71", 311, 9002);
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 9C B8 72", 311, 9003);
@@ -444,7 +440,7 @@ static void nr_seed(NRApp* a) {
     SEED(NRProtoPT2262, 380, 0xC6, 9, "Remote C6", "May 25", 433920000, -77);
     { NRDev* rc = &a->devs[a->dev_count-1];
       memset(rc->sigs, 0, sizeof(rc->sigs));
-      snprintf(rc->sigs[0].label, 20, "Button"); rc->sigs[0].file_seq = 9040; rc->sigs[0].has_file = true;
+      snprintf(rc->sigs[0].label, 20, "Button"); rc->sigs[0].tx_key = 0xC62C86; rc->sigs[0].has_file = true; rc->sigs[0].file_seq = 9040;
       rc->sig_count = 1;
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 C6 2C 86", 380, 9040);
     }
@@ -454,14 +450,14 @@ static void nr_seed(NRApp* a) {
     SEED(NRProtoPT2262, 322, 0xEA, 1, "Remote EA", "May 14", 433920000, -86);
     { NRDev* ea = &a->devs[a->dev_count-1];
       memset(ea->sigs, 0, sizeof(ea->sigs));
-      snprintf(ea->sigs[0].label, 20, "Button"); ea->sigs[0].file_seq = 9041; ea->sigs[0].has_file = true;
+      snprintf(ea->sigs[0].label, 20, "Button"); ea->sigs[0].tx_key = 0xEA55B1; ea->sigs[0].has_file = true; ea->sigs[0].file_seq = 9041;
       ea->sig_count = 1;
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 EA 55 B1", 322, 9041);
     }
     SEED(NRProtoPT2262, 311, 0x11, 2, "Remote 11", "May 25", 433920000, -81);
     { NRDev* r11 = &a->devs[a->dev_count-1];
       memset(r11->sigs, 0, sizeof(r11->sigs));
-      snprintf(r11->sigs[0].label, 20, "Button"); r11->sigs[0].file_seq = 9042; r11->sigs[0].has_file = true;
+      snprintf(r11->sigs[0].label, 20, "Button"); r11->sigs[0].tx_key = 0x11B172; r11->sigs[0].has_file = true; r11->sigs[0].file_seq = 9042;
       r11->sig_count = 1;
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 11 B1 72", 311, 9042);
     }
@@ -486,17 +482,18 @@ static void nr_seed(NRApp* a) {
       g->sigs[0].raw_len = 2; g->sigs[0].bits = 12;
       snprintf(g->sigs[0].label, 20, "CAME 0x9EC");
       g->sigs[0].file_seq = 9006; g->sigs[0].has_file = true;
+      g->sigs[0].tx_key = 0x09EC;  // 12-bit CAME key
       g->sig_count = 1;
       nr_seed_sub(a, "CAME", 868350000, 12, "00 00 00 00 00 00 09 EC", 0, 9006);
     }
     SEED(NRProtoBinRAW, 249, 0xB118, 2, "868 Dev 249", "May 16", 868350000, -85);
 
-    // Dooya Windows — 3 remotes with RAW .sub files for replay
+    // Dooya Windows — 3 remotes with direct TX encoding
     SEED(NRProtoBinRAW, 366, 0xC0A16C, 0, "Window 1", "May 5", 433920000, 0);
     { NRDev* w = &a->devs[a->dev_count-1];
-      snprintf(w->sigs[0].label, 20, "UP"); w->sigs[0].file_seq = 9010; w->sigs[0].has_file = true;
-      snprintf(w->sigs[1].label, 20, "STOP"); w->sigs[1].file_seq = 9011; w->sigs[1].has_file = true;
-      snprintf(w->sigs[2].label, 20, "DOWN"); w->sigs[2].file_seq = 9012; w->sigs[2].has_file = true;
+      snprintf(w->sigs[0].label, 20, "UP"); w->sigs[0].tx_key = 0xA3C0A16C01000BD9ULL; w->sigs[0].has_file = true; w->sigs[0].file_seq = 9010;
+      snprintf(w->sigs[1].label, 20, "STOP"); w->sigs[1].tx_key = 0xA3C0A16C010023F1ULL; w->sigs[1].has_file = true; w->sigs[1].file_seq = 9011;
+      snprintf(w->sigs[2].label, 20, "DOWN"); w->sigs[2].tx_key = 0xA3C0A16C01004311ULL; w->sigs[2].has_file = true; w->sigs[2].file_seq = 9012;
       w->sig_count = 3;
       uint16_t n;
       n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0A16C01000BD9ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9010);
@@ -505,9 +502,9 @@ static void nr_seed(NRApp* a) {
     }
     SEED(NRProtoBinRAW, 366, 0xC0AD01, 0, "Window 2", "May 5", 433920000, 0);
     { NRDev* w = &a->devs[a->dev_count-1];
-      snprintf(w->sigs[0].label, 20, "UP"); w->sigs[0].file_seq = 9020; w->sigs[0].has_file = true;
-      snprintf(w->sigs[1].label, 20, "STOP"); w->sigs[1].file_seq = 9021; w->sigs[1].has_file = true;
-      snprintf(w->sigs[2].label, 20, "DOWN"); w->sigs[2].file_seq = 9022; w->sigs[2].has_file = true;
+      snprintf(w->sigs[0].label, 20, "UP"); w->sigs[0].tx_key = 0xA3C0AD0101000B7AULL; w->sigs[0].has_file = true; w->sigs[0].file_seq = 9020;
+      snprintf(w->sigs[1].label, 20, "STOP"); w->sigs[1].tx_key = 0xA3C0AD01010023B2ULL; w->sigs[1].has_file = true; w->sigs[1].file_seq = 9021;
+      snprintf(w->sigs[2].label, 20, "DOWN"); w->sigs[2].tx_key = 0xA3C0AD01010043B2ULL; w->sigs[2].has_file = true; w->sigs[2].file_seq = 9022;
       w->sig_count = 3;
       uint16_t n;
       n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0AD0101000B7AULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9020);
@@ -516,9 +513,9 @@ static void nr_seed(NRApp* a) {
     }
     SEED(NRProtoBinRAW, 366, 0xC09EBD, 0, "Window 3", "May 5", 433920000, 0);
     { NRDev* w = &a->devs[a->dev_count-1];
-      snprintf(w->sigs[0].label, 20, "UP"); w->sigs[0].file_seq = 9030; w->sigs[0].has_file = true;
-      snprintf(w->sigs[1].label, 20, "STOP"); w->sigs[1].file_seq = 9031; w->sigs[1].has_file = true;
-      snprintf(w->sigs[2].label, 20, "DOWN"); w->sigs[2].file_seq = 9032; w->sigs[2].has_file = true;
+      snprintf(w->sigs[0].label, 20, "UP"); w->sigs[0].tx_key = 0xA3C09EBD01000B27ULL; w->sigs[0].has_file = true; w->sigs[0].file_seq = 9030;
+      snprintf(w->sigs[1].label, 20, "STOP"); w->sigs[1].tx_key = 0xA3C09EBD0100233FULL; w->sigs[1].has_file = true; w->sigs[1].file_seq = 9031;
+      snprintf(w->sigs[2].label, 20, "DOWN"); w->sigs[2].tx_key = 0xA3C09EBD0100435FULL; w->sigs[2].has_file = true; w->sigs[2].file_seq = 9032;
       w->sig_count = 3;
       uint16_t n;
       n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C09EBD01000B27ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9030);
@@ -804,100 +801,130 @@ static void nr_rx_stop(NRApp* a) {
     a->rx_on = false;
 }
 
-static void nr_tx(NRApp* a, NRDev* d, NRSig* s) {
-    // File-based replay (Princeton .sub, Dooya RAW .sub, CAME .sub)
-    if(s->has_file && s->file_seq > 0) {
-        bool was = a->rx_on; if(was) nr_rx_stop(a);
-        char path[80];
-        snprintf(path, sizeof(path), "%s/%04d.sub", NR_AUTOSAVE_DIR, s->file_seq);
-        Storage* st = furi_record_open(RECORD_STORAGE);
-        FlipperFormat* ff = flipper_format_file_alloc(st);
-        if(flipper_format_file_open_existing(ff, path)) {
-            FuriString* proto_name = furi_string_alloc();
-            if(flipper_format_read_string(ff, "Protocol", proto_name)) {
-                if(furi_string_cmp_str(proto_name, "RAW") == 0) {
-                    // RAW file: use SubGhzProtocolRAW transmitter
-                    flipper_format_file_close(ff);
-                    flipper_format_free(ff);
-                    FlipperFormat* fff_data = flipper_format_string_alloc();
-                    subghz_protocol_raw_gen_fff_data(fff_data, path, subghz_devices_get_name(a->radio));
-                    SubGhzTransmitter* transmitter = subghz_transmitter_alloc_init(a->environment, "RAW");
-                    if(transmitter) {
-                        if(subghz_transmitter_deserialize(transmitter, fff_data) == SubGhzProtocolStatusOk) {
-                            subghz_devices_idle(a->radio);
-                            subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
-                            subghz_devices_set_frequency(a->radio, d->freq ? d->freq : 433920000);
-                            if(subghz_devices_start_async_tx(a->radio, subghz_transmitter_yield, transmitter)) {
-                                while(!subghz_devices_is_async_complete_tx(a->radio)) furi_delay_ms(10);
-                                subghz_devices_stop_async_tx(a->radio);
-                            }
-                        }
-                        subghz_transmitter_free(transmitter);
-                    }
-                    flipper_format_free(fff_data);
-                    furi_record_close(RECORD_STORAGE);
-                    if(was) nr_rx_start(a);
-                    return;
-                } else {
-                    // Protocol file: standard transmitter
-                    SubGhzTransmitter* transmitter = subghz_transmitter_alloc_init(
-                        a->environment, furi_string_get_cstr(proto_name));
-                    if(transmitter) {
-                        if(subghz_transmitter_deserialize(transmitter, ff) == SubGhzProtocolStatusOk) {
-                            subghz_devices_idle(a->radio);
-                            subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
-                            subghz_devices_set_frequency(a->radio, d->freq ? d->freq : 433920000);
-                            if(subghz_devices_start_async_tx(a->radio, subghz_transmitter_yield, transmitter)) {
-                                while(!subghz_devices_is_async_complete_tx(a->radio)) furi_delay_ms(10);
-                                subghz_devices_stop_async_tx(a->radio);
-                            }
-                        }
-                        subghz_transmitter_free(transmitter);
-                    }
-                }
-            }
-            furi_string_free(proto_name);
+// ============== Direct TX Encoders (same method as Dooya Remote app) ==============
+
+static LevelDuration nr_tx_yield(void* ctx) {
+    NRApp* a = ctx;
+    if(a->upload_idx >= a->upload_size) return level_duration_reset();
+    return a->upload[a->upload_idx++];
+}
+
+// Princeton/PT2262/EV1527: sync + 24-bit PWM
+static uint16_t nr_encode_princeton(LevelDuration* buf, uint16_t pos, uint32_t key, uint16_t te) {
+    uint16_t te3 = te * 3;
+    // Sync: HIGH te, LOW 31*te
+    buf[pos++] = level_duration_make(true, te);
+    buf[pos++] = level_duration_make(false, (uint32_t)te * 31);
+    // Data: 24 bits MSB first
+    for(int8_t i = 23; i >= 0; i--) {
+        if((key >> i) & 1) {
+            buf[pos++] = level_duration_make(true, te3);
+            buf[pos++] = level_duration_make(false, te);
+        } else {
+            buf[pos++] = level_duration_make(true, te);
+            buf[pos++] = level_duration_make(false, te3);
         }
-        flipper_format_free(ff);
-        furi_record_close(RECORD_STORAGE);
-        if(was) nr_rx_start(a);
-        return;
     }
-    // Legacy raw byte TX (PT2262/CAME bit-bang)
-    if(!s->raw_len) return;
+    return pos;
+}
+
+// CAME: header + 12-bit PWM
+static uint16_t nr_encode_came(LevelDuration* buf, uint16_t pos, uint16_t key, uint16_t te) {
+    // Header: LOW 47*te, HIGH te
+    buf[pos++] = level_duration_make(false, (uint32_t)te * 47);
+    buf[pos++] = level_duration_make(true, te);
+    // Data: 12 bits MSB first
+    for(int8_t i = 11; i >= 0; i--) {
+        if((key >> i) & 1) {
+            buf[pos++] = level_duration_make(false, (uint32_t)te * 2);
+            buf[pos++] = level_duration_make(true, te);
+        } else {
+            buf[pos++] = level_duration_make(false, te);
+            buf[pos++] = level_duration_make(true, (uint32_t)te * 2);
+        }
+    }
+    return pos;
+}
+
+// Dooya/A-OK: preamble + sync + 64-bit PWM + gap
+static uint16_t nr_encode_dooya(LevelDuration* buf, uint16_t pos, uint64_t frame) {
+    // Preamble: 8x (HIGH 290, LOW 600)
+    for(uint8_t i = 0; i < 8; i++) {
+        buf[pos++] = level_duration_make(true, 290);
+        buf[pos++] = level_duration_make(false, 600);
+    }
+    // Sync: HIGH 5000, LOW 650
+    buf[pos++] = level_duration_make(true, 5000);
+    buf[pos++] = level_duration_make(false, 650);
+    // Data: 64 bits MSB first
+    for(int8_t bit = 63; bit >= 0; bit--) {
+        if((frame >> bit) & 1) {
+            buf[pos++] = level_duration_make(true, 600);
+            buf[pos++] = level_duration_make(false, 290);
+        } else {
+            buf[pos++] = level_duration_make(true, 290);
+            buf[pos++] = level_duration_make(false, 600);
+        }
+    }
+    // Gap
+    buf[pos++] = level_duration_make(true, 290);
+    buf[pos++] = level_duration_make(false, 5000);
+    return pos;
+}
+
+static void nr_tx(NRApp* a, NRDev* d, NRSig* s) {
+    if(!s->tx_key && !s->raw_len) return;
     bool was = a->rx_on; if(was) nr_rx_stop(a);
+
+    uint16_t pos = 0;
+    uint32_t freq = d->freq ? d->freq : 433920000;
+
+    if(s->tx_key) {
+        // Direct in-memory encoding — fast path (like Dooya Remote app)
+        if(d->proto == NRProtoBinRAW && (d->dev_id == 0xC0A16C || d->dev_id == 0xC0AD01 || d->dev_id == 0xC09EBD)) {
+            // Dooya: 3 repeats
+            for(uint8_t r = 0; r < 3; r++)
+                pos = nr_encode_dooya(a->upload, pos, s->tx_key);
+        } else if(freq == 868350000 && s->bits == 12) {
+            // CAME 12-bit: 6 repeats
+            for(uint8_t r = 0; r < 6; r++)
+                pos = nr_encode_came(a->upload, pos, (uint16_t)s->tx_key, 320);
+        } else {
+            // Princeton/PT2262/EV1527: 6 repeats
+            for(uint8_t r = 0; r < 6; r++)
+                pos = nr_encode_princeton(a->upload, pos, (uint32_t)s->tx_key, d->te);
+        }
+    } else if(s->raw_len) {
+        // Legacy fallback: encode from raw bytes
+        uint16_t te = d->te;
+        bool is_came = (freq == 868350000 && s->bits == 12 && te >= 280 && te <= 360);
+        uint8_t repeats = 6;
+        for(uint8_t r = 0; r < repeats && pos < 850; r++) {
+            if(is_came) {
+                pos = nr_encode_came(a->upload, pos, (uint16_t)((s->raw[0] << 8) | s->raw[1]) >> 4, te);
+            } else {
+                // Reconstruct key from raw bytes (24-bit)
+                uint32_t key = 0;
+                for(uint16_t i = 0; i < s->bits && i < 24; i++)
+                    key |= (uint32_t)((s->raw[i/8] >> (7-(i%8))) & 1) << (23-i);
+                pos = nr_encode_princeton(a->upload, pos, key, te);
+            }
+        }
+    }
+
+    if(pos == 0) { if(was) nr_rx_start(a); return; }
+
+    // Transmit directly from memory — identical to Dooya Remote app
+    a->upload_size = pos;
+    a->upload_idx = 0;
     subghz_devices_idle(a->radio);
     subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
-    subghz_devices_set_frequency(a->radio, d->freq ? d->freq : 433920000);
-    uint16_t te = d->te;
-    // Detect CAME-style encoding: TE ~320, 12 bits, on 868 MHz
-    bool is_came = (d->freq == 868350000 && s->bits == 12 && te >= 280 && te <= 360);
-    for(int r = 0; r < 6; r++) {
-        subghz_devices_set_tx(a->radio);
-        if(is_came) {
-            // CAME: header = LOW 47*TE, then HIGH TE
-            furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(te * 47);
-            furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(te);
-            for(uint16_t i = 0; i < s->bits; i++) {
-                uint8_t b = (s->raw[i/8] >> (7-(i%8))) & 1;
-                // CAME: 1=LOW long+HIGH short, 0=LOW short+HIGH long
-                furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(b ? te*2 : te);
-                furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(b ? te : te*2);
-            }
-        } else {
-            // PT2262/EV1527: sync = HIGH TE, LOW 31*TE
-            furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(te);
-            furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(te * 31);
-            uint16_t te3 = te * 3;
-            for(uint16_t i = 0; i < s->bits && i < 256; i++) {
-                uint8_t b = (s->raw[i/8] >> (7-(i%8))) & 1;
-                furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(b ? te3 : te);
-                furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(b ? te : te3);
-            }
-        }
-        furi_hal_gpio_write(&gpio_cc1101_g0, false);
-        subghz_devices_idle(a->radio); furi_delay_ms(8);
+    subghz_devices_set_frequency(a->radio, freq);
+    if(subghz_devices_start_async_tx(a->radio, nr_tx_yield, a)) {
+        while(!subghz_devices_is_async_complete_tx(a->radio)) furi_delay_ms(10);
+        subghz_devices_stop_async_tx(a->radio);
     }
+    subghz_devices_idle(a->radio);
     if(was) nr_rx_start(a);
 }
 
@@ -905,23 +932,21 @@ static void nr_tx(NRApp* a, NRDev* d, NRSig* s) {
 static void nr_came_tx_code(NRApp* a, uint16_t code) {
     a->came_tx = true;
     bool was = a->rx_on; if(was) nr_rx_stop(a);
+
+    uint16_t pos = 0;
+    for(uint8_t r = 0; r < 3; r++)
+        pos = nr_encode_came(a->upload, pos, code, 320);
+
+    a->upload_size = pos;
+    a->upload_idx = 0;
     subghz_devices_idle(a->radio);
     subghz_devices_load_preset(a->radio, FuriHalSubGhzPresetOok650Async, NULL);
     subghz_devices_set_frequency(a->radio, 868350000);
-    uint16_t te = 320;
-    for(int r = 0; r < 3; r++) {
-        subghz_devices_set_tx(a->radio);
-        // CAME header: LOW 47*TE, HIGH TE
-        furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(te * 47);
-        furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(te);
-        for(int8_t i = 11; i >= 0; i--) {
-            uint8_t b = (code >> i) & 1;
-            furi_hal_gpio_write(&gpio_cc1101_g0, false); furi_delay_us(b ? te*2 : te);
-            furi_hal_gpio_write(&gpio_cc1101_g0, true); furi_delay_us(b ? te : te*2);
-        }
-        furi_hal_gpio_write(&gpio_cc1101_g0, false);
-        subghz_devices_idle(a->radio); furi_delay_ms(8);
+    if(subghz_devices_start_async_tx(a->radio, nr_tx_yield, a)) {
+        while(!subghz_devices_is_async_complete_tx(a->radio)) furi_delay_ms(10);
+        subghz_devices_stop_async_tx(a->radio);
     }
+    subghz_devices_idle(a->radio);
     if(was) nr_rx_start(a);
     a->came_tx = false;
 }
