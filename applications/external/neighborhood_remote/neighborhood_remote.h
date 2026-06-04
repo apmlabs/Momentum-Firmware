@@ -24,13 +24,13 @@
 
 typedef enum {
     NRProtoHoneywell, NRProtoPT2262, NRProtoEV1527,
-    NRProtoKeeloq, NRProtoFSK, NRProtoNexusTH, NRProtoBinRAW, NRProtoCount
+    NRProtoKeeloq, NRProtoFSK, NRProtoNexusTH, NRProtoTPMS, NRProtoBinRAW, NRProtoCount
 } NRProto;
 
-static const char* nr_pname[] = {"Honeywell","PT2262","EV1527","Keeloq","FSK","NexusTH","BinRAW"};
-static const char* nr_picon[] = {"#",">",">","#","?","~","?"};
-static const bool nr_replayable[] = {false,true,true,false,false,false,false};
-static const bool nr_is_sensor[] = {true,false,false,false,true,true,true};
+static const char* nr_pname[] = {"Honeywell","PT2262","EV1527","Keeloq","FSK","NexusTH","TPMS","BinRAW"};
+static const char* nr_picon[] = {"#",">",">","#","?","~","C","?"};
+static const bool nr_replayable[] = {false,true,true,false,false,false,false,false};
+static const bool nr_is_sensor[] = {true,false,false,false,true,true,true,true};
 static const char* nr_pdesc[] = {
     "Honeywell-family 5800EU alarm.\nManchester TE=143us 64-bit.\nFFFE+ch+serial+event+CRC.\nEvent: open tamper alarm\nbattery heartbeat.\n12+ zones. NOT replayable.",
     "PT2262/Princeton remote.\nPWM TE=194us 24-bit.\nAddress + command.\nGarage, doorbell, switch.\nFixed code. REPLAYABLE.",
@@ -38,6 +38,7 @@ static const char* nr_pdesc[] = {
     "Keeloq HCS301 rolling.\nPWM TE=250us 66-bit.\n32-bit hop + serial + btn.\nEncrypted counter.\nNOT replayable.",
     "FSK on AM demodulator.\nRecapture on FM476.\nLikely weather or HVAC\nsensor. TE=65us typical.",
     "Nexus-TH weather sensor.\nOOK_PWM TE=650us 36-bit.\nID+flags+temp+humidity.\nAuriol/Lidl/Rubicson.\nUpdates every 50 seconds.",
+    "Schrader TPMS tire sensor.\nManchester TE=120us 64-bit.\nID+pressure+temperature.\nCar passing nearby.\nBurst when wheel spinning.",
     "Unknown OOK protocol.\nRaw pulse timing only.\nTE and bit count shown.\nCheck TE for device type.",
 };
 
@@ -153,6 +154,15 @@ typedef struct {
     uint32_t nexus_pulse;
     uint64_t nexus_data;
     uint32_t dooya_last_hash;
+
+    // Schrader TPMS Manchester decoder
+    uint8_t  tpms_state;   // 0=idle, 1=preamble, 2=data
+    uint8_t  tpms_pre;     // preamble bit counter
+    uint8_t  tpms_bit_cnt;
+    uint64_t tpms_data;
+    uint8_t  tpms_manch;   // manchester state
+    bool     tpms_last_level;
+    uint32_t tpms_last_dur;
 
     // Direct TX upload buffer (same method as Dooya Remote app)
     LevelDuration upload[900];

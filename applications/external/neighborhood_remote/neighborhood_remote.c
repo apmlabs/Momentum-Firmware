@@ -485,6 +485,9 @@ static void nr_seed(NRApp* a) {
     // Interlogix/GE alarm system — 7 sensors (motion+smoke+contact), event-only TX
     SEED(NRProtoBinRAW, 366, 0xB14A, 7, "Interlogix", "Jun 4", 433920000, -90);
 
+    // TPMS — known car tire sensor (Schrader, captured via RTL-SDR)
+    SEED(NRProtoTPMS, 120, 0x09B6BE9, 1, "Car 1", "Jun 4", 433920000, -80);
+
     // 868 MHz devices
     SEED(NRProtoBinRAW, 320, 0x09EC, 19, "Garage", "May 4", 868350000, -75);
     { NRDev* g = &a->devs[a->dev_count-1];
@@ -720,6 +723,103 @@ static void nr_dooya_decode(NRApp* a, bool level, uint32_t duration) {
     }
 }
 
+// Schrader TPMS Manchester decoder (TE=120/240µs, 64-bit, CRC-8)
+static void nr_tpms_rx_frame(NRApp* a, uint64_t data) {
+    // CRC-8 check (poly 0x07)
+    uint8_t msg[6] = {data>>48, data>>40, data>>32, data>>24, data>>16, data>>8};
+    uint8_t crc = 0;
+    for(int i = 0; i < 6; i++) {
+        crc ^= msg[i];
+        for(int b = 0; b < 8; b++) crc = (crc & 0x80) ? (crc << 1) ^ 0x07 : crc << 1;
+    }
+    if(crc != (uint8_t)(data & 0xFF)) return;
+
+    uint32_t id = (uint32_t)(data >> 24);
+    int8_t temp = (int8_t)(((data >> 8) & 0xFF) - 50);
+    uint8_t pres_raw = (data >> 16) & 0xFF;
+    float bar = pres_raw * 2.5f * 0.069f;
+
+    // Find or create device
+    NRDev* d = NULL;
+    for(uint8_t i = 0; i < a->dev_count; i++) {
+        if(a->devs[i].proto == NRProtoTPMS && a->devs[i].dev_id == id) { d = &a->devs[i]; break; }
+    }
+    if(!d && a->dev_count < NR_MAX_DEVICES) {
+        d = &a->devs[a->dev_count++];
+        memset(d, 0, sizeof(NRDev));
+        d->proto = NRProtoTPMS;
+        d->dev_id = id;
+        d->te = 120;
+        d->freq = a->rx_freq;
+        snprintf(d->name, NR_MAX_NAME, "Car %06lX", (unsigned long)(id & 0xFFFFFF));
+        d->useful = true;
+    }
+    if(!d) return;
+    d->hits++;
+    d->last_seen = a->tick;
+    d->rssi = furi_hal_subghz_get_rssi();
+    d->confirmed = true;
+    snprintf(d->sigs[0].label, 20, "%dC %.1fbar", temp, (double)bar);
+    d->sig_count = 1;
+    nr_update_date(d);
+}
+
+static void nr_tpms_decode(NRApp* a, bool level, uint32_t duration) {
+    // Manchester decoder for Schrader GG4: TE_short=120, TE_long=240, delta=55
+    switch(a->tpms_state) {
+    case 0: // wait for start pulse (~480µs HIGH = 2*TE_long)
+        if(level && duration > 380 && duration < 580) {
+            a->tpms_state = 1;
+            a->tpms_pre = 0;
+            a->tpms_bit_cnt = 0;
+            a->tpms_data = 0;
+            a->tpms_manch = 0; // ManchesterStateStart1
+            a->tpms_last_level = level;
+            a->tpms_last_dur = duration;
+        }
+        break;
+    case 1: // preamble + data via Manchester
+    case 2:
+        {
+        // Classify duration
+        uint8_t sym; // 0=short, 1=long, 2=reset
+        if(duration > 65 && duration < 175) sym = 0; // short (~120µs)
+        else if(duration > 185 && duration < 295) sym = 1; // long (~240µs)
+        else { a->tpms_state = 0; break; } // out of tolerance
+
+        // Simple Manchester II decode using edge counting
+        // Long = full bit period = emit bit; Short = half period = wait for pair
+        bool emit = false;
+        bool bit_val = false;
+        if(sym == 1) { // long duration = full symbol
+            emit = true;
+            bit_val = !level; // Manchester II: falling edge in middle = 1
+        } else { // short duration
+            if(a->tpms_manch == 0) { a->tpms_manch = 1; break; } // first half, wait
+            a->tpms_manch = 0; // second half
+            emit = true;
+            bit_val = !level;
+        }
+
+        if(!emit) break;
+
+        if(a->tpms_state == 1) {
+            // Preamble: expect zeros
+            if(bit_val != false) { a->tpms_state = 0; break; }
+            if(++a->tpms_pre >= 3) a->tpms_state = 2;
+        } else {
+            // Data collection
+            a->tpms_data = (a->tpms_data << 1) | (bit_val ? 1 : 0);
+            if(++a->tpms_bit_cnt >= 64) {
+                nr_tpms_rx_frame(a, a->tpms_data);
+                a->tpms_state = 0;
+            }
+        }
+        }
+        break;
+    }
+}
+
 static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
     NRApp* a = ctx;
     // Feed firmware protocol decoders
@@ -728,6 +828,8 @@ static void nr_rx_cb(void* ctx, bool level, uint32_t duration) {
     nr_dooya_decode(a, level, duration);
     // Feed NexusTH gap-based decoder
     nr_nexus_decode(a, level, duration);
+    // Feed Schrader TPMS Manchester decoder
+    nr_tpms_decode(a, level, duration);
     if(level) { a->rx_pulse = duration; return; }
     uint32_t h = a->rx_pulse, l = duration;
     // Frame-end gap: 5ms for OOK, 1.5ms for FSK
