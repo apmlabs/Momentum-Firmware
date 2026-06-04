@@ -482,6 +482,9 @@ static void nr_seed(NRApp* a) {
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "16.5C");
     SEED(NRProtoBinRAW, 345, 0xB122, 10, "Bell Ctrl", "May 2", 433920000, -83);
 
+    // Interlogix/GE alarm system — 7 sensors (motion+smoke+contact), event-only TX
+    SEED(NRProtoBinRAW, 366, 0xB14A, 7, "Interlogix", "Jun 4", 433920000, -90);
+
     // 868 MHz devices
     SEED(NRProtoBinRAW, 320, 0x09EC, 19, "Garage", "May 4", 868350000, -75);
     { NRDev* g = &a->devs[a->dev_count-1];
