@@ -147,6 +147,12 @@ static int8_t nr_find_sig(NRDev* d, uint8_t* data, uint8_t len) {
 
 static void nr_autosave_sig(NRApp* a, NRDev* d, NRSig* s) {
     if(!a->autosave) return;
+    // Skip phantom KeeLoq (Interlogix alarm frames misclassified, always unique serial)
+    if(d->proto == NRProtoKeeloq && !d->seeded && d->hits < 2) return;
+    // Skip OOK meter and Honeywell half-TE noise (bulk of traffic, all identical)
+    if(d->dev_id == 0xB109 || d->dev_id == 0xB108) return;
+    // Skip high-entropy BinRAW in TE 200-400 range (encrypted alarm scatter)
+    if(d->proto == NRProtoBinRAW && !d->seeded && d->te >= 200 && d->te <= 400 && d->hits < 3) return;
     Storage* st = furi_record_open(RECORD_STORAGE);
     storage_simply_mkdir(st, NR_SAVE_DIR);
     storage_simply_mkdir(st, NR_AUTOSAVE_DIR);
