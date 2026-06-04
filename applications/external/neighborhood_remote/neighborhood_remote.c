@@ -462,6 +462,14 @@ static void nr_seed(NRApp* a) {
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 11 B1 72", 311, 9042);
     }
 
+    // Gate remote — Princeton tristate X1XX0XX000Z1 (captured via RTL-SDR)
+    SEED(NRProtoPT2262, 340, 0x75, 1, "Gate", "Jun 4", 433920000, -80);
+    { NRDev* gt = &a->devs[a->dev_count-1];
+      memset(gt->sigs, 0, sizeof(gt->sigs));
+      snprintf(gt->sigs[0].label, 20, "Open/Close"); gt->sigs[0].tx_key = 0x75140B;
+      gt->sig_count = 1;
+    }
+
     // Confirmed neighbor KeeLoq fobs (seen multiple times across batches)
     SEED(NRProtoKeeloq, 225, 0x000B116, 8, "Fob B116", "May 2", 433920000, -92);
     SEED(NRProtoKeeloq, 295, 0x008011F, 6, "Fob 8011F", "May 8", 433920000, -92);
