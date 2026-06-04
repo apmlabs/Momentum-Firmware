@@ -491,8 +491,10 @@ static void nr_seed(NRApp* a) {
     // Interlogix/GE alarm system — 7 sensors (motion+smoke+contact), event-only TX
     SEED(NRProtoBinRAW, 366, 0xB14A, 7, "Interlogix", "Jun 4", 433920000, -90);
 
-    // TPMS — known car tire sensor (Schrader, captured via RTL-SDR)
+    // TPMS — known car tire sensors (captured via RTL-SDR)
     SEED(NRProtoTPMS, 120, 0x09B6BE9, 1, "Car 1", "Jun 4", 433920000, -80);
+    SEED(NRProtoTPMS, 120, 0xD769369B, 3, "Car 2", "Jun 4", 433920000, -58);
+    SEED(NRProtoTPMS, 120, 0xD76C7040, 2, "Car 3", "Jun 4", 433920000, -112);
 
     // 868 MHz devices
     SEED(NRProtoBinRAW, 320, 0x09EC, 19, "Garage", "May 4", 868350000, -75);
@@ -1161,6 +1163,73 @@ static void nr_process(NRApp* a) {
     uint8_t len = a->rx_flen, data[32];
     memcpy(data, a->rx_fdata, len);
     a->rx_ready = false;
+
+    // Toyota TPMS decoder (FSK differential Manchester, ~48µs TE, 64-bit payload)
+    bool is_fm = (a->freq_mode == NRFreq433FM || a->freq_mode == NRFreq868FM);
+    if(is_fm && te >= 35 && te <= 65 && bits >= 80) {
+        // Search for sync pattern 001111 in raw bits
+        for(uint16_t si = 0; si + 6 + 128 <= bits; si++) {
+            if(a->rx_fdata[si/8] & (0x80 >> (si%8))) continue; // bit[si] must be 0
+            if(a->rx_fdata[(si+1)/8] & (0x80 >> ((si+1)%8))) continue; // bit[si+1] must be 0
+            bool sync_ok = true;
+            for(uint8_t k = 2; k < 6; k++) {
+                if(!(a->rx_fdata[(si+k)/8] & (0x80 >> ((si+k)%8)))) { sync_ok = false; break; }
+            }
+            if(!sync_ok) continue;
+            // Found sync at si. Differential Manchester starts at si+6
+            uint16_t doff = si + 6;
+            if(doff + 128 > bits) break; // need 64*2 symbols
+            uint8_t raw[9]; memset(raw, 0, 9);
+            uint8_t decoded_bits = 0;
+            bool last = (a->rx_fdata[doff/8] >> (7-(doff%8))) & 1;
+            for(uint16_t di = 0; di < 128 && decoded_bits < 72; di += 2) {
+                uint16_t p0 = doff + di, p1 = doff + di + 1;
+                bool b0 = (a->rx_fdata[p0/8] >> (7-(p0%8))) & 1;
+                bool b1 = (a->rx_fdata[p1/8] >> (7-(p1%8))) & 1;
+                // Differential Manchester: transition at start of bit period = 1, no transition = 0
+                bool bit_val = (b0 != last);
+                raw[decoded_bits/8] |= (bit_val ? (0x80 >> (decoded_bits%8)) : 0);
+                decoded_bits++;
+                last = b1;
+            }
+            if(decoded_bits < 64) continue;
+            // CRC-8 check (poly 0x80, init 7) over bytes 0-7, check byte 8
+            uint8_t crc = 7;
+            for(int i = 0; i < 8; i++) {
+                crc ^= raw[i];
+                for(int b = 0; b < 8; b++) crc = (crc & 0x80) ? (crc << 1) ^ 0x80 : crc << 1;
+            }
+            if(decoded_bits >= 72 && crc != raw[8]) continue;
+            // Valid Toyota TPMS! Extract fields
+            uint32_t tid = ((uint32_t)raw[0]<<24)|((uint32_t)raw[1]<<16)|((uint32_t)raw[2]<<8)|raw[3];
+            float psi = (float)(((raw[4]&0x7f)<<1)|(raw[5]>>7)) * 0.25f - 7.0f;
+            int temp = (((raw[5]&0x7f)<<1)|(raw[6]>>7)) - 40;
+            // Find or create TPMS device
+            NRDev* d2 = NULL;
+            for(uint8_t i = 0; i < a->dev_count; i++) {
+                if(a->devs[i].proto == NRProtoTPMS && a->devs[i].dev_id == tid) { d2 = &a->devs[i]; break; }
+            }
+            if(!d2 && a->dev_count < NR_MAX_DEVICES) {
+                d2 = &a->devs[a->dev_count++];
+                memset(d2, 0, sizeof(NRDev));
+                d2->proto = NRProtoTPMS;
+                d2->dev_id = tid;
+                d2->te = te;
+                d2->freq = a->rx_freq;
+                snprintf(d2->name, NR_MAX_NAME, "Car %08lX", (unsigned long)tid);
+                d2->useful = true;
+            }
+            if(!d2) break;
+            d2->hits++;
+            d2->last_seen = a->tick;
+            d2->rssi = a->rx_on ? (int8_t)subghz_devices_get_rssi(a->radio) : -127;
+            d2->confirmed = true;
+            snprintf(d2->sigs[0].label, 20, "%dC %.1fpsi", temp, (double)psi);
+            d2->sig_count = 1;
+            nr_update_date(d2);
+            return; // handled
+        }
+    }
 
     NRProto p = nr_classify(te, bits, data, len);
 
