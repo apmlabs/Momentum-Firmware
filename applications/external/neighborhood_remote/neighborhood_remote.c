@@ -493,8 +493,11 @@ static void nr_seed(NRApp* a) {
 
     // TPMS — known car tire sensors (captured via RTL-SDR)
     SEED(NRProtoTPMS, 120, 0x09B6BE9, 1, "Car 1", "Jun 4", 433920000, -80);
-    SEED(NRProtoTPMS, 120, 0xD769369B, 3, "Car 2", "Jun 4", 433920000, -58);
-    SEED(NRProtoTPMS, 120, 0xD76C7040, 2, "Car 3", "Jun 4", 433920000, -112);
+    SEED(NRProtoTPMS, 48, 0xD769369B, 4, "Car 2", "Jun 4", 433920000, -120);
+    SEED(NRProtoTPMS, 48, 0xD76C7040, 16, "Car 3", "Jun 4", 433920000, -112);
+    SEED(NRProtoTPMS, 48, 0xD76CA970, 1, "Car 3b", "Jun 4", 433920000, -120);
+    SEED(NRProtoTPMS, 48, 0x85C4975C, 2, "Citroen", "Jun 4", 433920000, -120);
+    SEED(NRProtoTPMS, 48, 0x07CCA0, 2, "Renault", "Jun 4", 433920000, -23);
 
     // 868 MHz devices
     SEED(NRProtoBinRAW, 320, 0x09EC, 19, "Garage", "May 4", 868350000, -75);
