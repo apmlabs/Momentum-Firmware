@@ -496,8 +496,13 @@ static void nr_seed(NRApp* a) {
     SEED(NRProtoTPMS, 48, 0xD769369B, 4, "Car 2", "Jun 4", 433920000, -120);
     SEED(NRProtoTPMS, 48, 0xD76C7040, 16, "Car 3", "Jun 4", 433920000, -112);
     SEED(NRProtoTPMS, 48, 0xD76CA970, 1, "Car 3b", "Jun 4", 433920000, -120);
+    SEED(NRProtoTPMS, 48, 0xF13D76AC, 5, "Car 4", "Jun 6", 433920000, -51);
+    SEED(NRProtoTPMS, 48, 0x4636F918, 3, "Ford", "Jun 6", 433920000, -78);
     SEED(NRProtoTPMS, 48, 0x85C4975C, 2, "Citroen", "Jun 4", 433920000, -120);
     SEED(NRProtoTPMS, 48, 0x07CCA0, 2, "Renault", "Jun 4", 433920000, -23);
+
+    // FSK key fobs (captured via RTL-SDR, rolling code, monitor-only)
+    SEED(NRProtoFSK, 48, 0xEFF864, 1, "Honda", "Jun 6", 433920000, -70);
 
     // 868 MHz devices
     SEED(NRProtoBinRAW, 320, 0x09EC, 19, "Garage", "May 4", 868350000, -75);
