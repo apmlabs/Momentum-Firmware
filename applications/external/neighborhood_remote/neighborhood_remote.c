@@ -329,6 +329,32 @@ static void nr_load(NRApp* a) {
     }
     flipper_format_free(ff);
     furi_record_close(RECORD_STORAGE);
+
+    // Re-apply tx_keys (not saved in file) for known devices
+    struct { uint32_t dev_id; uint64_t keys[3]; } known_tx[] = {
+        {0x9CB87, {0x9CB871, 0x9CB872, 0x9CB874}},  // Neighbor Gate (3 of 4)
+        {0xC62C86, {0xC62C86, 0, 0}},               // Remote C6 (dev_id matches tx_key)
+        {0xEA55B1, {0xEA55B1, 0, 0}},               // Remote EA
+        {0x11B172, {0x11B172, 0, 0}},                // Remote 11
+        {0x75140B, {0x75140B, 0, 0}},                // Gate
+        {0xC0A16C, {0xA3C0A16C01000BD9ULL, 0xA3C0A16C010023F1ULL, 0xA3C0A16C01004311ULL}},
+        {0xC0AD01, {0xA3C0AD0101000B7AULL, 0xA3C0AD01010023B2ULL, 0xA3C0AD01010043B2ULL}},
+        {0xC09EBD, {0xA3C09EBD01000B27ULL, 0xA3C09EBD0100233FULL, 0xA3C09EBD0100435FULL}},
+        {0x09EC, {0x09EC, 0, 0}},                    // Garage CAME
+    };
+    for(uint8_t i = 0; i < a->dev_count; i++) {
+        NRDev* d = &a->devs[i];
+        for(size_t k = 0; k < sizeof(known_tx)/sizeof(known_tx[0]); k++) {
+            if(d->dev_id == known_tx[k].dev_id) {
+                for(uint8_t s = 0; s < d->sig_count && s < 3; s++) {
+                    if(known_tx[k].keys[s]) d->sigs[s].tx_key = known_tx[k].keys[s];
+                }
+                break;
+            }
+        }
+        // Neighbor Gate 4th button
+        if(d->dev_id == 0x9CB87 && d->sig_count >= 4) d->sigs[3].tx_key = 0x9CB878;
+    }
 }
 
 // Generate a protocol .sub file for seeding (Princeton, CAME, etc.)
