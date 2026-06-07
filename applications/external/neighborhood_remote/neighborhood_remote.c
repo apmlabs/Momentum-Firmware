@@ -1041,9 +1041,17 @@ static void nr_tx(NRApp* a, NRDev* d, NRSig* s) {
     if(s->tx_key) {
         // Direct in-memory encoding — fast path (like Dooya Remote app)
         if(d->proto == NRProtoBinRAW && (d->dev_id == 0xC0A16C || d->dev_id == 0xC0AD01 || d->dev_id == 0xC09EBD)) {
-            // Dooya: 3 repeats
+            // Dooya: 3 repeats + CONFIRM after UP/DOWN (not STOP)
             for(uint8_t r = 0; r < 3; r++)
                 pos = nr_encode_dooya(a->upload, pos, s->tx_key);
+            uint8_t cmd = (s->tx_key >> 8) & 0xFF;
+            if(cmd == 0x0B || cmd == 0x43) { // UP or DOWN
+                uint64_t confirm = (s->tx_key & 0xFFFFFFFFFFFF0000ULL) | 0x2400 |
+                    (((s->tx_key >> 48) + ((s->tx_key >> 40) & 0xFF) + ((s->tx_key >> 32) & 0xFF) +
+                      ((s->tx_key >> 24) & 0xFF) + ((s->tx_key >> 16) & 0xFF) + 0x24) & 0xFF);
+                for(uint8_t r = 0; r < 3; r++)
+                    pos = nr_encode_dooya(a->upload, pos, confirm);
+            }
         } else if(freq == 868350000 && s->bits == 12) {
             // CAME 12-bit: 6 repeats
             for(uint8_t r = 0; r < 6; r++)
