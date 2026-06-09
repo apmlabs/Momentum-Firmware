@@ -331,12 +331,14 @@ static void nr_load(NRApp* a) {
     furi_record_close(RECORD_STORAGE);
 
     // Re-apply tx_keys (not saved in file) for known devices
+    // dev_id must match what SEED macro stores (truncated address byte for Princeton)
     struct { uint32_t dev_id; uint64_t keys[4]; } known_tx[] = {
-        {0x9CB87, {0x9CB871, 0x9CB872, 0x9CB874, 0x9CB878}},  // Neighbor Gate
-        {0xC62C86, {0xC62C86, 0, 0, 0}},               // Remote C6
-        {0xEA55B1, {0xEA55B1, 0, 0, 0}},               // Remote EA
-        {0x11B172, {0x11B172, 0, 0, 0}},                // Remote 11
-        {0x75140B, {0x75140B, 0, 0, 0}},                // Gate
+        {0x4F, {0xFFFE4F, 0x004480, 0, 0}},              // Remote 4F (Btn A, Btn B)
+        {0x9C, {0x9CB871, 0x9CB872, 0x9CB874, 0x9CB878}},  // Neighbor Gate
+        {0xC6, {0xC62C86, 0, 0, 0}},                   // Remote C6
+        {0xEA, {0xEA55B1, 0, 0, 0}},                   // Remote EA
+        {0x11, {0x11B172, 0, 0, 0}},                    // Remote 11
+        {0x75, {0x75140B, 0, 0, 0}},                    // Gate
         {0xC0A16C, {0xA3C0A16C01000BD9ULL, 0xA3C0A16C010023F1ULL, 0xA3C0A16C01004311ULL, 0}},
         {0xC0AD01, {0xA3C0AD0101000B7AULL, 0xA3C0AD01010023B2ULL, 0xA3C0AD01010043B2ULL, 0}},
         {0xC09EBD, {0xA3C09EBD01000B27ULL, 0xA3C09EBD0100233FULL, 0xA3C09EBD0100435FULL, 0}},
@@ -449,9 +451,11 @@ static void nr_seed(NRApp* a) {
     memcpy(r->sigs[0].raw, (uint8_t[]){0xFF,0xFE,0x4F,0xFF,0xE0}, 5);
     r->sigs[0].raw_len = 5; r->sigs[0].bits = 40;
     snprintf(r->sigs[0].label, 20, "Cmd:E0 (Btn A)");
+    r->sigs[0].tx_key = 0xFFFE4F;
     memcpy(r->sigs[1].raw, (uint8_t[]){0x00,0x44,0x80}, 3);
     r->sigs[1].raw_len = 3; r->sigs[1].bits = 24;
     snprintf(r->sigs[1].label, 20, "Cmd:22 (Btn B)");
+    r->sigs[1].tx_key = 0x004480;
     r->sig_count = 2;
 
     // Neighbor Gate — Princeton TE=311, 4 buttons
