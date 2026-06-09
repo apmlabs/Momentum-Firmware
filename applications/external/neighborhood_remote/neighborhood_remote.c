@@ -340,6 +340,7 @@ static void nr_load(NRApp* a) {
         {0xC0A16C, {0xA3C0A16C01000BD9ULL, 0xA3C0A16C010023F1ULL, 0xA3C0A16C01004311ULL, 0}},
         {0xC0AD01, {0xA3C0AD0101000B7AULL, 0xA3C0AD01010023B2ULL, 0xA3C0AD01010043B2ULL, 0}},
         {0xC09EBD, {0xA3C09EBD01000B27ULL, 0xA3C09EBD0100233FULL, 0xA3C09EBD0100435FULL, 0}},
+        {0x635A4B, {0xA3635A4B01000B14ULL, 0xA3635A4B0100232CULL, 0xA3635A4B0100434CULL, 0}},
         {0x09EC, {0x09EC, 0, 0, 0}},                    // Garage CAME
         {0x0100, {0x0100C0013FULL, 0x01001001EFULL, 0x01005001AFULL, 0}},  // Markisol
         {0x47864, {0x08F0C8F19ULL, 0x08F0C9503ULL, 0x08F0C891FULL, 0x08F0C9701ULL}},  // UniFan
@@ -518,18 +519,16 @@ static void nr_seed(NRApp* a) {
     SEED(NRProtoBinRAW, 366, 0xB14A, 7, "Interlogix", "Jun 4", 433920000, -90);
 
     // TPMS — known car tire sensors (captured via RTL-SDR)
-    SEED(NRProtoTPMS, 120, 0x09B6BE9, 1, "Car 1", "Jun 4", 433920000, -80);
-    SEED(NRProtoTPMS, 48, 0xD769369B, 4, "Car 2", "Jun 4", 433920000, -120);
-    SEED(NRProtoTPMS, 48, 0xD76C7040, 16, "Car 3", "Jun 4", 433920000, -112);
-    SEED(NRProtoTPMS, 48, 0xD76CA970, 1, "Car 3b", "Jun 4", 433920000, -120);
-    SEED(NRProtoTPMS, 48, 0xF13D76AC, 5, "Car 4", "Jun 6", 433920000, -51);
-    SEED(NRProtoTPMS, 48, 0x4636F918, 3, "Ford", "Jun 6", 433920000, -78);
-    SEED(NRProtoTPMS, 48, 0x85C4975C, 2, "Citroen", "Jun 4", 433920000, -120);
-    SEED(NRProtoTPMS, 48, 0x07CCA0, 2, "Renault", "Jun 4", 433920000, -23);
-
-    // New cars from batch 7 (Jun 7-9, 2026)
-    SEED(NRProtoTPMS, 48, 0x8147E6, 5, "Renault 2", "Jun 9", 433920000, -86);
-    SEED(NRProtoTPMS, 120, 0x4B87E0, 5, "Schrader 2", "Jun 9", 433920000, -55);
+    SEED(NRProtoTPMS, 120, 0x09B6BE9, 1, "V Schrader", "Jun 4", 433920000, -80);
+    SEED(NRProtoTPMS, 48, 0xD76C7040, 16, "N1 Toyota", "Jun 4", 433920000, -112);
+    SEED(NRProtoTPMS, 48, 0xD76CA970, 1, "N1 Toyota b", "Jun 4", 433920000, -120);
+    SEED(NRProtoTPMS, 48, 0xF13D76AC, 5, "N2 Toyota", "Jun 6", 433920000, -51);
+    SEED(NRProtoTPMS, 48, 0x8147E6, 5, "N3 Renault", "Jun 9", 433920000, -86);
+    SEED(NRProtoTPMS, 48, 0xD769369B, 7, "R1 Toyota", "Jun 9", 433920000, -120);
+    SEED(NRProtoTPMS, 48, 0x4636F918, 6, "R2 Ford", "Jun 6", 433920000, -78);
+    SEED(NRProtoTPMS, 48, 0x07CCA0, 3, "R3 Renault", "Jun 9", 433920000, -23);
+    SEED(NRProtoTPMS, 48, 0x85C4975C, 2, "V Citroen", "Jun 4", 433920000, -120);
+    SEED(NRProtoTPMS, 120, 0x4B87E0, 5, "V Schrader2", "Jun 9", 433920000, -55);
 
     // Markisol blind remote — OOK_PWM s=368 l=704 sync=5628, 40-bit fixed code
     // ID=0x0100, captured Jun 7 16:18. Replayable (no rolling code).
@@ -604,6 +603,17 @@ static void nr_seed(NRApp* a) {
       n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C09EBD01000B27ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9030);
       n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C09EBD0100233FULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9031);
       n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C09EBD0100435FULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9032);
+    }
+    SEED(NRProtoBinRAW, 366, 0x635A4B, 2, "Window 4", "Jun 9", 433920000, -121);
+    { NRDev* w = &a->devs[a->dev_count-1];
+      snprintf(w->sigs[0].label, 20, "UP"); w->sigs[0].tx_key = 0xA3635A4B01000B14ULL; w->sigs[0].has_file = true; w->sigs[0].file_seq = 9050;
+      snprintf(w->sigs[1].label, 20, "STOP"); w->sigs[1].tx_key = 0xA3635A4B0100232CULL; w->sigs[1].has_file = true; w->sigs[1].file_seq = 9051;
+      snprintf(w->sigs[2].label, 20, "DOWN"); w->sigs[2].tx_key = 0xA3635A4B0100434CULL; w->sigs[2].has_file = true; w->sigs[2].file_seq = 9052;
+      w->sig_count = 3;
+      uint16_t n;
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3635A4B01000B14ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9050);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3635A4B0100232CULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9051);
+      n = nr_dooya_encode_raw(nr_raw_buf, 0xA3635A4B0100434CULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9052);
     }
     #undef SEED
 }
@@ -1128,7 +1138,7 @@ static void nr_tx(NRApp* a, NRDev* d, NRSig* s) {
 
     if(s->tx_key) {
         // Direct in-memory encoding — fast path (like Dooya Remote app)
-        if(d->proto == NRProtoBinRAW && (d->dev_id == 0xC0A16C || d->dev_id == 0xC0AD01 || d->dev_id == 0xC09EBD)) {
+        if(d->proto == NRProtoBinRAW && (d->dev_id == 0xC0A16C || d->dev_id == 0xC0AD01 || d->dev_id == 0xC09EBD || d->dev_id == 0x635A4B)) {
             // Dooya: 3 repeats + CONFIRM after UP/DOWN (not STOP)
             for(uint8_t r = 0; r < 3; r++)
                 pos = nr_encode_dooya(a->upload, pos, s->tx_key);

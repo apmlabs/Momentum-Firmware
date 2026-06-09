@@ -116,7 +116,15 @@ static void dooya_load(DooyaApp* app) {
         rem->buttons[1] = (DooyaButton){.frame = 0xA3C09EBD0100233F}; snprintf(rem->buttons[1].name, DOOYA_NAME_LEN, "Stop");
         rem->buttons[2] = (DooyaButton){.frame = 0xA3C09EBD0100435F}; snprintf(rem->buttons[2].name, DOOYA_NAME_LEN, "Down");
         rem->btn_count = 3;
-        app->remote_count = 3;
+        // Window 4
+        rem = &app->remotes[3];
+        rem->id = 0xA3635A; rem->addr = 0x4B0100;
+        snprintf(rem->name, DOOYA_NAME_LEN, "Window 4");
+        rem->buttons[0] = (DooyaButton){.frame = 0xA3635A4B01000B14}; snprintf(rem->buttons[0].name, DOOYA_NAME_LEN, "Up");
+        rem->buttons[1] = (DooyaButton){.frame = 0xA3635A4B0100232C}; snprintf(rem->buttons[1].name, DOOYA_NAME_LEN, "Stop");
+        rem->buttons[2] = (DooyaButton){.frame = 0xA3635A4B0100434C}; snprintf(rem->buttons[2].name, DOOYA_NAME_LEN, "Down");
+        rem->btn_count = 3;
+        app->remote_count = 4;
     }
 }
 
