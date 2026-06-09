@@ -331,29 +331,29 @@ static void nr_load(NRApp* a) {
     furi_record_close(RECORD_STORAGE);
 
     // Re-apply tx_keys (not saved in file) for known devices
-    struct { uint32_t dev_id; uint64_t keys[3]; } known_tx[] = {
-        {0x9CB87, {0x9CB871, 0x9CB872, 0x9CB874}},  // Neighbor Gate (3 of 4)
-        {0xC62C86, {0xC62C86, 0, 0}},               // Remote C6 (dev_id matches tx_key)
-        {0xEA55B1, {0xEA55B1, 0, 0}},               // Remote EA
-        {0x11B172, {0x11B172, 0, 0}},                // Remote 11
-        {0x75140B, {0x75140B, 0, 0}},                // Gate
-        {0xC0A16C, {0xA3C0A16C01000BD9ULL, 0xA3C0A16C010023F1ULL, 0xA3C0A16C01004311ULL}},
-        {0xC0AD01, {0xA3C0AD0101000B7AULL, 0xA3C0AD01010023B2ULL, 0xA3C0AD01010043B2ULL}},
-        {0xC09EBD, {0xA3C09EBD01000B27ULL, 0xA3C09EBD0100233FULL, 0xA3C09EBD0100435FULL}},
-        {0x09EC, {0x09EC, 0, 0}},                    // Garage CAME
+    struct { uint32_t dev_id; uint64_t keys[4]; } known_tx[] = {
+        {0x9CB87, {0x9CB871, 0x9CB872, 0x9CB874, 0x9CB878}},  // Neighbor Gate
+        {0xC62C86, {0xC62C86, 0, 0, 0}},               // Remote C6
+        {0xEA55B1, {0xEA55B1, 0, 0, 0}},               // Remote EA
+        {0x11B172, {0x11B172, 0, 0, 0}},                // Remote 11
+        {0x75140B, {0x75140B, 0, 0, 0}},                // Gate
+        {0xC0A16C, {0xA3C0A16C01000BD9ULL, 0xA3C0A16C010023F1ULL, 0xA3C0A16C01004311ULL, 0}},
+        {0xC0AD01, {0xA3C0AD0101000B7AULL, 0xA3C0AD01010023B2ULL, 0xA3C0AD01010043B2ULL, 0}},
+        {0xC09EBD, {0xA3C09EBD01000B27ULL, 0xA3C09EBD0100233FULL, 0xA3C09EBD0100435FULL, 0}},
+        {0x09EC, {0x09EC, 0, 0, 0}},                    // Garage CAME
+        {0x0100, {0x0100C0013FULL, 0x01001001EFULL, 0x01005001AFULL, 0}},  // Markisol
+        {0x47864, {0x08F0C8F19ULL, 0x08F0C9503ULL, 0x08F0C891FULL, 0x08F0C9701ULL}},  // UniFan
     };
     for(uint8_t i = 0; i < a->dev_count; i++) {
         NRDev* d = &a->devs[i];
         for(size_t k = 0; k < sizeof(known_tx)/sizeof(known_tx[0]); k++) {
             if(d->dev_id == known_tx[k].dev_id) {
-                for(uint8_t s = 0; s < d->sig_count && s < 3; s++) {
+                for(uint8_t s = 0; s < d->sig_count && s < 4; s++) {
                     if(known_tx[k].keys[s]) d->sigs[s].tx_key = known_tx[k].keys[s];
                 }
                 break;
             }
         }
-        // Neighbor Gate 4th button
-        if(d->dev_id == 0x9CB87 && d->sig_count >= 4) d->sigs[3].tx_key = 0x9CB878;
     }
 }
 
@@ -526,6 +526,33 @@ static void nr_seed(NRApp* a) {
     SEED(NRProtoTPMS, 48, 0x4636F918, 3, "Ford", "Jun 6", 433920000, -78);
     SEED(NRProtoTPMS, 48, 0x85C4975C, 2, "Citroen", "Jun 4", 433920000, -120);
     SEED(NRProtoTPMS, 48, 0x07CCA0, 2, "Renault", "Jun 4", 433920000, -23);
+
+    // New cars from batch 7 (Jun 7-9, 2026)
+    SEED(NRProtoTPMS, 48, 0x8147E6, 5, "Renault 2", "Jun 9", 433920000, -86);
+    SEED(NRProtoTPMS, 120, 0x4B87E0, 5, "Schrader 2", "Jun 9", 433920000, -55);
+
+    // Markisol blind remote — OOK_PWM s=368 l=704 sync=5628, 40-bit fixed code
+    // ID=0x0100, captured Jun 7 16:18. Replayable (no rolling code).
+    SEED(NRProtoBinRAW, 368, 0x0100, 1, "Markisol", "Jun 7", 433920000, -97);
+    { NRDev* mk = &a->devs[a->dev_count-1];
+      memset(mk->sigs, 0, sizeof(mk->sigs));
+      snprintf(mk->sigs[0].label, 20, "Up"); mk->sigs[0].tx_key = 0x0100C0013FULL;
+      snprintf(mk->sigs[1].label, 20, "Down"); mk->sigs[1].tx_key = 0x01001001EFULL;
+      snprintf(mk->sigs[2].label, 20, "Stop"); mk->sigs[2].tx_key = 0x01005001AFULL;
+      mk->sig_count = 3;
+    }
+
+    // UniFan-24V ceiling fan — OOK_PWM s=256 l=756 sync=3616, 33-bit with 3-bit counter
+    // ID=0x47864 (292964), captured Jun 9 00:10. Counter=0 for all.
+    SEED(NRProtoBinRAW, 256, 0x47864, 4, "Fan", "Jun 9", 433920000, -121);
+    { NRDev* fan = &a->devs[a->dev_count-1];
+      memset(fan->sigs, 0, sizeof(fan->sigs));
+      snprintf(fan->sigs[0].label, 20, "Speed 1"); fan->sigs[0].tx_key = 0x08F0C8F19ULL;
+      snprintf(fan->sigs[1].label, 20, "Speed 4"); fan->sigs[1].tx_key = 0x08F0C9503ULL;
+      snprintf(fan->sigs[2].label, 20, "Fan Off"); fan->sigs[2].tx_key = 0x08F0C891FULL;
+      snprintf(fan->sigs[3].label, 20, "Light"); fan->sigs[3].tx_key = 0x08F0C9701ULL;
+      fan->sig_count = 4;
+    }
 
     // FSK key fobs (captured via RTL-SDR, rolling code, monitor-only)
     SEED(NRProtoFSK, 48, 0xEFF864, 1, "Honda", "Jun 6", 433920000, -70);
@@ -1031,6 +1058,67 @@ static uint16_t nr_encode_dooya(LevelDuration* buf, uint16_t pos, uint64_t frame
     return pos;
 }
 
+// Markisol: sync(4886h+2470l+1647h+315l) + 40-bit PWM (0=670h/320l, 1=348h/642l)
+// BUT: raw air bits are inverted+reversed vs decoded frame. We must transform.
+static uint16_t nr_encode_markisol(LevelDuration* buf, uint16_t pos, uint64_t frame) {
+    // Transform decoded frame bytes to air bits (reverse of rtl_433 decode)
+    uint8_t dec[5];
+    for(int i = 0; i < 5; i++) dec[i] = (frame >> (32 - i*8)) & 0xFF;
+    // Reverse decode: air_byte = reverse8(~dec_byte), then shift left by 1 across all
+    uint8_t air[6] = {0};
+    for(int i = 0; i < 5; i++) {
+        uint8_t r = 0;
+        uint8_t v = ~dec[i];
+        for(int b = 0; b < 8; b++) r |= ((v >> b) & 1) << (7-b);
+        air[i] = r;
+    }
+    // Shift right by 1 bit (undo the <<1 in decode)
+    for(int i = 4; i >= 0; i--) {
+        air[i+1] |= (air[i] & 1) << 7;
+        air[i] >>= 1;
+    }
+    air[0] |= 0x80; // first spurious bit is always 1
+
+    // Sync: 4886h, 2470l, 1647h, 315l
+    buf[pos++] = level_duration_make(true, 4886);
+    buf[pos++] = level_duration_make(false, 2470);
+    buf[pos++] = level_duration_make(true, 1647);
+    buf[pos++] = level_duration_make(false, 315);
+    // 41 bits (40 data + 1 spurious first bit already in air[])
+    for(int i = 0; i < 41; i++) {
+        uint8_t bit = (air[i/8] >> (7 - (i%8))) & 1;
+        if(bit) { // one: short high, long low
+            buf[pos++] = level_duration_make(true, 348);
+            buf[pos++] = level_duration_make(false, 642);
+        } else { // zero: long high, short low
+            buf[pos++] = level_duration_make(true, 670);
+            buf[pos++] = level_duration_make(false, 320);
+        }
+    }
+    // Inter-frame gap (must exceed reset_limit=2000 for rtl_433 to separate rows)
+    buf[pos++] = level_duration_make(true, 348);
+    buf[pos++] = level_duration_make(false, 8000);
+    return pos;
+}
+
+// UniFan-24V: sync(3616h) + 33-bit PWM (0=756h/252l, 1=256h/756l) + gap 8200
+static uint16_t nr_encode_unifan(LevelDuration* buf, uint16_t pos, uint64_t frame33) {
+    buf[pos++] = level_duration_make(true, 3616);
+    buf[pos++] = level_duration_make(false, 252);
+    for(int8_t i = 32; i >= 0; i--) {
+        if((frame33 >> i) & 1) {
+            buf[pos++] = level_duration_make(true, 256);
+            buf[pos++] = level_duration_make(false, 756);
+        } else {
+            buf[pos++] = level_duration_make(true, 756);
+            buf[pos++] = level_duration_make(false, 252);
+        }
+    }
+    buf[pos++] = level_duration_make(true, 256);
+    buf[pos++] = level_duration_make(false, 8200);
+    return pos;
+}
+
 static void nr_tx(NRApp* a, NRDev* d, NRSig* s) {
     if(!s->tx_key && !s->raw_len) return;
     bool was = a->rx_on; if(was) nr_rx_stop(a);
@@ -1056,6 +1144,14 @@ static void nr_tx(NRApp* a, NRDev* d, NRSig* s) {
             // CAME 12-bit: 6 repeats
             for(uint8_t r = 0; r < 6; r++)
                 pos = nr_encode_came(a->upload, pos, (uint16_t)s->tx_key, 320);
+        } else if(d->dev_id == 0x0100 && d->te >= 350 && d->te <= 400) {
+            // Markisol: 7 repeats (per protocol spec)
+            for(uint8_t r = 0; r < 7; r++)
+                pos = nr_encode_markisol(a->upload, pos, s->tx_key);
+        } else if(d->dev_id == 0x47864) {
+            // UniFan: 7 repeats
+            for(uint8_t r = 0; r < 7; r++)
+                pos = nr_encode_unifan(a->upload, pos, s->tx_key);
         } else {
             // Princeton/PT2262/EV1527: 6 repeats
             for(uint8_t r = 0; r < 6; r++)
