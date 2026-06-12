@@ -2106,7 +2106,7 @@ int32_t neighborhood_remote_app(void* p) {
                 } else if(ev.key == InputKeyDown && ri < a->dev_count &&
                           a->dev_scroll + 1 < a->devs[ri].sig_count) {
                     a->dev_scroll++;
-                } else if(ev.key == InputKeyOk && ri < a->dev_count) {
+                } else if(ev.key == InputKeyOk && ev.type == InputTypeShort && ri < a->dev_count) {
                     NRDev* d = &a->devs[ri];
                     uint8_t si = a->dev_scroll < d->sig_count ? a->dev_scroll : 0;
                     notification_message(a->notif, &sequence_blink_magenta_100);
