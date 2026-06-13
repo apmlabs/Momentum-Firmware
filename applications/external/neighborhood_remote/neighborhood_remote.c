@@ -339,6 +339,7 @@ static void nr_load(NRApp* a) {
         {0xEA, {0xEA55B1, 0, 0, 0}},                   // Remote EA
         {0x11, {0x11B172, 0, 0, 0}},                    // Remote 11
         {0x75, {0x75140B, 0, 0, 0}},                    // Gate
+        {0xF7, {0xF72C9E, 0, 0, 0}},                    // Gate 2
         {0xC0A16C, {0xA3C0A16C01000BD9ULL, 0xA3C0A16C010023F1ULL, 0xA3C0A16C01004311ULL, 0}},
         {0xC0AD01, {0xA3C0AD0101000B7AULL, 0xA3C0AD01010023B2ULL, 0xA3C0AD01010043B2ULL, 0}},
         {0xC09EBD, {0xA3C09EBD01000B27ULL, 0xA3C09EBD0100233FULL, 0xA3C09EBD0100435FULL, 0}},
@@ -439,13 +440,13 @@ static void nr_seed(NRApp* a) {
         d->useful=true; d->freq=FREQ; d->rssi=RSSI; snprintf(d->name, NR_MAX_NAME, NAME); \
         snprintf(d->last_seen_date, 12, DATE); }
 
-    SEED(NRProtoHoneywell, 143, 0x5800, 1633, "Alarm System", "May 2", 433920000, -85);
+    SEED(NRProtoHoneywell, 143, 0x5800, 1633, "Alarm System", "Jun 13", 433920000, -85);
     SEED(NRProtoKeeloq, 289, 0x2F9AE15, 24, "Parking Fob", "May 7", 433920000, -88);
     a->devs[a->dev_count-1].sig_count = 2;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "S2 2F9AE1");
     snprintf(a->devs[a->dev_count-1].sigs[1].label, 20, "S3 2F9AE1");
 
-    SEED(NRProtoPT2262, 194, 0x4F, 53, "Remote 4F", "May 2", 433920000, -75);
+    SEED(NRProtoPT2262, 194, 0x4F, 53, "Remote 4F", "Jun 9", 433920000, -75);
     NRDev* r = &a->devs[a->dev_count-1];
     memset(r->sigs, 0, sizeof(r->sigs));
     memcpy(r->sigs[0].raw, (uint8_t[]){0xFF,0xFE,0x4F,0xFF,0xE0}, 5);
@@ -459,7 +460,7 @@ static void nr_seed(NRApp* a) {
     r->sig_count = 2;
 
     // Neighbor Gate — Princeton TE=311, 4 buttons
-    SEED(NRProtoPT2262, 311, 0x9C, 8, "Neighbor Gate", "May 18", 433920000, -87);
+    SEED(NRProtoPT2262, 311, 0x9C, 8, "Neighbor Gate", "Jun 13", 433920000, -87);
     { NRDev* ng = &a->devs[a->dev_count-1];
       memset(ng->sigs, 0, sizeof(ng->sigs));
       snprintf(ng->sigs[0].label, 20, "Open"); ng->sigs[0].tx_key = 0x9CB871; ng->sigs[0].has_file = true; ng->sigs[0].file_seq = 9002;
@@ -474,7 +475,7 @@ static void nr_seed(NRApp* a) {
     }
 
     // Remote C6 — Princeton TE=380, 1 button
-    SEED(NRProtoPT2262, 380, 0xC6, 9, "Remote C6", "May 25", 433920000, -77);
+    SEED(NRProtoPT2262, 380, 0xC6, 9, "Remote C6", "Jun 13", 433920000, -77);
     { NRDev* rc = &a->devs[a->dev_count-1];
       memset(rc->sigs, 0, sizeof(rc->sigs));
       snprintf(rc->sigs[0].label, 20, "Button"); rc->sigs[0].tx_key = 0xC62C86; rc->sigs[0].has_file = true; rc->sigs[0].file_seq = 9040;
@@ -484,14 +485,14 @@ static void nr_seed(NRApp* a) {
 
     SEED(NRProtoFSK, 65, 0xF5C0, 118, "FSK Sensor", "Apr 30", 433920000, -88);
     SEED(NRProtoEV1527, 113, 0x87FFE, 1, "Sens 87FFE", "May 8", 433920000, -90);
-    SEED(NRProtoPT2262, 322, 0xEA, 1, "Remote EA", "May 14", 433920000, -86);
+    SEED(NRProtoPT2262, 322, 0xEA, 1, "Remote EA", "Jun 9", 433920000, -86);
     { NRDev* ea = &a->devs[a->dev_count-1];
       memset(ea->sigs, 0, sizeof(ea->sigs));
       snprintf(ea->sigs[0].label, 20, "Button"); ea->sigs[0].tx_key = 0xEA55B1; ea->sigs[0].has_file = true; ea->sigs[0].file_seq = 9041;
       ea->sig_count = 1;
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 EA 55 B1", 322, 9041);
     }
-    SEED(NRProtoPT2262, 311, 0x11, 2, "Remote 11", "May 25", 433920000, -81);
+    SEED(NRProtoPT2262, 311, 0x11, 2, "Remote 11", "Jun 9", 433920000, -81);
     { NRDev* r11 = &a->devs[a->dev_count-1];
       memset(r11->sigs, 0, sizeof(r11->sigs));
       snprintf(r11->sigs[0].label, 20, "Button"); r11->sigs[0].tx_key = 0x11B172; r11->sigs[0].has_file = true; r11->sigs[0].file_seq = 9042;
@@ -500,11 +501,18 @@ static void nr_seed(NRApp* a) {
     }
 
     // Gate remote — Princeton tristate X1XX0XX000Z1 (captured via RTL-SDR)
-    SEED(NRProtoPT2262, 340, 0x75, 1, "Gate", "Jun 4", 433920000, -80);
+    SEED(NRProtoPT2262, 340, 0x75, 1, "Gate", "Jun 12", 433920000, -80);
     { NRDev* gt = &a->devs[a->dev_count-1];
       memset(gt->sigs, 0, sizeof(gt->sigs));
       snprintf(gt->sigs[0].label, 20, "Open/Close"); gt->sigs[0].tx_key = 0x75140B;
       gt->sig_count = 1;
+    }
+
+    SEED(NRProtoPT2262, 340, 0xF7, 1, "Gate 2", "Jun 12", 433920000, -97);
+    { NRDev* g2 = &a->devs[a->dev_count-1];
+      memset(g2->sigs, 0, sizeof(g2->sigs));
+      snprintf(g2->sigs[0].label, 20, "Open/Close"); g2->sigs[0].tx_key = 0xF72C9E;
+      g2->sig_count = 1;
     }
 
     // Confirmed neighbor KeeLoq fobs (seen multiple times across batches)
@@ -513,30 +521,30 @@ static void nr_seed(NRApp* a) {
     SEED(NRProtoKeeloq, 295, 0x008005E, 5, "Fob 8005E", "May 25", 433920000, -92);
     SEED(NRProtoKeeloq, 240, 0x000B118, 3, "Fob B118", "May 2", 433920000, -92);
     SEED(NRProtoKeeloq, 300, 0x0080218, 4, "Fob 80218", "May 25", 433920000, -85);
-    SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "May 2", 433920000, -84);
-    SEED(NRProtoNexusTH, 650, 0xE0E0, 29, "Weather E0", "May 2", 433920000, -88);
+    SEED(NRProtoBinRAW, 98, 0xB109, 699, "OOK Unknown 98", "Jun 13", 433920000, -84);
+    SEED(NRProtoNexusTH, 650, 0xE0E0, 29, "Weather E0", "Jun 12", 433920000, -88);
     a->devs[a->dev_count-1].sig_count = 1;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "16.5C");
     SEED(NRProtoBinRAW, 345, 0xB122, 10, "Bell Ctrl", "May 2", 433920000, -83);
 
     // Interlogix/GE alarm system — 7 sensors (motion+smoke+contact), event-only TX
-    SEED(NRProtoBinRAW, 366, 0xB14A, 7, "Interlogix", "Jun 4", 433920000, -90);
+    SEED(NRProtoBinRAW, 366, 0xB14A, 7, "Interlogix", "Jun 12", 433920000, -90);
 
     // TPMS — known car tire sensors (captured via RTL-SDR)
     SEED(NRProtoTPMS, 120, 0x09B6BE9, 1, "V Schrader", "Jun 4", 433920000, -80);
-    SEED(NRProtoTPMS, 48, 0xD76C7040, 16, "N1 Toyota", "Jun 4", 433920000, -112);
+    SEED(NRProtoTPMS, 48, 0xD76C7040, 16, "N1 Toyota", "Jun 7", 433920000, -112);
     SEED(NRProtoTPMS, 48, 0xD76CA970, 1, "N1 Toyota b", "Jun 4", 433920000, -120);
-    SEED(NRProtoTPMS, 48, 0xF13D76AC, 5, "N2 Toyota", "Jun 6", 433920000, -51);
-    SEED(NRProtoTPMS, 48, 0x8147E6, 5, "N3 Renault", "Jun 9", 433920000, -86);
-    SEED(NRProtoTPMS, 48, 0xD769369B, 7, "R1 Toyota", "Jun 9", 433920000, -120);
+    SEED(NRProtoTPMS, 48, 0xF13D76AC, 5, "N2 Toyota", "Jun 9", 433920000, -51);
+    SEED(NRProtoTPMS, 48, 0x8147E6, 5, "N3 Renault", "Jun 12", 433920000, -86);
+    SEED(NRProtoTPMS, 48, 0xD769369B, 7, "R1 Toyota", "Jun 12", 433920000, -120);
     SEED(NRProtoTPMS, 48, 0x4636F918, 6, "R2 Ford", "Jun 6", 433920000, -78);
-    SEED(NRProtoTPMS, 48, 0x07CCA0, 3, "R3 Renault", "Jun 9", 433920000, -23);
+    SEED(NRProtoTPMS, 48, 0x07CCA0, 3, "R3 Renault", "Jun 12", 433920000, -23);
     SEED(NRProtoTPMS, 48, 0x85C4975C, 2, "V Citroen", "Jun 4", 433920000, -120);
     SEED(NRProtoTPMS, 120, 0x4B87E0, 5, "V Schrader2", "Jun 9", 433920000, -55);
 
     // Markisol blind remote — OOK_PWM s=368 l=704 sync=5628, 40-bit fixed code
     // ID=0x0100, captured Jun 7 16:18. Replayable (no rolling code).
-    SEED(NRProtoBinRAW, 368, 0x0100, 1, "Markisol", "Jun 7", 433920000, -97);
+    SEED(NRProtoBinRAW, 368, 0x0100, 1, "Markisol", "Jun 12", 433920000, -97);
     { NRDev* mk = &a->devs[a->dev_count-1];
       memset(mk->sigs, 0, sizeof(mk->sigs));
       snprintf(mk->sigs[0].label, 20, "Up"); mk->sigs[0].tx_key = 0x0100C0013FULL;
@@ -547,7 +555,7 @@ static void nr_seed(NRApp* a) {
 
     // UniFan-24V ceiling fan — OOK_PWM s=256 l=756 sync=3616, 33-bit with 3-bit counter
     // ID=0x47864 (292964), captured Jun 9 00:10. Counter=0 for all.
-    SEED(NRProtoBinRAW, 256, 0x47864, 4, "Fan", "Jun 9", 433920000, -121);
+    SEED(NRProtoBinRAW, 256, 0x47864, 4, "Fan", "Jun 12", 433920000, -121);
     { NRDev* fan = &a->devs[a->dev_count-1];
       memset(fan->sigs, 0, sizeof(fan->sigs));
       snprintf(fan->sigs[0].label, 20, "Speed 1"); fan->sigs[0].tx_key = 0x08F0C8F19ULL;
@@ -561,7 +569,7 @@ static void nr_seed(NRApp* a) {
     SEED(NRProtoFSK, 48, 0xEFF864, 1, "Honda", "Jun 6", 433920000, -70);
 
     // 868 MHz devices
-    SEED(NRProtoBinRAW, 320, 0x09EC, 19, "Garage", "May 4", 868350000, -75);
+    SEED(NRProtoBinRAW, 320, 0x09EC, 19, "Garage", "Jun 9", 868350000, -75);
     { NRDev* g = &a->devs[a->dev_count-1];
       memset(g->sigs, 0, sizeof(g->sigs));
       memcpy(g->sigs[0].raw, (uint8_t[]){0x9E,0xC0}, 2);
@@ -575,7 +583,7 @@ static void nr_seed(NRApp* a) {
     SEED(NRProtoBinRAW, 249, 0xB118, 2, "868 Dev 249", "May 16", 868350000, -85);
 
     // Dooya Windows — 3 remotes with direct TX encoding
-    SEED(NRProtoBinRAW, 366, 0xC0A16C, 0, "Window 1", "May 5", 433920000, 0);
+    SEED(NRProtoBinRAW, 366, 0xC0A16C, 0, "Window 1", "Jun 12", 433920000, 0);
     { NRDev* w = &a->devs[a->dev_count-1];
       snprintf(w->sigs[0].label, 20, "UP"); w->sigs[0].tx_key = 0xA3C0A16C01000BD9ULL; w->sigs[0].has_file = true; w->sigs[0].file_seq = 9010;
       snprintf(w->sigs[1].label, 20, "STOP"); w->sigs[1].tx_key = 0xA3C0A16C010023F1ULL; w->sigs[1].has_file = true; w->sigs[1].file_seq = 9011;
@@ -586,7 +594,7 @@ static void nr_seed(NRApp* a) {
       n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0A16C010023F1ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9011);
       n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0A16C01004311ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9012);
     }
-    SEED(NRProtoBinRAW, 366, 0xC0AD01, 0, "Window 2", "May 5", 433920000, 0);
+    SEED(NRProtoBinRAW, 366, 0xC0AD01, 0, "Window 2", "Jun 12", 433920000, 0);
     { NRDev* w = &a->devs[a->dev_count-1];
       snprintf(w->sigs[0].label, 20, "UP"); w->sigs[0].tx_key = 0xA3C0AD0101000B7AULL; w->sigs[0].has_file = true; w->sigs[0].file_seq = 9020;
       snprintf(w->sigs[1].label, 20, "STOP"); w->sigs[1].tx_key = 0xA3C0AD01010023B2ULL; w->sigs[1].has_file = true; w->sigs[1].file_seq = 9021;
@@ -597,7 +605,7 @@ static void nr_seed(NRApp* a) {
       n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0AD01010023B2ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9021);
       n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C0AD01010043B2ULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9022);
     }
-    SEED(NRProtoBinRAW, 366, 0xC09EBD, 0, "Window 3", "May 5", 433920000, 0);
+    SEED(NRProtoBinRAW, 366, 0xC09EBD, 0, "Window 3", "Jun 12", 433920000, 0);
     { NRDev* w = &a->devs[a->dev_count-1];
       snprintf(w->sigs[0].label, 20, "UP"); w->sigs[0].tx_key = 0xA3C09EBD01000B27ULL; w->sigs[0].has_file = true; w->sigs[0].file_seq = 9030;
       snprintf(w->sigs[1].label, 20, "STOP"); w->sigs[1].tx_key = 0xA3C09EBD0100233FULL; w->sigs[1].has_file = true; w->sigs[1].file_seq = 9031;
@@ -608,7 +616,7 @@ static void nr_seed(NRApp* a) {
       n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C09EBD0100233FULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9031);
       n = nr_dooya_encode_raw(nr_raw_buf, 0xA3C09EBD0100435FULL, 3); nr_seed_raw_sub(a, 433920000, nr_raw_buf, n, 9032);
     }
-    SEED(NRProtoBinRAW, 366, 0x635A4B, 2, "Window 4", "Jun 9", 433920000, -121);
+    SEED(NRProtoBinRAW, 366, 0x635A4B, 2, "Window 4", "Jun 12", 433920000, -121);
     { NRDev* w = &a->devs[a->dev_count-1];
       snprintf(w->sigs[0].label, 20, "UP"); w->sigs[0].tx_key = 0xA3635A4B01000B14ULL; w->sigs[0].has_file = true; w->sigs[0].file_seq = 9050;
       snprintf(w->sigs[1].label, 20, "STOP"); w->sigs[1].tx_key = 0xA3635A4B0100232CULL; w->sigs[1].has_file = true; w->sigs[1].file_seq = 9051;
