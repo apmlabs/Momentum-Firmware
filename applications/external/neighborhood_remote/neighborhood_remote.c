@@ -337,7 +337,7 @@ static void nr_load(NRApp* a) {
         {0x9C, {0x9CB871, 0x9CB872, 0x9CB874, 0x9CB878}},  // Neighbor Gate
         {0xC6, {0xC62C86, 0, 0, 0}},                   // Remote C6
         {0xEA, {0xEA55B1, 0, 0, 0}},                   // Remote EA
-        {0x11, {0x11B172, 0, 0, 0}},                    // Remote 11
+        {0x11, {0x11B172, 0x11B174, 0, 0}},                    // Remote 11
         {0x75, {0x75140B, 0, 0, 0}},                    // Gate
         {0xF7, {0xF72C9E, 0, 0, 0}},                    // Gate 2
         {0xC0A16C, {0xA3C0A16C01000BD9ULL, 0xA3C0A16C010023F1ULL, 0xA3C0A16C01004311ULL, 0}},
@@ -475,7 +475,7 @@ static void nr_seed(NRApp* a) {
     }
 
     // Remote C6 — Princeton TE=380, 1 button
-    SEED(NRProtoPT2262, 380, 0xC6, 9, "Remote C6", "Jun 13", 433920000, -77);
+    SEED(NRProtoPT2262, 380, 0xC6, 9, "Remote C6", "Jun 16", 433920000, -77);
     { NRDev* rc = &a->devs[a->dev_count-1];
       memset(rc->sigs, 0, sizeof(rc->sigs));
       snprintf(rc->sigs[0].label, 20, "Button"); rc->sigs[0].tx_key = 0xC62C86; rc->sigs[0].has_file = true; rc->sigs[0].file_seq = 9040;
@@ -492,12 +492,14 @@ static void nr_seed(NRApp* a) {
       ea->sig_count = 1;
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 EA 55 B1", 322, 9041);
     }
-    SEED(NRProtoPT2262, 311, 0x11, 2, "Remote 11", "Jun 9", 433920000, -81);
+    SEED(NRProtoPT2262, 311, 0x11, 2, "Remote 11", "Jun 16", 433920000, -81);
     { NRDev* r11 = &a->devs[a->dev_count-1];
       memset(r11->sigs, 0, sizeof(r11->sigs));
-      snprintf(r11->sigs[0].label, 20, "Button"); r11->sigs[0].tx_key = 0x11B172; r11->sigs[0].has_file = true; r11->sigs[0].file_seq = 9042;
-      r11->sig_count = 1;
+      snprintf(r11->sigs[0].label, 20, "Btn 2"); r11->sigs[0].tx_key = 0x11B172; r11->sigs[0].has_file = true; r11->sigs[0].file_seq = 9042;
+      snprintf(r11->sigs[1].label, 20, "Btn 4"); r11->sigs[1].tx_key = 0x11B174; r11->sigs[1].has_file = true; r11->sigs[1].file_seq = 9043;
+      r11->sig_count = 2;
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 11 B1 72", 311, 9042);
+      nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 11 B1 74", 311, 9043);
     }
 
     // Gate remote — Princeton tristate X1XX0XX000Z1 (captured via RTL-SDR)
@@ -525,7 +527,7 @@ static void nr_seed(NRApp* a) {
     SEED(NRProtoNexusTH, 650, 0xE0E0, 29, "Weather E0", "Jun 12", 433920000, -88);
     a->devs[a->dev_count-1].sig_count = 1;
     snprintf(a->devs[a->dev_count-1].sigs[0].label, 20, "16.5C");
-    SEED(NRProtoBinRAW, 345, 0xB122, 10, "Bell Ctrl", "May 2", 433920000, -83);
+    SEED(NRProtoBinRAW, 345, 0xB122, 10, "Bell Ctrl", "Jun 16", 433920000, -83);
 
     // Interlogix/GE alarm system — 7 sensors (motion+smoke+contact), event-only TX
     SEED(NRProtoBinRAW, 366, 0xB14A, 7, "Interlogix", "Jun 12", 433920000, -90);
@@ -536,7 +538,7 @@ static void nr_seed(NRApp* a) {
     SEED(NRProtoTPMS, 48, 0xD76CA970, 1, "N1 Toyota b", "Jun 4", 433920000, -120);
     SEED(NRProtoTPMS, 48, 0xF13D76AC, 5, "N2 Toyota", "Jun 9", 433920000, -51);
     SEED(NRProtoTPMS, 48, 0x8147E6, 5, "N3 Renault", "Jun 12", 433920000, -86);
-    SEED(NRProtoTPMS, 48, 0xD769369B, 7, "R1 Toyota", "Jun 12", 433920000, -120);
+    SEED(NRProtoTPMS, 48, 0xD769369B, 7, "R1 Toyota", "Jun 13", 433920000, -120);
     SEED(NRProtoTPMS, 48, 0x4636F918, 6, "R2 Ford", "Jun 6", 433920000, -78);
     SEED(NRProtoTPMS, 48, 0x07CCA0, 3, "R3 Renault", "Jun 12", 433920000, -23);
     SEED(NRProtoTPMS, 48, 0x85C4975C, 2, "V Citroen", "Jun 4", 433920000, -120);
