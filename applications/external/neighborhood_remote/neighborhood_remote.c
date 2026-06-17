@@ -460,7 +460,7 @@ static void nr_seed(NRApp* a) {
     r->sig_count = 2;
 
     // Neighbor Gate — Princeton TE=311, 4 buttons
-    SEED(NRProtoPT2262, 311, 0x9C, 8, "Neighbor Gate", "Jun 13", 433920000, -87);
+    SEED(NRProtoPT2262, 311, 0x9C, 8, "Neighbor Gate", "Jun 17", 433920000, -87);
     { NRDev* ng = &a->devs[a->dev_count-1];
       memset(ng->sigs, 0, sizeof(ng->sigs));
       snprintf(ng->sigs[0].label, 20, "Open"); ng->sigs[0].tx_key = 0x9CB871; ng->sigs[0].has_file = true; ng->sigs[0].file_seq = 9002;
@@ -538,7 +538,7 @@ static void nr_seed(NRApp* a) {
     SEED(NRProtoTPMS, 48, 0xD76CA970, 1, "N1 Toyota b", "Jun 4", 433920000, -120);
     SEED(NRProtoTPMS, 48, 0xF13D76AC, 5, "N2 Toyota", "Jun 9", 433920000, -51);
     SEED(NRProtoTPMS, 48, 0x8147E6, 5, "N3 Renault", "Jun 12", 433920000, -86);
-    SEED(NRProtoTPMS, 48, 0xD769369B, 7, "R1 Toyota", "Jun 13", 433920000, -120);
+    SEED(NRProtoTPMS, 48, 0xD769369B, 7, "R1 Toyota", "Jun 17", 433920000, -120);
     SEED(NRProtoTPMS, 48, 0x4636F918, 6, "R2 Ford", "Jun 6", 433920000, -78);
     SEED(NRProtoTPMS, 48, 0x07CCA0, 3, "R3 Renault", "Jun 12", 433920000, -23);
     SEED(NRProtoTPMS, 48, 0x85C4975C, 2, "V Citroen", "Jun 4", 433920000, -120);
