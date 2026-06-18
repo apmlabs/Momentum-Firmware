@@ -347,6 +347,7 @@ static void nr_load(NRApp* a) {
         {0x09EC, {0x09EC, 0, 0, 0}},                    // Garage CAME
         {0x0100, {0x0100C0013FULL, 0x01001001EFULL, 0x01005001AFULL, 0}},  // Markisol
         {0x47864, {0x08F0C8F19ULL, 0x08F0C9503ULL, 0x08F0C891FULL, 0x08F0C9701ULL}},  // UniFan
+        {0xABE1, {0xABE1DF, 0, 0, 0}},                     // Gate MC (Ford-CarRemote)
     };
     for(uint8_t i = 0; i < a->dev_count; i++) {
         NRDev* d = &a->devs[i];
@@ -565,6 +566,15 @@ static void nr_seed(NRApp* a) {
       snprintf(fan->sigs[2].label, 20, "Fan Off"); fan->sigs[2].tx_key = 0x08F0C891FULL;
       snprintf(fan->sigs[3].label, 20, "Light"); fan->sigs[3].tx_key = 0x08F0C9701ULL;
       fan->sig_count = 4;
+    }
+
+    // Ford-CarRemote — Manchester fixed code, 24-bit (ID:16 + Code:8)
+    // ID=0xABE1 (44001), Code=0xDF (223), captured Jun 18 15:42. REPLAYABLE.
+    SEED(NRProtoBinRAW, 500, 0xABE1, 1, "Gate MC", "Jun 18", 433920000, -9);
+    { NRDev* mc = &a->devs[a->dev_count-1];
+      memset(mc->sigs, 0, sizeof(mc->sigs));
+      snprintf(mc->sigs[0].label, 20, "Btn 1"); mc->sigs[0].tx_key = 0xABE1DF;
+      mc->sig_count = 1;
     }
 
     // FSK key fobs (captured via RTL-SDR, rolling code, monitor-only)
@@ -1125,6 +1135,31 @@ static uint16_t nr_encode_markisol(LevelDuration* buf, uint16_t pos, uint64_t fr
     return pos;
 }
 
+// Ford-CarRemote / Manchester fixed-code: preamble + 24-bit Manchester + gap
+// Manchester IEEE 802.3: 0 = low-high, 1 = high-low (per half-bit period = TE)
+static uint16_t nr_encode_manchester(LevelDuration* buf, uint16_t pos, uint32_t key, uint8_t bits, uint16_t te) {
+    // Preamble: 12 × (HIGH te, LOW te) — clock sync
+    for(uint8_t i = 0; i < 12; i++) {
+        buf[pos++] = level_duration_make(true, te);
+        buf[pos++] = level_duration_make(false, te);
+    }
+    // Sync: LOW 2*te (marks start of data)
+    buf[pos++] = level_duration_make(false, te);
+    // Data: bits MSB first, Manchester: 1 = HIGH-LOW, 0 = LOW-HIGH
+    for(int8_t i = bits - 1; i >= 0; i--) {
+        if((key >> i) & 1) {
+            buf[pos++] = level_duration_make(true, te);
+            buf[pos++] = level_duration_make(false, te);
+        } else {
+            buf[pos++] = level_duration_make(false, te);
+            buf[pos++] = level_duration_make(true, te);
+        }
+    }
+    // Inter-frame gap
+    buf[pos++] = level_duration_make(false, (uint32_t)te * 20);
+    return pos;
+}
+
 // UniFan-24V: sync(3616h) + 33-bit PWM (0=756h/252l, 1=256h/756l) + gap 8200
 static uint16_t nr_encode_unifan(LevelDuration* buf, uint16_t pos, uint64_t frame33) {
     buf[pos++] = level_duration_make(true, 3616);
@@ -1176,6 +1211,10 @@ static void nr_tx(NRApp* a, NRDev* d, NRSig* s) {
             // UniFan: 7 repeats
             for(uint8_t r = 0; r < 7; r++)
                 pos = nr_encode_unifan(a->upload, pos, s->tx_key);
+        } else if(d->dev_id == 0xABE1) {
+            // Ford-CarRemote (Manchester fixed code): 10 repeats
+            for(uint8_t r = 0; r < 10; r++)
+                pos = nr_encode_manchester(a->upload, pos, (uint32_t)s->tx_key, 24, 500);
         } else {
             // Princeton/PT2262/EV1527: 6 repeats
             for(uint8_t r = 0; r < 6; r++)
