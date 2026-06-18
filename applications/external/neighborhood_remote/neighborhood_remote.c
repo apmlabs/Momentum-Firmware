@@ -338,6 +338,7 @@ static void nr_load(NRApp* a) {
         {0xC6, {0xC62C86, 0, 0, 0}},                   // Remote C6
         {0xEA, {0xEA55B1, 0, 0, 0}},                   // Remote EA
         {0x11, {0x11B172, 0x11B174, 0, 0}},                    // Remote 11
+        {0xEE, {0xEE593C, 0, 0, 0}},                        // Remote EE
         {0x75, {0x75140B, 0, 0, 0}},                    // Gate
         {0xF7, {0xF72C9E, 0, 0, 0}},                    // Gate 2
         {0xC0A16C, {0xA3C0A16C01000BD9ULL, 0xA3C0A16C010023F1ULL, 0xA3C0A16C01004311ULL, 0}},
@@ -501,6 +502,15 @@ static void nr_seed(NRApp* a) {
       r11->sig_count = 2;
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 11 B1 72", 311, 9042);
       nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 11 B1 74", 311, 9043);
+    }
+
+    // Remote EE — Princeton TE=311, discovered via RTL-SDR batch 22 (Jun 18)
+    SEED(NRProtoPT2262, 311, 0xEE, 1, "Remote EE", "Jun 18", 433920000, -82);
+    { NRDev* ree = &a->devs[a->dev_count-1];
+      memset(ree->sigs, 0, sizeof(ree->sigs));
+      snprintf(ree->sigs[0].label, 20, "Btn 1"); ree->sigs[0].tx_key = 0xEE593C; ree->sigs[0].has_file = true; ree->sigs[0].file_seq = 9050;
+      ree->sig_count = 1;
+      nr_seed_sub(a, "Princeton", 433920000, 24, "00 00 00 00 00 EE 59 3C", 311, 9050);
     }
 
     // Gate remote — Princeton tristate X1XX0XX000Z1 (captured via RTL-SDR)
