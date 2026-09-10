@@ -1,3 +1,9 @@
+# Codex scope for this component
+
+Follow this component's technical contracts below and the project-root AGENTS.md for current Codex workflow, progress and publication rules. Use available tools; named DQL/Strato knowledge tools are optional when installed, with official documentation and installed type definitions as fallbacks. Historical assistant-brand references do not require that assistant.
+
+All firmware build examples below require `FBT_NO_SYNC=1`; run them from the firmware root. Do not reuse flashed tags, synchronize applications/external as a submodule, or change option-byte fields.
+
 # AGENTS.md
 
 ## Purpose
