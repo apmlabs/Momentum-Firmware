@@ -72,3 +72,14 @@ node_modules/
 # cli_perf script output in case of errors
 /block.bin
 /return_block.bin
+
+# Codex adoption: preserve private migration sources locally
+.codex/legacy/
+.codex/migration-manifest.json
+.agents/skills/**/.env
+.agents/skills/**/activation.json
+.agents/skills/**/.*state*.json
+
+# Private MCP credentials and local migration evidence
+.codex/private/
+.codex/validation.json
